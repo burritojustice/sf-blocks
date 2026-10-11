@@ -68,6 +68,17 @@ def download(key, path):
     os.replace(tmp, path)
 
 
+def ymd(v):
+    """dates as YYYY-MM-DD, whether the CSV came from the API (2013-11-07T00:00:00.000) or the site's
+    Export (11/07/2013, 2026/09/27 03:55:00 AM)"""
+    v = (v or "").strip()
+    m = re.match(r"(\d{4})[-/](\d{2})[-/](\d{2})", v) or re.match(r"(\d{2})/(\d{2})/(\d{4})", v)
+    if not m:
+        return v
+    a, b, c = m.groups()
+    return f"{a}-{b}-{c}" if len(a) == 4 else f"{c}-{a}-{b}"
+
+
 def rows(path):
     """CSV rows with lowercase column names, so API downloads and site exports read the same"""
     with open(path, newline="", encoding="utf-8-sig") as f:
@@ -245,13 +256,13 @@ def main():
         node_xy.setdefault(fn, pts[0])
         node_xy.setdefault(tn, pts[-1])
         flags = (1 if r["active"].lower() == "true" else 0) | (2 if r["accepted"].lower() == "true" else 0)
-        data_as_of = data_as_of or r.get("data_as_of", "")
+        data_as_of = data_as_of or ymd(r.get("data_as_of"))
         segs.append([
             to_int(r["cnn"]), S(r["streetname"]), S(r["f_st"]), S(r["t_st"]),
             to_int(r["lf_fadd"]), to_int(r["lf_toadd"]), to_int(r["rt_fadd"]), to_int(r["rt_toadd"]),
             fn, tn, S(r["layer"]), flags,
             S(r["nhood"]), S(r["analysis_neighborhood"]), to_int(r["supervisor_district"]), S(r["zip_code"]),
-            S(r["oneway"]), to_int(r["classcode"]), S(r["date_dropped"]), delta(pts),
+            S(r["oneway"]), to_int(r["classcode"]), S(ymd(r["date_dropped"])), delta(pts),
         ])
 
     # Intersections: which streets meet at each node. Falls back to segment endpoints if the CSV is missing.
