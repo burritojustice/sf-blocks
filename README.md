@@ -29,6 +29,8 @@ From DataSF:
 - **List of Intersections only** → `data/sf_intersections.csv`
   https://data.sf.gov/Geographic-Locations-and-Boundaries/List-of-Intersections-only/sw2d-qfup/about_data
 
+Both CSVs are committed so the build works right away. If one is missing, `build_data.py` downloads it from DataSF's API (`https://data.sf.gov/resource/<id>.csv`); `python3 scripts/build_data.py --download` refreshes both before building. A manual Export from the pages above also works: save it under the name shown. The dataset ids and pages are also listed at the top of the script.
+
 The GeoJSON version of the streets dataset isn't needed; the CSV has the same geometry as WKT.
 
 ## streets.json
@@ -44,6 +46,17 @@ It also lists every intersection: its CNN, coordinates, and the streets that mee
 `build_data.py` reads `sf_intersections.csv` for the list of streets meeting at each intersection; coordinates come from the street segments, since the CSV has none. For about 615 of the ~9,800 intersections it names a street that no segment touches at that corner. Without the CSV, the build prints a warning and uses names from the segments; everything still works without those extra names.
 
 Not used yet: the `theOrder` column (the city's order of cross streets along each street).
+
+### Slopes (optional)
+
+`python3 scripts/build_data.py --slopes` adds two fields to every segment: `slope_avg` (start-to-end grade) and `slope_max` (steepest quarter), both unsigned percent × 10, or -1 if unknown. They come from AWS Terrarium elevation tiles at zoom 15 (about 10 m resolution in SF), sampled at five points along the block. The tiles download once into `.tile-cache/`. Block Party uses these for its "flat to moderate" filter.
+
+## Dead ends and one-way streets
+
+Not stored; worked out from the data when it's loaded:
+
+- **Dead end:** an end of a drivable segment where no other drivable street meets it. Paper streets and pedestrian paths don't count as a way through, which matters because the city often continues a street past its last driveable block as a paper segment (20th St past Noe, Cumberland St past Church). A segment's `f_st`/`t_st` repeating its own street name is a hint but not reliable: of about 500 such segments only ~120 are dead ends.
+- **One-way:** `oneway` = `F` means traffic runs from the `f_st` end to the `t_st` end, `T` the reverse, `B` both ways. The geometry doesn't always run from `f_st` to `t_st`, so compare the line's ends to the from-intersection's location before deciding which way the arrow points.
 
 ## The matcher
 
