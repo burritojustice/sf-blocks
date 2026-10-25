@@ -18,6 +18,7 @@ Those projects **keep their own copies** of the files they use, so each one work
 | `data/streets.json` | Compact data built from the two CSVs (~2.5 MB, ~650 KB gzipped); what the maps load |
 | `scripts/build_data.py` | CSVs → `data/streets.json` |
 | `scripts/match_blocks.py` | Matches free-text locations to blocks; also a library used by sf-striping |
+| `scripts/match_polygons.py` | Polygons (GeoJSON) → the blocks and intersections inside them |
 | `VERSION` | Date-style version of the data and code, e.g. `2026.10.06` |
 
 ## Data sources
@@ -47,6 +48,12 @@ It also lists every intersection: its CNN, coordinates, and the streets that mee
 
 Not used yet: the `theOrder` column (the city's order of cross streets along each street).
 
+### Neighborhoods (optional)
+
+`python3 scripts/build_data.py --areas` adds one field per neighborhood set: `hood_analysis`, `hood_sffind`, `hood_planning`, `hood_realtor`, `hood_wof`, from the boundary files in `data/boundaries/` (copied from civic-joy-fund/joiner, which downloads them from DataSF; Who's on First from its own data). Each is checked at 25%, 50%, and 75% along the block, so a block on a boundary gets both names ("Mission; Castro/Upper Market", most-covered first). The streets file's own `nhood` is the city's assignment to its realtor-style neighborhoods, and `analysis_neighborhood` its Analysis Neighborhood; both stay as they are.
+
+Use `--slopes --areas` together for the full file.
+
 ### Slopes (optional)
 
 `python3 scripts/build_data.py --slopes` adds two fields to every segment: `slope_avg` (start-to-end grade) and `slope_max` (steepest quarter), both unsigned percent × 10, or -1 if unknown. They come from AWS Terrarium elevation tiles at zoom 15 (about 10 m resolution in SF), sampled at five points along the block. The tiles download once into `.tile-cache/`. Block Party uses these for its "flat to moderate" filter.
@@ -55,7 +62,7 @@ Not used yet: the `theOrder` column (the city's order of cross streets along eac
 
 Not stored; worked out from the data when it's loaded:
 
-- **Dead end:** an end of a drivable segment where no other drivable street meets it. Paper streets and pedestrian paths don't count as a way through, which matters because the city often continues a street past its last driveable block as a paper segment (20th St past Noe, Cumberland St past Church). A segment's `f_st`/`t_st` repeating its own street name is a hint but not reliable: of about 500 such segments only ~120 are dead ends.
+- **Dead end:** an end of a drivable segment where no other drivable street meets it. Paper streets and pedestrian paths don't count as a way through, which matters because the city often continues a street past its last driveable block as a paper segment (20th St past Noe, Cumberland St past Church). A segment's `f_st`/`t_st` repeating its own street name is a hint but not reliable: of about 500 such segments only ~120 are dead ends. About 36 ends touch another street's line with no intersection between them (Comerford St meets Church and Sanchez with no shared corner; several private streets around Stonestown and Sunnyside); Block Party treats an end within 1.5 m of another drivable, non-freeway street as open, and uses that street's name where the city's is a placeholder like "START: 1-99 BLOCK".
 - **One-way:** `oneway` = `F` means traffic runs from the `f_st` end to the `t_st` end, `T` the reverse, `B` both ways. The geometry doesn't always run from `f_st` to `t_st`, so compare the line's ends to the from-intersection's location before deciding which way the arrow points.
 
 ## The matcher
@@ -89,3 +96,20 @@ Standard library only; no installs.
 2. `python3 scripts/build_data.py`
 3. Bump `VERSION`, update the version in the header line of both scripts, and add a CHANGELOG entry.
 4. Copy the changed files into the projects that use them: `data/streets.json`, and `scripts/build_data.py` / `scripts/match_blocks.py` where they have them, updating their header lines to the new version.
+
+## Matching polygons
+
+`scripts/match_polygons.py` takes a GeoJSON file of polygons (drawn in Felt, Selecter, etc.) and lists the blocks and intersections inside each one:
+
+```
+python3 scripts/match_polygons.py projects.geojson      # writes projects_cnns.csv and projects_cnns.geojson next to it
+```
+
+- **Street strips** (narrower than 35 m, or at least 4 times as long as wide and under 60 m): blocks running along the strip, with half the block inside or an inside stretch covering half the strip. Cross streets that only cut across are left out; their corners are in the intersection list. `full` = 90%+ of the block inside, otherwise `partial`.
+- **Areas** (anything wider): blocks in any direction, `full` at 90%+, `partial` from 10%.
+- **Intersections**: corners inside the polygon or within 3 m of its edge. Corners where only one block meets are marked `end`.
+- **Medians**: a strip with no blocks inside is matched again counting 10 m around it, which catches medians and planting strips between the two sides of a divided street (noted in the `note` column).
+- **Off the grid**: a polygon with nothing inside (a parcel, stairs, a plaza) gets the nearest block within 40 m, status `nearest`.
+- Felt's text labels (`"felt:type": "Text"`) are skipped.
+
+Thresholds are flags: `--thin-m`, `--max-strip-m`, `--min-partial`, `--near-m`. Standard library only.
