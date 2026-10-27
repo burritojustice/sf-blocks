@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026.10.27
+sf-blocks becomes the San Francisco data repo for Joiner and Block Party, not just the street blocks. Nothing existing moved or changed; everything here is added.
+
+- `data/boundaries/`: all 16 of Joiner's boundary sets (was 5), with Joiner's manifest `index.json` and its build config as `sources.json`. Adds supervisor districts, ZIPs, census tracts, Cultural Districts, Bay Area counties and ZIPs, election precincts, and US House, State Senate, Assembly and BART districts.
+- `data/aliases.json`: other names for areas, in one place. Block Party's neighborhood aliases and Joiner's Cultural District aliases.
+- `data/layers/` and `scripts/build_layers.py`: Block Party's map layers (schools, stations, health care, Muni, bike, Slow Streets, city lands) and the script that builds them, now reading raw downloads from `data/uploads/` (Block Party's top-level `layers/`). Rebuilt files are byte-identical to Block Party's.
+- `data/Land_Use_with_Active_Parcel_Information.pmtiles`, from Block Party.
+- `data/uploads/`: the raw downloads, the Cultural Districts export (2026-10-25), and Who's On First's SF data from Joiner.
+- `reference/`: SF Planning's neighborhood group list and `scripts/build_neighborhood_groups.py` from Block Party (now reading `data/aliases.json` and writing `reference/neighborhood-groups/neighborhood_groups.json`), and the Cultural Districts contacts template from Joiner.
+- `region.json`: name, home view, bbox, basemap keys and paths, for apps opening this region.
+- `.nojekyll`, so GitHub Pages serves every file as is.
+
 ## 2026.10.23
 - `build_data.py --areas` tags every segment with the neighborhoods it falls in from each boundary set in `data/boundaries/`: `hood_analysis` (Analysis Neighborhoods), `hood_sffind` (SF Find), `hood_planning` (Planning Neighborhood Groups), `hood_realtor` (Realtor), `hood_wof` (Who's on First). Each is checked at 25%, 50%, and 75% along the block; a block on a boundary gets both names, most-covered first, joined with "; ". Boundary files are copied from civic-joy-fund/joiner; a missing one is skipped. About 16,000 of 16,400 active blocks agree with the streets file's own `analysis_neighborhood`; the rest are boundary streets the city assigned to the other side.
 

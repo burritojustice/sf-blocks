@@ -1,0 +1,38 @@
+{
+  "id": "sf",
+  "name": "San Francisco",
+  "region": "San Francisco Bay Area",
+  "country": "US",
+  "home": {
+    "center": [
+      -122.4425,
+      37.7575
+    ],
+    "zoom": 11.6
+  },
+  "bbox": [
+    -122.5149,
+    37.7081,
+    -122.357,
+    37.8324
+  ],
+  "live": "https://burritojustice.github.io/sf-blocks/",
+  "basemap": {
+    "style": "protomaps-white",
+    "keys": {
+      "https://burritojustice.github.io": "071e272e8d5e13b7",
+      "https://civic-joy-fund.github.io": "6c8d7dd20c838f80"
+    }
+  },
+  "boundaries": "data/boundaries/index.json",
+  "aliases": "data/aliases.json",
+  "layers": "data/layers/",
+  "streets": {
+    "segments": "data/sf_streets.csv",
+    "intersections": "data/sf_intersections.csv",
+    "built": "data/streets.json",
+    "id": "cnn"
+  },
+  "reference": "reference/",
+  "portal": "https://data.sf.gov"
+}

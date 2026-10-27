@@ -1,25 +1,43 @@
 # sf-blocks
 
-San Francisco street blocks and intersections, and the code that matches street descriptions to them.
+The building blocks of a city map for San Francisco: boundaries, city layers, street blocks, public contact lists, and the scripts that build them. Apps like Joiner and Block Party load what they need from here.
 
-This is the master copy of the street data and matching logic shared by:
+Used by:
 
-- [civic-joy-fund/block-party](https://github.com/civic-joy-fund/block-party): find a block and its CNN for a block party application
+- **Joiner** (burritojustice/joiner, civic-joy-fund/joiner): joins spreadsheets to boundaries
+- **Block Party** (burritojustice/block-party, civic-joy-fund/block-party): find a block, its CNN and what's around it
 - [burritojustice/sf-striping](https://github.com/burritojustice/sf-striping): SFMTA striping diagrams mapped to blocks
 
-Those projects **keep their own copies** of the files they use, so each one works on its own and nothing breaks if this repo changes or moves. Each copied file starts with a line saying which version it came from (see `VERSION`).
+Another city can start its own repo with the same layout (nyc-blocks, london-blocks…) and point the apps at it.
+
+## How apps use it
+
+- **Live:** apps load files from this repo's GitHub Pages site, `https://burritojustice.github.io/sf-blocks/<path>` (GitHub Pages allows loading from any site). An update here reaches every app.
+- **Backup:** each app also keeps a copy of the files it uses, and loads its copy if the live file can't be reached. Copied files start with, or sit next to, the sf-blocks version they came from (`VERSION`).
+- `region.json` says what an app needs to open this region: its name, home view, bounding box, basemap keys, and where each kind of data is.
 
 ## Files
 
 | Path | What it is |
 |---|---|
+| `region.json` | Name, home view, bbox, basemap keys, and paths to everything below |
+| `data/boundaries/` | Polygons to join to: districts, ZIPs, five neighborhood sets, tracts, Cultural Districts, Bay Area counties and ZIPs, precincts and the districts made from them. `index.json` lists them; `sources.json` says where each comes from and how names match |
+| `data/aliases.json` | Other names people use for areas ("South Bayshore" → Bayview, "Calle 24" → Calle 24 Latino Cultural District), by boundary set. One list for every app and script |
+| `data/layers/` | City layers drawn on maps: schools, fire and police stations, health care (points); Muni, bike network, Slow Streets (lines); city-owned lands (polygons) |
+| `data/Land_Use_with_Active_Parcel_Information.pmtiles` | Parcels with land use, as vector tiles (24 MB) |
+| `data/uploads/` | Raw downloads and exports the layers and boundaries are built from, with their dates in the names. `wof/` is Who's On First, the source of the WOF neighbourhoods |
 | `data/sf_streets.csv` | DataSF export: Streets – Active and Retired |
 | `data/sf_intersections.csv` | DataSF export: List of Intersections only |
 | `data/streets.json` | Compact data built from the two CSVs (~2.5 MB, ~650 KB gzipped); what the maps load |
+| `reference/` | Public contact lists: SF Planning's neighborhood groups, Cultural Districts |
 | `scripts/build_data.py` | CSVs → `data/streets.json` |
+| `scripts/build_layers.py` | `data/uploads/` → `data/layers/` |
+| `scripts/build_neighborhood_groups.py` | SF Planning's list → `reference/neighborhood-groups/neighborhood_groups.json` |
 | `scripts/match_blocks.py` | Matches free-text locations to blocks; also a library used by sf-striping |
 | `scripts/match_polygons.py` | Polygons (GeoJSON) → the blocks and intersections inside them |
-| `VERSION` | Date-style version of the data and code, e.g. `2026.10.06` |
+| `VERSION` | Date-style version of the data and code, e.g. `2026.10.27` |
+
+The boundary files are still built by Joiner's `scripts/get_layers.mjs` (Node) and copied here; that script moves here next.
 
 ## Data sources
 
@@ -50,7 +68,7 @@ Not used yet: the `theOrder` column (the city's order of cross streets along eac
 
 ### Neighborhoods (optional)
 
-`python3 scripts/build_data.py --areas` adds one field per neighborhood set: `hood_analysis`, `hood_sffind`, `hood_planning`, `hood_realtor`, `hood_wof`, from the boundary files in `data/boundaries/` (copied from civic-joy-fund/joiner, which downloads them from DataSF; Who's on First from its own data). Each is checked at 25%, 50%, and 75% along the block, so a block on a boundary gets both names ("Mission; Castro/Upper Market", most-covered first). The streets file's own `nhood` is the city's assignment to its realtor-style neighborhoods, and `analysis_neighborhood` its Analysis Neighborhood; both stay as they are.
+`python3 scripts/build_data.py --areas` adds one field per neighborhood set: `hood_analysis`, `hood_sffind`, `hood_planning`, `hood_realtor`, `hood_wof`, from the boundary files in `data/boundaries/`. Each is checked at 25%, 50%, and 75% along the block, so a block on a boundary gets both names ("Mission; Castro/Upper Market", most-covered first). The streets file's own `nhood` is the city's assignment to its realtor-style neighborhoods, and `analysis_neighborhood` its Analysis Neighborhood; both stay as they are.
 
 Use `--slopes --areas` together for the full file.
 
