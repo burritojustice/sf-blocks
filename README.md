@@ -32,12 +32,24 @@ Another city can start its own repo with the same layout (nyc-blocks, london-blo
 | `reference/` | Public contact lists: SF Planning's neighborhood groups, Cultural Districts |
 | `scripts/build_data.py` | CSVs → `data/streets.json` |
 | `scripts/build_layers.py` | `data/uploads/` → `data/layers/` |
+| `scripts/get_layers.py` | DataSF (or a local export) → `data/boundaries/` and its `index.json` |
 | `scripts/build_neighborhood_groups.py` | SF Planning's list → `reference/neighborhood-groups/neighborhood_groups.json` |
 | `scripts/match_blocks.py` | Matches free-text locations to blocks; also a library used by sf-striping |
 | `scripts/match_polygons.py` | Polygons (GeoJSON) → the blocks and intersections inside them |
 | `VERSION` | Date-style version of the data and code, e.g. `2026.10.27` |
 
-The boundary files are still built by Joiner's `scripts/get_layers.mjs` (Node) and copied here; that script moves here next.
+### Rebuilding the boundaries
+
+`data/boundaries/sources.json` lists each set: its DataSF dataset (or local files, or another set to dissolve), join key, fields to keep and matching rules. `scripts/get_layers.py` downloads and cleans them into `data/boundaries/<id>.geojson` and writes the manifest `index.json`, which the apps read:
+
+```
+python3 scripts/get_layers.py                       # every set
+python3 scripts/get_layers.py census_tracts         # one set
+python3 scripts/get_layers.py --file cultural_districts=data/uploads/Cultural_Districts_20261025.geojson
+python3 scripts/get_layers.py --check               # validate what's there
+```
+
+A set dissolved from another (US House, State Senate, Assembly and BART districts from the precincts) is rebuilt from the precincts already in `data/boundaries/`, so rebuild `election_precincts` first. Who's on First comes from `data/uploads/wof/`. Other names for areas go in `data/aliases.json`, not in `sources.json`.
 
 ## Data sources
 
