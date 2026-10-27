@@ -28,7 +28,7 @@ One row per district. If a district has two organizations, add a second row with
 1. Open the district's page from the SF.gov Cultural Districts page (or the organization's own site).
 2. Fill in the row in `contacts.csv` in a spreadsheet app or text editor. Save it as CSV (UTF-8), keeping the header row and column order.
 3. Put the page you used in `source_url` and today's date in `checked`.
-4. Check it in Joiner: choose **Other › Cultural Districts**, then **Load data** and pick `contacts.csv`. All 10 districts should be matched (rows match by `district_name`). Other spellings people use go in `data/aliases.json`..
+4. Check it in Joiner: choose **Other › Cultural Districts**, then **Load data** and pick `contacts.csv`. All 10 districts should be matched (rows match by `district_name`). Other spellings people use go in `data/aliases.json`.
 5. Commit with a message like "Cultural Districts contacts: add Japantown". On GitHub you can edit the file in the browser (the pencil icon) and commit from there.
 
 ## When the districts change
@@ -36,5 +36,5 @@ One row per district. If a district has two organizations, add a second row with
 When the Board of Supervisors designates a new district or redraws one:
 
 1. Export the new GeoJSON from DataSF (Export › GeoJSON).
-2. Save it in `data/uploads/` with its date in the name and rebuild the set (for now with Joiner's `node scripts/get_layers.mjs --file cultural_districts=<path>`, then copy it here). Update `expectCount` and the label in `data/boundaries/sources.json` if the number changed.
+2. Save it in `data/uploads/` with its date in the name and rebuild the set (`python3 scripts/get_layers.py --file cultural_districts=<path>`). Update `expectCount` and the label in `data/boundaries/sources.json` if the number changed.
 3. Add a row to `contacts.csv` for the new district, and update the export date above.

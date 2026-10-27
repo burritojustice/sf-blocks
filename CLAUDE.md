@@ -33,7 +33,7 @@ The **main copy** of San Francisco's map data: boundaries, aliases, city layers,
 
 ## Data
 
-- **`data/boundaries/`** is built by Joiner's `scripts/get_layers.mjs` (Node) for now and copied here. Moving that script here (and whether to port it to Python) is pending.
+- **`data/boundaries/`** is built by `scripts/get_layers.py` from `sources.json` (ported from Joiner's `get_layers.mjs`, which is retired; for the same input it writes the same bytes). It sorts the way JavaScript's `Intl.Collator('en', {numeric: true})` does and writes numbers the way `JSON.stringify` does, so keep those helpers if you change it. DataSF is blocked from Claude's sandbox: rebuild from exports with `--file <id>=<path>`.
 - **The CSV's `nhood`** is DPW's realtor-style neighborhood. `analysis_neighborhood` is the city's own assignment, and boundary streets can sit on either side.
 
 ## Gotchas

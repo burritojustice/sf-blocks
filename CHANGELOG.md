@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026.10.27.2
+- New `scripts/get_layers.py` builds `data/boundaries/` from `sources.json`: a standard-library Python port of Joiner's `get_layers.mjs` (v42), including JoinKit's dissolve for the districts made from precincts. Built from the same input, all 16 sets and `index.json` come out byte-for-byte the same as the Node script's; rebuilding each committed set from itself gives the same file back. Joiner's copy of the script is retired.
+- `sources.json`: Who's on First is read from `data/uploads/wof/`. The boundary files and `index.json` are unchanged; the next rebuild drops the Cultural Districts aliases still inside `index.json` (they're in `data/aliases.json`).
+
 ## 2026.10.27
 sf-blocks becomes the San Francisco data repo for Joiner and Block Party, not just the street blocks. Nothing existing moved or changed; everything here is added.
 
