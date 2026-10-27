@@ -1,0 +1,18 @@
+{
+  "_about": "Other names people use for areas, by boundary set id. Each maps a name as people write it to the area's name in data/boundaries/<set>.geojson. Shared by every app and script that matches names to areas.",
+  "planning_neighborhoods": {
+    "South Bayshore": "Bayview",
+    "Upper Market": "Castro/Upper Market",
+    "Treasure Island": "Treasure Island/YBI"
+  },
+  "cultural_districts": {
+    "Calle 24": "Calle 24 Latino Cultural District",
+    "SoMa Pilipinas": "SoMa Pilipinas Filipino Cultural District",
+    "Filipino Cultural District": "SoMa Pilipinas Filipino Cultural District",
+    "Castro": "Castro LGBTQ Cultural District",
+    "Leather": "Leather & LGBTQ Cultural District",
+    "Sunset Chinese": "Sunset Chinese Cultural District",
+    "Compton's Transgender": "Transgender Cultural District",
+    "African American Arts": "African American Arts & Cultural District"
+  }
+}

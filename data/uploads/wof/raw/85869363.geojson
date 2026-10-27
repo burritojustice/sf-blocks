@@ -1,0 +1,159 @@
+{
+  "id": 85869363,
+  "type": "Feature",
+  "properties": {
+    "edtf:cessation":"uuuu",
+    "edtf:inception":"uuuu",
+    "geom:area":0.000063,
+    "geom:area_square_m":615357.109648,
+    "geom:bbox":"-122.472322,37.721624,-122.462213,37.731032",
+    "geom:latitude":37.725109,
+    "geom:longitude":-122.46803,
+    "gn:elevation":68,
+    "iso:country":"US",
+    "lbl:latitude":37.724479,
+    "lbl:longitude":-122.466873,
+    "lbl:max_zoom":18.0,
+    "mps:latitude":37.725173,
+    "mps:longitude":-122.467229,
+    "mz:hierarchy_label":1,
+    "mz:is_current":1,
+    "mz:is_funky":0,
+    "mz:is_hard_boundary":0,
+    "mz:is_landuse_aoi":0,
+    "mz:is_official":0,
+    "mz:max_zoom":18.0,
+    "mz:min_zoom":15.0,
+    "mz:tier_locality":7,
+    "mz:tier_metro":1,
+    "name:eng_x_preferred":[
+        "Ingleside Terrace"
+    ],
+    "name:eng_x_variant":[
+        "Ingleside Ter",
+        "Ingleside Terraces"
+    ],
+    "name:fra_x_preferred":[
+        "Ingleside Terraces"
+    ],
+    "name:tur_x_preferred":[
+        "Ingleside Terraces"
+    ],
+    "qs:gn_adm0_cc":"US",
+    "qs:gn_fcode":"PPL",
+    "qs:gn_local":5391959,
+    "qs:gn_nam_loc":"San Francisco",
+    "qs:gn_namadm1":"CA",
+    "qs:gn_name":"Ingleside Terrace",
+    "qs:local_max":60110,
+    "qs:local_sum":1593503,
+    "qs:localhoods":148,
+    "qs:name":"Ingleside Terrace",
+    "qs:name_adm0":"United States",
+    "qs:name_adm1":"California",
+    "qs:name_adm2":"San Francisco",
+    "qs:name_local":"San Francisco",
+    "qs:photo_max":126,
+    "qs:photo_sum":432,
+    "qs:placetype":"Suburb",
+    "qs:quad_count":15,
+    "qs:woe_adm0":23424977,
+    "qs:woe_adm1":2347563,
+    "qs:woe_adm2":12587707,
+    "qs:woe_lau":0,
+    "qs:woe_local":2487956,
+    "qs:woe_ver":"7.10.0",
+    "reversegeo:latitude":37.724844,
+    "reversegeo:longitude":-122.468944,
+    "sfgov:link":"http://en.wikipedia.org/wiki/Ingleside_Terraces,_San_Francisco,_California",
+    "src:geom":"sfgov",
+    "src:geom_alt":[
+        "quattroshapes",
+        "zetashapes",
+        "quattroshapes_pg"
+    ],
+    "src:lbl_centroid":"mz",
+    "src:population":"zetashapes",
+    "wof:belongsto":[
+        85688637,
+        102191575,
+        85633793,
+        85922583,
+        102087579
+    ],
+    "wof:breaches":[],
+    "wof:concordances":{
+        "gn:id":7149828,
+        "gp:id":28751313,
+        "qs_pg:id":358238,
+        "wd:id":"Q6032653"
+    },
+    "wof:country":"US",
+    "wof:geom_alt":[
+        "quattroshapes_pg",
+        "zetashapes",
+        "quattroshapes"
+    ],
+    "wof:geomhash":"c78a2856064bbeb28441e1181b71721f",
+    "wof:hierarchy":[
+        {
+            "continent_id":102191575,
+            "country_id":85633793,
+            "county_id":102087579,
+            "locality_id":85922583,
+            "neighbourhood_id":85869363,
+            "region_id":85688637
+        }
+    ],
+    "wof:id":85869363,
+    "wof:lang":[
+        "eng"
+    ],
+    "wof:lastmodified":1690886951,
+    "wof:name":"Ingleside Terraces",
+    "wof:parent_id":85922583,
+    "wof:placetype":"neighbourhood",
+    "wof:population":1510,
+    "wof:population_rank":3,
+    "wof:repo":"whosonfirst-data-admin-us",
+    "wof:superseded_by":[],
+    "wof:supersedes":[],
+    "wof:tags":[],
+    "zs:blockids":[
+        60750309003004,
+        60750309004019,
+        60750309003003,
+        60750309003000,
+        60750309003020,
+        60750309003016,
+        60750309003007,
+        60750309003001,
+        60750309002017,
+        60750309003011,
+        60750309004017,
+        60750309003023,
+        60750309003022,
+        60750309003002,
+        60750309002018,
+        60750309003019,
+        60750309004018,
+        60750309004012,
+        60750309003015,
+        60750309002016,
+        60750309004016,
+        60750309003013,
+        60750309004020,
+        60750309003014,
+        60750309004027
+    ],
+    "zs:housing10":523,
+    "zs:pop10":1510
+},
+  "bbox": [
+    -122.472322,
+    37.721624,
+    -122.462213,
+    37.731032
+],
+  "geometry": {"coordinates":[[[-122.471797,37.731032],[-122.47011000000001,37.730308],[-122.469342,37.729977],[-122.468611,37.729599],[-122.468208,37.729221],[-122.46807699999999,37.728975],[-122.46773899999999,37.728329],[-122.467331,37.727772],[-122.46668099999999,37.727238],[-122.46607299999999,37.726785],[-122.46531299999999,37.726405],[-122.464573,37.726132],[-122.46422,37.726002],[-122.46384399999999,37.725862],[-122.46281500000001,37.725482],[-122.46221300000001,37.725266],[-122.462265,37.721695],[-122.47167399999999,37.721631],[-122.47176,37.721671],[-122.47198299999999,37.721661],[-122.47232200000001,37.721624],[-122.47205700000001,37.726824],[-122.471797,37.731032]]],"type":"Polygon"}
+}

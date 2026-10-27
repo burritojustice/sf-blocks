@@ -1,0 +1,162 @@
+{
+  "id": 85887465,
+  "type": "Feature",
+  "properties": {
+    "edtf:cessation":"uuuu",
+    "edtf:inception":"uuuu",
+    "geom:area":0.000058,
+    "geom:area_square_m":562410.52336,
+    "geom:bbox":"-122.51436,37.775005,-122.502671,37.781296",
+    "geom:latitude":37.777975,
+    "geom:longitude":-122.507929,
+    "gn:id":"",
+    "iso:country":"US",
+    "lbl:latitude":37.776597,
+    "lbl:longitude":-122.507538,
+    "lbl:max_zoom":18.0,
+    "mps:latitude":37.777289,
+    "mps:longitude":-122.514283,
+    "mz:hierarchy_label":1,
+    "mz:is_current":1,
+    "mz:is_funky":0,
+    "mz:is_hard_boundary":0,
+    "mz:is_landuse_aoi":0,
+    "mz:is_official":0,
+    "mz:max_zoom":18.0,
+    "mz:min_zoom":18.0,
+    "mz:tier_locality":7,
+    "mz:tier_metro":1,
+    "name:ceb_x_preferred":[
+        "Sutro Heights Park"
+    ],
+    "name:deu_x_preferred":[
+        "Sutro Heights Park"
+    ],
+    "name:eng_x_preferred":[
+        "Sutro Heights"
+    ],
+    "name:eng_x_variant":[
+        "Sutro Heights Park"
+    ],
+    "name:zho_x_preferred":[
+        "\u8607\u7279\u6d1b\u9ad8\u5730\u516c\u5712"
+    ],
+    "qs:gn_adm0_cc":"US",
+    "qs:gn_id":0,
+    "qs:gn_local":5391959,
+    "qs:gn_nam_loc":"San Francisco",
+    "qs:gn_namadm1":"CA",
+    "qs:local_max":60110,
+    "qs:local_sum":1593503,
+    "qs:localhoods":148,
+    "qs:name":"Sutro Heights",
+    "qs:name_adm0":"United States",
+    "qs:name_adm1":"California",
+    "qs:name_adm2":"San Francisco",
+    "qs:name_local":"San Francisco",
+    "qs:photo_max":834,
+    "qs:photo_sum":9017,
+    "qs:placetype":"Suburb",
+    "qs:quad_count":152,
+    "qs:woe_adm0":23424977,
+    "qs:woe_adm1":2347563,
+    "qs:woe_adm2":12587707,
+    "qs:woe_lau":0,
+    "qs:woe_local":2487956,
+    "qs:woe_ver":"7.10.0",
+    "reversegeo:latitude":37.77818,
+    "reversegeo:longitude":-122.507345,
+    "src:geom":"sfgov",
+    "src:geom_alt":[
+        "quattroshapes",
+        "zetashapes",
+        "quattroshapes_pg"
+    ],
+    "src:lbl_centroid":"mz",
+    "src:population":"zetashapes",
+    "wd:wordcount":741,
+    "wof:belongsto":[
+        102191575,
+        1108830805,
+        85633793,
+        85922583,
+        102087579,
+        85688637
+    ],
+    "wof:breaches":[],
+    "wof:concordances":{
+        "gp:id":55970975,
+        "qs_pg:id":993433,
+        "wd:id":"Q7650129"
+    },
+    "wof:country":"US",
+    "wof:geom_alt":[
+        "zetashapes",
+        "quattroshapes_pg",
+        "quattroshapes"
+    ],
+    "wof:geomhash":"bfc0305ef6ab68e5658cfdc97799f572",
+    "wof:hierarchy":[
+        {
+            "continent_id":102191575,
+            "country_id":85633793,
+            "county_id":102087579,
+            "locality_id":85922583,
+            "macrohood_id":1108830805,
+            "neighbourhood_id":85887465,
+            "region_id":85688637
+        }
+    ],
+    "wof:id":85887465,
+    "wof:lang":[
+        "eng"
+    ],
+    "wof:lastmodified":1690886799,
+    "wof:name":"Sutro Heights",
+    "wof:parent_id":1108830805,
+    "wof:placetype":"neighbourhood",
+    "wof:population":1751,
+    "wof:population_rank":3,
+    "wof:repo":"whosonfirst-data-admin-us",
+    "wof:superseded_by":[],
+    "wof:supersedes":[],
+    "wof:tags":[],
+    "zs:blockids":[
+        60750479021003,
+        60750479015000,
+        60759802001004,
+        60750479015001,
+        60750479012009,
+        60759803001020,
+        60750479015004,
+        60750479012003,
+        60750479021006,
+        60759803001022,
+        60750479021005,
+        60759803001021,
+        60750479021002,
+        60750479022012,
+        60750479012002,
+        60759803001027,
+        60750479021001,
+        60750479021007,
+        60750479015003,
+        60759803001018,
+        60750479012006,
+        60750479021009,
+        60750479012001,
+        60750479021008,
+        60750479015002,
+        60759803001019
+    ],
+    "zs:housing10":828,
+    "zs:pop10":1751
+},
+  "bbox": [
+    -122.51436,
+    37.775005,
+    -122.502671,
+    37.781296
+],
+  "geometry": {"coordinates":[[[-122.503086,37.781177],[-122.50267100000001,37.775471],[-122.511295,37.775076],[-122.513166,37.775005],[-122.513133,37.776042],[-122.513351,37.777345],[-122.513516,37.777594],[-122.51396,37.777751],[-122.514194,37.777997],[-122.51436,37.778857],[-122.514093,37.779176],[-122.512154,37.779364],[-122.510907,37.779976],[-122.50957200000001,37.780057],[-122.509646,37.780997],[-122.50310500000001,37.781296],[-122.503086,37.781177]]],"type":"Polygon"}
+}

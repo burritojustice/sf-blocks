@@ -1,0 +1,322 @@
+{
+  "id": 85810881,
+  "type": "Feature",
+  "properties": {
+    "edtf:cessation":"uuuu",
+    "edtf:inception":"uuuu",
+    "geom:area":0.000033,
+    "geom:area_square_m":318288.426969,
+    "geom:bbox":"-122.410264,37.790366,-122.402957,37.797865",
+    "geom:latitude":37.794492,
+    "geom:longitude":-122.406569,
+    "gn:elevation":29,
+    "iso:country":"US",
+    "lbl:latitude":37.794295,
+    "lbl:longitude":-122.407227,
+    "lbl:max_zoom":18.0,
+    "mps:latitude":37.794235,
+    "mps:longitude":-122.407558,
+    "mz:hierarchy_label":1,
+    "mz:is_current":-1,
+    "mz:is_funky":0,
+    "mz:is_hard_boundary":0,
+    "mz:is_landuse_aoi":0,
+    "mz:is_official":0,
+    "mz:max_zoom":18.0,
+    "mz:min_zoom":14.0,
+    "mz:tier_locality":7,
+    "mz:tier_metro":1,
+    "name:ara_x_preferred":[
+        "\u0627\u0644\u062d\u064a \u0627\u0644\u0635\u064a\u0646\u064a"
+    ],
+    "name:ast_x_preferred":[
+        "Barriu chinu"
+    ],
+    "name:aze_x_preferred":[
+        "\u00c7in m\u0259h\u0259ll\u0259si"
+    ],
+    "name:cat_x_preferred":[
+        "barri xin\u00e8s"
+    ],
+    "name:cdo_x_preferred":[
+        "D\u00f2ng-\u00ecng-g\u0103\u0324"
+    ],
+    "name:ces_x_preferred":[
+        "\u010d\u00ednsk\u00e1 \u010dtvr\u0165"
+    ],
+    "name:ckb_x_preferred":[
+        "\u06af\u06d5\u0695\u06d5\u06a9\u06cc \u0686\u06cc\u0646\u06cc"
+    ],
+    "name:dan_x_preferred":[
+        "Chinatown"
+    ],
+    "name:deu_x_preferred":[
+        "Chinatown"
+    ],
+    "name:eng_x_preferred":[
+        "Chinatown"
+    ],
+    "name:epo_x_preferred":[
+        "\u0109ina kvartalo"
+    ],
+    "name:est_x_preferred":[
+        "Hiinalinn"
+    ],
+    "name:eus_x_preferred":[
+        "Chinatown"
+    ],
+    "name:fas_x_preferred":[
+        "\u0645\u062d\u0644\u0647 \u0686\u06cc\u0646\u06cc\u200c\u0647\u0627"
+    ],
+    "name:fin_x_preferred":[
+        "Kiinalainen Kaupunki"
+    ],
+    "name:fin_x_variant":[
+        "Chinatown"
+    ],
+    "name:fra_x_preferred":[
+        "quartier chinois"
+    ],
+    "name:fry_x_preferred":[
+        "Chinatown"
+    ],
+    "name:heb_x_preferred":[
+        "\u05e6'\u05d9\u05d9\u05e0\u05d8\u05d0\u05d5\u05df"
+    ],
+    "name:hun_x_preferred":[
+        "k\u00ednai negyed"
+    ],
+    "name:hye_x_preferred":[
+        "\u0549\u056b\u0576\u0561\u056f\u0561\u0576 \u0561\u0580\u057e\u0561\u0580\u0571\u0561\u0576"
+    ],
+    "name:ind_x_preferred":[
+        "Pecinan"
+    ],
+    "name:isl_x_preferred":[
+        "K\u00ednahverfi"
+    ],
+    "name:ita_x_preferred":[
+        "Chinatown"
+    ],
+    "name:jpn_x_preferred":[
+        "\u30c1\u30e3\u30a4\u30ca\u30bf\u30a6\u30f3"
+    ],
+    "name:jpn_x_variant":[
+        "\u4e2d\u83ef\u8857"
+    ],
+    "name:kaz_x_preferred":[
+        "Chinatown"
+    ],
+    "name:kor_x_preferred":[
+        "\ucc28\uc774\ub098\ud0c0\uc6b4"
+    ],
+    "name:lit_x_preferred":[
+        "Kin\u0173 kvartalas"
+    ],
+    "name:mri_x_preferred":[
+        "Hainat\u0101one"
+    ],
+    "name:msa_x_preferred":[
+        "Pekan Cina"
+    ],
+    "name:nan_x_preferred":[
+        "Tn\u0302g-l\u00e2ng-ke"
+    ],
+    "name:nld_x_preferred":[
+        "Chinatown"
+    ],
+    "name:nno_x_preferred":[
+        "Chinatown"
+    ],
+    "name:nob_x_preferred":[
+        "Chinatown"
+    ],
+    "name:pol_x_preferred":[
+        "Chinatown"
+    ],
+    "name:por_x_preferred":[
+        "Chinatown"
+    ],
+    "name:ron_x_preferred":[
+        "Chinatown"
+    ],
+    "name:rus_x_preferred":[
+        "\u043a\u0438\u0442\u0430\u0439\u0441\u043a\u0438\u0439 \u043a\u0432\u0430\u0440\u0442\u0430\u043b"
+    ],
+    "name:sah_x_preferred":[
+        "\u0427\u0430\u0439\u043d\u0430\u0442\u0430\u0443\u043d"
+    ],
+    "name:sco_x_preferred":[
+        "Chinatown"
+    ],
+    "name:slk_x_preferred":[
+        "Chinatown"
+    ],
+    "name:spa_x_preferred":[
+        "barrio chino"
+    ],
+    "name:swe_x_preferred":[
+        "Chinatown"
+    ],
+    "name:tam_x_preferred":[
+        "\u0b9a\u0bc0\u0ba9 \u0ba8\u0b95\u0bb0\u0bcd"
+    ],
+    "name:tgl_x_preferred":[
+        "China Town"
+    ],
+    "name:tur_x_preferred":[
+        "\u00c7in mahallesi"
+    ],
+    "name:ukr_x_preferred":[
+        "\u041a\u0438\u0442\u0430\u0439\u0441\u044c\u043a\u0438\u0439 \u043a\u0432\u0430\u0440\u0442\u0430\u043b"
+    ],
+    "name:yue_x_preferred":[
+        "\u5510\u4eba\u8857"
+    ],
+    "name:zho_x_preferred":[
+        "\u5510\u4eba\u8857"
+    ],
+    "qs:gn_adm0_cc":"US",
+    "qs:gn_fcode":"PPLX",
+    "qs:gn_local":5391959,
+    "qs:gn_nam_loc":"San Francisco",
+    "qs:gn_namadm1":"CA",
+    "qs:gn_name":"Chinatown",
+    "qs:local_max":60110,
+    "qs:local_sum":1593503,
+    "qs:localhoods":148,
+    "qs:name":"Chinatown",
+    "qs:name_adm0":"United States",
+    "qs:name_adm1":"California",
+    "qs:name_adm2":"San Francisco",
+    "qs:name_local":"San Francisco",
+    "qs:photo_max":5256,
+    "qs:photo_sum":33591,
+    "qs:placetype":"Suburb",
+    "qs:quad_count":114,
+    "qs:woe_adm0":23424977,
+    "qs:woe_adm1":2347563,
+    "qs:woe_adm2":12587707,
+    "qs:woe_lau":0,
+    "qs:woe_local":2487956,
+    "qs:woe_ver":"7.10.0",
+    "reversegeo:latitude":37.794621,
+    "reversegeo:longitude":-122.406135,
+    "sfgov:link":"http://www.sfgate.com/neighborhoods/sf/chinatown/",
+    "src:geom":"sfgov",
+    "src:geom_alt":[
+        "quattroshapes",
+        "zetashapes",
+        "quattroshapes_pg"
+    ],
+    "src:lbl_centroid":"mz",
+    "src:population":"zetashapes",
+    "wd:wordcount":8212,
+    "wof:belongsto":[
+        102191575,
+        1108830801,
+        85633793,
+        85922583,
+        102087579,
+        85688637
+    ],
+    "wof:breaches":[],
+    "wof:concordances":{
+        "gn:id":5336477,
+        "gp:id":2379855,
+        "qs_pg:id":1134377,
+        "wd:id":"Q202509"
+    },
+    "wof:country":"US",
+    "wof:geom_alt":[
+        "zetashapes",
+        "quattroshapes_pg",
+        "quattroshapes"
+    ],
+    "wof:geomhash":"8a907a7f60538a2ab82bcbab36acd720",
+    "wof:hierarchy":[
+        {
+            "continent_id":102191575,
+            "country_id":85633793,
+            "county_id":102087579,
+            "locality_id":85922583,
+            "macrohood_id":1108830801,
+            "neighbourhood_id":85810881,
+            "region_id":85688637
+        }
+    ],
+    "wof:id":85810881,
+    "wof:lang":[
+        "eng"
+    ],
+    "wof:lastmodified":1690887329,
+    "wof:name":"Chinatown",
+    "wof:parent_id":1108830801,
+    "wof:placetype":"neighbourhood",
+    "wof:population":10910,
+    "wof:population_rank":6,
+    "wof:repo":"whosonfirst-data-admin-us",
+    "wof:superseded_by":[],
+    "wof:supersedes":[],
+    "wof:tags":[],
+    "zs:blockids":[
+        60750113002000,
+        60750611002003,
+        60750119021000,
+        60750113001004,
+        60750118001002,
+        60750611001024,
+        60750113002001,
+        60750113002004,
+        60750118001004,
+        60750117001019,
+        60750611003001,
+        60750118001000,
+        60750118001006,
+        60750107003006,
+        60750113001003,
+        60750113001001,
+        60750112001000,
+        60750119022002,
+        60750113001006,
+        60750118001005,
+        60750112003000,
+        60750113002003,
+        60750113001005,
+        60750611002008,
+        60750611002002,
+        60750611002007,
+        60750117001007,
+        60750117001020,
+        60750119022000,
+        60750113001002,
+        60750112001002,
+        60750113001000,
+        60750611003002,
+        60750119022001,
+        60750611002001,
+        60750611002005,
+        60750118001001,
+        60750107003003,
+        60750118001003,
+        60750611002004,
+        60750113002005,
+        60750107003004,
+        60750119021001,
+        60750113002002,
+        60750611002006,
+        60750611002000,
+        60750117001018,
+        60750112001001
+    ],
+    "zs:housing10":6034,
+    "zs:pop10":10910
+},
+  "bbox": [
+    -122.410264,
+    37.790366,
+    -122.402957,
+    37.797865
+],
+  "geometry": {"coordinates":[[[-122.410076,37.796493],[-122.410264,37.79742],[-122.408619,37.797628],[-122.407016,37.797822],[-122.406668,37.797865],[-122.405513,37.797065],[-122.405288,37.796909],[-122.405143,37.796211],[-122.40441199999999,37.796302],[-122.403317,37.795532],[-122.403139,37.794666],[-122.402957,37.79378],[-122.404613,37.793565],[-122.40441800000001,37.792639],[-122.40422,37.791691],[-122.404031,37.79076],[-122.405574,37.790565],[-122.407149,37.790366],[-122.40734,37.791296],[-122.40753599999999,37.792249],[-122.40772699999999,37.793178],[-122.407903,37.79406],[-122.409541,37.793852],[-122.409722,37.794737],[-122.409899,37.795616],[-122.410076,37.796493]]],"type":"Polygon"}
+}
