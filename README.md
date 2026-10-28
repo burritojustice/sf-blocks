@@ -36,6 +36,7 @@ Another city can start its own repo with the same layout (nyc-blocks, london-blo
 | `scripts/build_neighborhood_groups.py` | SF Planning's list → `reference/neighborhood-groups/neighborhood_groups.json` |
 | `scripts/match_blocks.py` | Matches free-text locations to blocks; also a library used by sf-striping |
 | `scripts/match_polygons.py` | Polygons (GeoJSON) → the blocks and intersections inside them |
+| `docs/apps-and-data.md` | What's in this repo, how Joiner, Block Party and sf-striping use it, Airtable, and the roadmap, with a diagram |
 | `VERSION` | Date-style version of the data and code, e.g. `2026.10.27` |
 
 ### Rebuilding the boundaries
