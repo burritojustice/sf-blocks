@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.10.28.2
+- Added boundary set `historic_districts` (Historic Districts): 199 areas named by `name_1`, from DataSF [63x5-g3m4](https://data.sf.gov/d/63x5-g3m4). Raw copy: `data/uploads/Historic_Districts_20261028.geojson`.
+
 ## 2026.10.28
 - **[ADDING-DATA.md](ADDING-DATA.md):** what goes where, and how to add or refresh a boundary set three ways (from DataSF in the browser, from an uploaded file, or the command line), what to check, what happens in Joiner and Block Party after merging, and what isn't automated yet.
 - **"Add or refresh a boundary set" Action** and `scripts/add_boundary_set.py`: give it a set id and a DataSF dataset (id or page link) or a file in `data/uploads/`. It saves the raw download in `data/uploads/`, picks the field that names each area (or uses the one you give), joins pieces that share a name, adds the set to `sources.json`, builds it, bumps the version, and opens a pull request with the fields, counts and a Joiner link that reads the branch. A refresh that changes nothing does nothing.
