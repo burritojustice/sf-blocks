@@ -32,6 +32,7 @@ Another city can start its own repo with the same layout (nyc-blocks, london-blo
 | `reference/` | Public contact lists: SF Planning's neighborhood groups, Cultural Districts |
 | `scripts/build_data.py` | CSVs → `data/streets.json` |
 | `scripts/build_layers.py` | `data/uploads/` → `data/layers/` |
+| `scripts/add_boundary_set.py` | Adds or refreshes one boundary set in one step (what the Action runs) |
 | `scripts/get_layers.py` | DataSF (or a local export) → `data/boundaries/` and its `index.json` |
 | `scripts/build_neighborhood_groups.py` | SF Planning's list → `reference/neighborhood-groups/neighborhood_groups.json` |
 | `scripts/match_blocks.py` | Matches free-text locations to blocks; also a library used by sf-striping |
@@ -40,6 +41,9 @@ Another city can start its own repo with the same layout (nyc-blocks, london-blo
 | `VERSION` | Date-style version of the data and code, e.g. `2026.10.27` |
 
 ### Rebuilding the boundaries
+
+To add a new set or refresh one, see **[ADDING-DATA.md](ADDING-DATA.md)**: a GitHub Action does it from a DataSF link or an uploaded file and opens a pull request, no command line needed.
+
 
 `data/boundaries/sources.json` lists each set: its DataSF dataset (or local files, or another set to dissolve), join key, fields to keep and matching rules. `scripts/get_layers.py` downloads and cleans them into `data/boundaries/<id>.geojson` and writes the manifest `index.json`, which the apps read:
 
