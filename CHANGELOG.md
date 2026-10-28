@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026.10.28
+- **[ADDING-DATA.md](ADDING-DATA.md):** what goes where, and how to add or refresh a boundary set three ways (from DataSF in the browser, from an uploaded file, or the command line), what to check, what happens in Joiner and Block Party after merging, and what isn't automated yet.
+- **"Add or refresh a boundary set" Action** and `scripts/add_boundary_set.py`: give it a set id and a DataSF dataset (id or page link) or a file in `data/uploads/`. It saves the raw download in `data/uploads/`, picks the field that names each area (or uses the one you give), joins pieces that share a name, adds the set to `sources.json`, builds it, bumps the version, and opens a pull request with the fields, counts and a Joiner link that reads the branch. A refresh that changes nothing does nothing.
+- **"Check data" Action** on every pull request: JSON files parse and `get_layers.py --check` passes.
+
 ## 2026.10.27.2
 - New `scripts/get_layers.py` builds `data/boundaries/` from `sources.json`: a standard-library Python port of Joiner's `get_layers.mjs` (v42), including JoinKit's dissolve for the districts made from precincts. Built from the same input, all 16 sets and `index.json` come out byte-for-byte the same as the Node script's; rebuilding each committed set from itself gives the same file back. Joiner's copy of the script is retired.
 - `sources.json`: Who's on First is read from `data/uploads/wof/`. The boundary files and `index.json` are unchanged; the next rebuild drops the Cultural Districts aliases still inside `index.json` (they're in `data/aliases.json`).

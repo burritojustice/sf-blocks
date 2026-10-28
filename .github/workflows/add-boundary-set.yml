@@ -1,0 +1,82 @@
+# Add a boundary set from DataSF (or from a file uploaded to data/uploads/), or refresh one, without a
+# command line: Actions → "Add or refresh a boundary set" → Run workflow. It runs
+# scripts/add_boundary_set.py and opens a pull request with a report and preview links.
+# Run it on main to get a new branch and PR; run it on another branch (say, one where you uploaded a file)
+# to add a commit to that branch.
+# Needs: Settings → Actions → General → Workflow permissions: "Read and write", and
+# "Allow GitHub Actions to create and approve pull requests".
+name: Add or refresh a boundary set
+on:
+  workflow_dispatch:
+    inputs:
+      id:
+        description: 'Set id: lowercase words joined by _, e.g. historic_districts'
+        required: true
+      source:
+        description: 'DataSF dataset id or page link (63x5-g3m4), or a file in data/uploads/. Blank: refresh from its dataset'
+        required: false
+      name_field:
+        description: 'Field that names each area (what rows match). Blank: pick one'
+        required: false
+      label:
+        description: "Title in the apps, e.g. Historic Districts. Blank: the dataset's name"
+        required: false
+      tab:
+        description: 'Joiner tab'
+        type: choice
+        options: [Other, Neighborhood, District, ZIP]
+        default: Other
+      keep:
+        description: 'Other fields to keep, comma separated. Blank: readable text fields'
+        required: false
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Branch
+        id: branch
+        env:
+          IN_ID: ${{ inputs.id }}
+        run: |
+          if ! [[ "$IN_ID" =~ ^[a-z][a-z0-9_]{2,40}$ ]]; then echo "Bad id: $IN_ID"; exit 1; fi
+          if [ "$GITHUB_REF_NAME" = main ]; then
+            b="boundary-$IN_ID-$(date +%Y%m%d)-$GITHUB_RUN_NUMBER"; git checkout -b "$b"; echo "new=1" >> "$GITHUB_OUTPUT"
+          else b="$GITHUB_REF_NAME"; echo "new=0" >> "$GITHUB_OUTPUT"; fi
+          echo "name=$b" >> "$GITHUB_OUTPUT"
+      - name: Build the set
+        env:
+          IN_ID: ${{ inputs.id }}
+          IN_SOURCE: ${{ inputs.source }}
+          IN_NAME: ${{ inputs.name_field }}
+          IN_LABEL: ${{ inputs.label }}
+          IN_TAB: ${{ inputs.tab }}
+          IN_KEEP: ${{ inputs.keep }}
+          BRANCH: ${{ steps.branch.outputs.name }}
+        run: |
+          python3 scripts/add_boundary_set.py --id "$IN_ID" --source "$IN_SOURCE" --name "$IN_NAME" --label "$IN_LABEL" \
+            --tab "$IN_TAB" --keep "$IN_KEEP" --branch "$BRANCH" --summary "$RUNNER_TEMP/summary.md"
+          cat "$RUNNER_TEMP/summary.md" >> "$GITHUB_STEP_SUMMARY"
+      - name: Commit and open a pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IN_ID: ${{ inputs.id }}
+          BRANCH: ${{ steps.branch.outputs.name }}
+          NEW: ${{ steps.branch.outputs.new }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A data VERSION CHANGELOG.md
+          if git diff --cached --quiet; then echo "Nothing changed."; exit 0; fi
+          git commit -m "$(head -1 "$RUNNER_TEMP/summary.md" | tr -d '*')" -m "Run by ${GITHUB_ACTOR} with the Add or refresh a boundary set action."
+          git push origin "HEAD:$BRANCH"
+          if [ "$NEW" = 1 ]; then
+            gh pr create --base main --head "$BRANCH" --title "Boundary set: $IN_ID" --body-file "$RUNNER_TEMP/summary.md"
+          else
+            pr=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number')
+            if [ -n "$pr" ]; then gh pr comment "$pr" --body-file "$RUNNER_TEMP/summary.md"
+            else gh pr create --base main --head "$BRANCH" --title "Boundary set: $IN_ID" --body-file "$RUNNER_TEMP/summary.md"; fi
+          fi

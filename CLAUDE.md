@@ -23,6 +23,8 @@ The **main copy** of San Francisco's map data: boundaries, aliases, city layers,
 
 ## Scripts
 
+- **Adding data:** follow `ADDING-DATA.md`. New or refreshed boundary sets go through `scripts/add_boundary_set.py` (the "Add or refresh a boundary set" Action runs it and opens a PR with preview links). `.github/workflows/check.yml` validates every PR. This sandbox can't reach DataSF; the Action can, so for a new dataset either have John run the Action or ask him for the export.
+
 - **`scripts/build_data.py`** turns `data/sf_streets.csv` and `data/sf_intersections.csv` into `data/streets.json`.
   - A missing CSV is downloaded from DataSF's API; `--download` refreshes them. Column names are read case-insensitively, so manual Exports work too.
   - `--slopes` samples Terrarium DEM tiles (cached in `.tile-cache/`) for `slope_avg` / `slope_max`.

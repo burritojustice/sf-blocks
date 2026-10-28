@@ -1,0 +1,16 @@
+# On every pull request: the JSON files parse, and every boundary set passes get_layers.py --check
+# (no duplicate ids, every area has its key, expected counts).
+name: Check data
+on:
+  pull_request:
+    paths: ['data/**', 'region.json', 'scripts/**']
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: JSON parses
+        run: |
+          for f in region.json data/aliases.json data/boundaries/*.json; do python3 -m json.tool "$f" > /dev/null || { echo "Bad JSON: $f"; exit 1; }; done
+      - name: Boundary sets
+        run: python3 scripts/get_layers.py --check
