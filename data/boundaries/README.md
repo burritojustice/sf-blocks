@@ -19,6 +19,7 @@ The polygon sets that apps join rows to. Each `<id>.geojson` is a FeatureCollect
 | `wof_neighbourhoods` | `name` | 116 | Who's On First, from `../uploads/wof/` |
 | `census_tracts` | `geoid` | 242 | DataSF `sevw-6tgi` (2020 tracts) |
 | `cultural_districts` | `district_name` | 10 | DataSF `5xmc-5bjj`, export of 2026-10-25 in `../uploads/` |
+| `historic_districts` | `name_1` | 199 | DataSF `63x5-g3m4` |
 | `bay_area_counties` | `county` | 9 | A California county boundaries file (the nine counties, simplified to about 20 m) |
 | `bay_area_zip_codes` | `zip` | 323 | DataSF `4kz9-76pb`, CSV export (simplified to about 10 m) |
 | `election_precincts` | `prec_2022` | 514 | DataSF `d6x4-hefw` (2022 precincts) |
