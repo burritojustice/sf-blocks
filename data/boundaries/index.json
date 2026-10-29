@@ -1,5 +1,5 @@
 {
-  "_doc": "Written by scripts/get_layers.mjs — do not edit by hand.",
+  "_doc": "Written by scripts/get_layers.py — do not edit by hand.",
   "portal": "https://data.sf.gov",
   "layers": [
     {
@@ -606,6 +606,36 @@
       "page": "https://data.sf.gov/Geographic-Locations-and-Boundaries/Election-Precincts-Current-Defined-2022/d6x4-hefw",
       "source": "election_precincts dissolved by bart22",
       "retrieved": "2026-10-21"
+    },
+    {
+      "id": "historic_districts",
+      "label": "Historic Districts",
+      "tab": "Other",
+      "file": "historic_districts.geojson",
+      "key": "name_1",
+      "name": "name_1",
+      "match": {
+        "caseInsensitive": true,
+        "collapseSpace": true
+      },
+      "count": 199,
+      "bbox": [
+        -122.51105,
+        37.70815,
+        -122.35715,
+        37.8333
+      ],
+      "extent": [
+        -122.51105,
+        37.70815,
+        -122.35715,
+        37.8333
+      ],
+      "bytes": 754938,
+      "dataset": "63x5-g3m4",
+      "page": "https://data.sf.gov/d/63x5-g3m4",
+      "source": "file:Historic_Districts_20261028.geojson",
+      "retrieved": "2026-10-28"
     }
   ]
 }

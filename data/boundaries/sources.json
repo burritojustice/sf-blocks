@@ -421,6 +421,29 @@
         "caseInsensitive": true,
         "delimiter": ","
       }
+    },
+    {
+      "id": "historic_districts",
+      "label": "Historic Districts",
+      "tab": "Other",
+      "dataset": "63x5-g3m4",
+      "page": "https://data.sf.gov/d/63x5-g3m4",
+      "key": "name_1",
+      "name": "name_1",
+      "keep": [
+        "name_1",
+        "pos_1",
+        "nr",
+        "cr",
+        "a11",
+        "origin",
+        "docname"
+      ],
+      "mergeByKey": true,
+      "match": {
+        "caseInsensitive": true,
+        "collapseSpace": true
+      }
     }
   ]
 }
