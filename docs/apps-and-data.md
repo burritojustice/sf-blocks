@@ -18,6 +18,47 @@ What's in sf-blocks, how Joiner, Block Party and sf-striping use it, how Airtabl
 
 Arrows show which way data flows: sf-blocks feeds the three apps, Joiner also takes rows from Airtable and its join code from JoinKit, and the Civic Joy Fund copies are updated from Joiner and Block Party.
 
+**The same diagram in Mermaid.** GitHub draws this one from the text below, so it can be edited right here in the browser; the SVGs above are drawn by hand and match the shared doc. Keep whichever works better and delete the other.
+
+```mermaid
+%%{init: {'flowchart': {'nodeSpacing': 18, 'rankSpacing': 40, 'wrappingWidth': 260}}}%%
+flowchart LR
+    subgraph sfb["burritojustice/sf-blocks"]
+        direction TB
+        region["<b>region.json</b><br/>home view, bbox, keys, paths"]
+        bounds["<b>data/boundaries/</b><br/>16 polygon sets + index.json"]
+        aliases["<b>data/aliases.json</b><br/>other names for areas"]
+        layers["<b>data/layers/</b><br/>schools, Muni, bike, city lands"]
+        streets["<b>streets.json + CSVs</b><br/>every block (CNN) and intersection"]
+        parcels["<b>parcels .pmtiles</b><br/>land use and zoning, 24 MB"]
+        reference["<b>reference/</b><br/>public contact lists"]
+        uploads["<b>data/uploads/ + scripts/</b><br/>dated exports, Python builds"]
+        region ~~~ bounds ~~~ aliases ~~~ layers
+        streets ~~~ parcels ~~~ reference ~~~ uploads
+    end
+
+    joiner["<b>Joiner</b><br/>region, boundaries, aliases<br/>live, with a backup copy"]
+    bp["<b>Block Party</b><br/>streets, layers, parcels,<br/>neighborhoods, groups list<br/>live, with a backup copy"]
+    striping["<b>sf-striping</b><br/>streets.json, match_blocks<br/>copies only"]
+    airtable["<b>Airtable</b><br/>views, read-only"]
+    joinkit["<b>JoinKit</b><br/>join code, from CDN"]
+    fund["<b>Fund copies</b><br/>civic-joy-fund repos,<br/>updated after testing"]
+
+    sfb --> joiner
+    sfb --> bp
+    sfb --> striping
+    airtable --> joiner
+    joinkit --> joiner
+    joiner -.-> fund
+    bp -.-> fund
+
+    classDef data stroke:#2f6fd6
+    classDef copy stroke-dasharray: 5 4
+    class region,bounds,aliases,layers,streets,parcels,reference,uploads data
+    class fund copy
+    style sfb fill:transparent,stroke:#2f6fd6,stroke-width:2px
+```
+
 Current versions: sf-blocks 2026.10.27.2, Joiner v43, Block Party v37.
 
 ## What's in sf-blocks
