@@ -636,6 +636,36 @@
       "page": "https://data.sf.gov/d/63x5-g3m4",
       "source": "file:Historic_Districts_20261028.geojson",
       "retrieved": "2026-10-28"
+    },
+    {
+      "id": "community_benefit_district",
+      "label": "Community Benefit Districts",
+      "tab": "Other",
+      "file": "community_benefit_district.geojson",
+      "key": "community_benefit_district",
+      "name": "community_benefit_district",
+      "match": {
+        "caseInsensitive": true,
+        "collapseSpace": true
+      },
+      "count": 16,
+      "bbox": [
+        -122.46531,
+        37.71984,
+        -122.38811,
+        37.80863
+      ],
+      "extent": [
+        -122.46531,
+        37.71984,
+        -122.38811,
+        37.80863
+      ],
+      "bytes": 44267,
+      "dataset": "c28a-f6gs",
+      "page": "https://data.sf.gov/d/c28a-f6gs",
+      "source": "file:Community_Benefits_Districts_20261030.geojson",
+      "retrieved": "2026-10-30"
     }
   ]
 }

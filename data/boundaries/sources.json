@@ -444,6 +444,28 @@
         "caseInsensitive": true,
         "collapseSpace": true
       }
+    },
+    {
+      "id": "community_benefit_district",
+      "label": "Community Benefit Districts",
+      "tab": "Other",
+      "dataset": "c28a-f6gs",
+      "page": "https://data.sf.gov/d/c28a-f6gs",
+      "key": "community_benefit_district",
+      "name": "community_benefit_district",
+      "keep": [
+        "community_benefit_district",
+        "shape__area",
+        "shape__length",
+        "renewed",
+        "contract_duration",
+        "annual_report_latest_year",
+        "revenue"
+      ],
+      "match": {
+        "caseInsensitive": true,
+        "collapseSpace": true
+      }
     }
   ]
 }
