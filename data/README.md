@@ -2,9 +2,16 @@
 
 San Francisco's map data, served as is from https://burritojustice.github.io/sf-blocks/data/… so apps can load any file by its path.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="../docs/apps-and-data-dark.svg">
+  <img src="../docs/apps-and-data-light.svg" alt="sf-blocks holds the data; the apps read it live and keep a backup. sf-blocks feeds Joiner, Block Party and sf-striping; Airtable and JoinKit (Selecter's join code) feed Joiner; Civic Joy Fund's and other organizations' copies are updated from Joiner and Block Party." width="760">
+</picture>
+
+More in [docs/apps-and-data.md](../docs/apps-and-data.md).
+
 | Path | What | Where it comes from | Rebuild with |
 |---|---|---|---|
-| `boundaries/` | 16 polygon sets to join to, plus `index.json` and `sources.json` | DataSF, Who's On First, and precincts merged into districts. See [boundaries/README.md](boundaries/README.md) | `scripts/get_layers.py` |
+| `boundaries/` | 17 polygon sets to join to, plus `index.json` and `sources.json` | DataSF, Who's On First, and precincts merged into districts. See [boundaries/README.md](boundaries/README.md) | `scripts/get_layers.py` |
 | `layers/` | City points, lines and polygons drawn on maps | DataSF. See [layers/README.md](layers/README.md) | `scripts/build_layers.py` |
 | `uploads/` | Raw downloads the two folders above are built from | DataSF exports, Who's On First. See [uploads/README.md](uploads/README.md) | (downloads, not built) |
 | `sf_streets.csv` | Every street block, active and retired, one row per CNN | DataSF [Streets – Active and Retired](https://data.sf.gov/Geographic-Locations-and-Boundaries/Streets-Active-and-Retired/3psu-pn9h/about_data) (`3psu-pn9h`) | `build_data.py --download` |

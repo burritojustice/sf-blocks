@@ -9,57 +9,16 @@ What's in sf-blocks, how Joiner, Block Party and sf-striping use it, how Airtabl
 - **Building blocks of a city.** Boundaries to join to, city layers to draw, street blocks to look up, public contact lists, and the scripts that build each. Another city can start its own repo with the same folders (nyc-blocks, london-blocks) and point the apps at it.
 - **Live, with a backup.** Apps load `https://burritojustice.github.io/sf-blocks/<path>`. If that fails, or one file is missing, they use the copy in their own repo, stamped with the sf-blocks version it came from (`data/sf-blocks.json`). `?sfblocks=local` forces the copy.
 - **burritojustice first.** [burritojustice/joiner](https://github.com/burritojustice/joiner) and [burritojustice/block-party](https://github.com/burritojustice/block-party) are the primary, unbranded versions. Civic Joy Fund's repos are updated from them after testing, and other organizations can run their own customized copies.
-- **Shared code, separate data.** Join logic (name matching, classing, hexbins, dissolve, placing points and lines) lives in JoinKit in [burritojustice/maplibre](https://github.com/burritojustice/maplibre/tree/main/joinkit). sf-blocks holds data and the Python scripts that build it.
+- **Shared code, separate data.** Join logic (name matching, classing, hexbins, dissolve, placing points and lines) lives in JoinKit, which started as Selecter's join code and is still shared with it in [burritojustice/maplibre](https://github.com/burritojustice/maplibre/tree/main/joinkit). sf-blocks holds data and the Python scripts that build it.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="apps-and-data-dark.svg">
-  <img src="apps-and-data-light.svg" alt="sf-blocks holds the data; the apps read it live and keep a backup. sf-blocks (region.json, boundaries, aliases, layers, streets, parcels, reference, uploads and scripts) feeds Joiner, Block Party and sf-striping. Airtable and JoinKit feed Joiner. Joiner and Block Party are copied to the Civic Joy Fund repos after testing." width="760">
+  <img src="apps-and-data-light.svg" alt="sf-blocks holds the data; the apps read it live and keep a backup. sf-blocks (region.json, boundaries, aliases, layers, streets, parcels, reference, uploads and scripts) feeds Joiner, Block Party and sf-striping. Airtable and JoinKit feed Joiner. Joiner and Block Party are copied to Civic Joy Fund's and other organizations' repos after testing." width="760">
 </picture>
 
-Arrows show which way data flows: sf-blocks feeds the three apps, Joiner also takes rows from Airtable and its join code from JoinKit, and the Civic Joy Fund copies are updated from Joiner and Block Party.
+Arrows show which way data flows: sf-blocks feeds the three apps, Joiner also takes rows from Airtable and its join code from JoinKit (Selecter's join logic), and Civic Joy Fund's and other organizations' copies are updated from Joiner and Block Party.
 
-**The same diagram in Mermaid.** GitHub draws this one from the text below, so it can be edited right here in the browser; the SVGs above are drawn by hand and match the shared doc. Keep whichever works better and delete the other.
-
-```mermaid
-%%{init: {'flowchart': {'nodeSpacing': 18, 'rankSpacing': 40, 'wrappingWidth': 260}}}%%
-flowchart LR
-    subgraph sfb["burritojustice/sf-blocks"]
-        direction TB
-        region["<b>region.json</b><br/>home view, bbox, keys, paths"]
-        bounds["<b>data/boundaries/</b><br/>16 polygon sets + index.json"]
-        aliases["<b>data/aliases.json</b><br/>other names for areas"]
-        layers["<b>data/layers/</b><br/>schools, Muni, bike, city lands"]
-        streets["<b>streets.json + CSVs</b><br/>every block (CNN) and intersection"]
-        parcels["<b>parcels .pmtiles</b><br/>land use and zoning, 24 MB"]
-        reference["<b>reference/</b><br/>public contact lists"]
-        uploads["<b>data/uploads/ + scripts/</b><br/>dated exports, Python builds"]
-        region ~~~ bounds ~~~ aliases ~~~ layers
-        streets ~~~ parcels ~~~ reference ~~~ uploads
-    end
-
-    joiner["<b>Joiner</b><br/>region, boundaries, aliases<br/>live, with a backup copy"]
-    bp["<b>Block Party</b><br/>streets, layers, parcels,<br/>neighborhoods, groups list<br/>live, with a backup copy"]
-    striping["<b>sf-striping</b><br/>streets.json, match_blocks<br/>copies only"]
-    airtable["<b>Airtable</b><br/>views, read-only"]
-    joinkit["<b>JoinKit</b><br/>join code, from CDN"]
-    fund["<b>Fund copies</b><br/>civic-joy-fund repos,<br/>updated after testing"]
-
-    sfb --> joiner
-    sfb --> bp
-    sfb --> striping
-    airtable --> joiner
-    joinkit --> joiner
-    joiner -.-> fund
-    bp -.-> fund
-
-    classDef data stroke:#2f6fd6
-    classDef copy stroke-dasharray: 5 4
-    class region,bounds,aliases,layers,streets,parcels,reference,uploads data
-    class fund copy
-    style sfb fill:transparent,stroke:#2f6fd6,stroke-width:2px
-```
-
-Current versions: sf-blocks 2026.10.27.2, Joiner v43, Block Party v37.
+Current versions: sf-blocks 2026.10.28.2, Joiner v43, Block Party v37.
 
 ## What's in sf-blocks
 
@@ -68,7 +27,7 @@ Each kind of file has its own folder; the data files are built by scripts in `sc
 | Path | What it holds | Built by | Size |
 | --- | --- | --- | --- |
 | `region.json` | Name, home view, bounding box, Protomaps keys by site, and the path to each kind of data. What an app reads first | by hand | 1 KB |
-| `data/boundaries/` | 16 polygon sets to join to, `index.json` (the manifest apps read) and `sources.json` (DataSF id, join key, name field, fields kept, match rules for each) | `get_layers.py` | 7.2 MB |
+| `data/boundaries/` | 17 polygon sets to join to, `index.json` (the manifest apps read) and `sources.json` (DataSF id, join key, name field, fields kept, match rules for each) | `get_layers.py` | 7.2 MB |
 | `data/aliases.json` | Other names people use for areas, by set: "South Bayshore" → Bayview, "Calle 24" → Calle 24 Latino Cultural District. The only alias list | by hand | 2 KB |
 | `data/layers/` | City layers drawn on maps: schools, fire and police stations, health care (points); Muni, bike network, Slow Streets (lines); city-owned lands (polygons) | `build_layers.py` | 2.5 MB |
 | `data/Land_Use_with_Active_Parcel_Information.pmtiles` | Parcels with land use and zoning, as vector tiles | one-off (command in Block Party's v32 notes) | 24 MB |
@@ -76,7 +35,7 @@ Each kind of file has its own folder; the data files are built by scripts in `sc
 | `data/uploads/` | Raw DataSF exports with dates in their names, and Who's On First's SF data. Never edited by hand | downloads | 12 MB |
 | `reference/` | Public contact lists: SF Planning's neighborhood group list (plus `neighborhood_groups.json`), Cultural Districts contacts template | `build_neighborhood_groups.py`; by hand | 0.4 MB |
 
-**The 16 boundary sets:** supervisor districts (11), ZIP codes (27), five neighborhood sets (SF Find 117, Analysis 41, Planning 37, Realtor 92, Who's On First 116), census tracts (242), Cultural Districts (10), Bay Area counties (9) and ZIPs (323), election precincts (514), and US House (4), State Senate (3), Assembly (4) and BART (3) districts merged from the precincts.
+**The 17 boundary sets:** supervisor districts (11), ZIP codes (27), five neighborhood sets (SF Find 117, Analysis 41, Planning 37, Realtor 92, Who's On First 116), census tracts (242), Cultural Districts (10), Historic Districts (199), Bay Area counties (9) and ZIPs (323), election precincts (514), and US House (4), State Senate (3), Assembly (4) and BART (3) districts merged from the precincts.
 
 **Matching scripts:** `match_blocks.py` turns written block descriptions ("Sanchez between 27th and Duncan", "100 block of Winfield") into CNNs. `match_polygons.py` lists the blocks and intersections inside polygons. All scripts are plain Python with no extra packages.
 
@@ -86,10 +45,10 @@ Joiner and Block Party both start from `region.json` and fall back to their own 
 
 | App | What it reads from sf-blocks | How | What stays in the app |
 | --- | --- | --- | --- |
-| [Joiner](https://github.com/burritojustice/joiner) | `region.json`, `data/boundaries/` (manifest and all 16 sets), `data/aliases.json` | Live, with copies in `data/` (sf-blocks 2026.10.27). `js/sfblocks.js` does the loading; hover the logo for the version and whether it's live | Which tab each set goes in, label templates, uploaded polygons, H3 hexbins (made in the browser), `reference/` lists that go with its sets |
+| [Joiner](https://github.com/burritojustice/joiner) | `region.json`, `data/boundaries/` (manifest and every set), `data/aliases.json` | Live, with copies in `data/` (sf-blocks 2026.10.27). `js/sfblocks.js` does the loading; hover the logo for the version and whether it's live | Which tab each set goes in, label templates, uploaded polygons, H3 hexbins (made in the browser), `reference/` lists that go with its sets |
 | [Block Party](https://github.com/burritojustice/block-party) | `region.json`, `streets.json`, `data/layers/`, the five neighborhood sets, the parcels pmtiles, `neighborhood_groups.json` | Live, with copies in `data/` and `reference/` (sf-blocks 2026.10.27). Hover the title for the version. The pmtiles file has no per-file fallback | The cards, filters, exports, the Apply button and its form link |
 | [sf-striping](https://github.com/burritojustice/sf-striping) | `streets.json`, `match_blocks.py` | Copies only, each with its sf-blocks version line | The striping diagrams and their PDFs |
-| [JoinKit](https://github.com/burritojustice/maplibre/tree/main/joinkit) (Selecter, Joiner) | Nothing; it's code | Pinned commit from jsDelivr, with a vendor copy in Joiner | Name matching, classes, hexbins, dissolve, point and line placement |
+| [JoinKit](https://github.com/burritojustice/maplibre/tree/main/joinkit) (started in Selecter; used by Selecter and Joiner) | Nothing; it's code | Pinned commit from jsDelivr, with a vendor copy in Joiner | Name matching, classes, hexbins, dissolve, point and line placement |
 
 **Refreshing the copies.** Each app has `scripts/copy_sf_blocks.py`, which copies the files it uses from a checkout of sf-blocks and updates `data/sf-blocks.json` with the version. Run it after an sf-blocks release, then ship the app as its own PR. Each app's `data/README.md` lists its copies and how it loads them.
 
