@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.10.30
+- Added boundary set `community_benefit_district` (Community Benefit Districts): 16 areas named by `community_benefit_district`, from DataSF [c28a-f6gs](https://data.sf.gov/d/c28a-f6gs). Raw copy: `data/uploads/Community_Benefits_Districts_20261030.geojson`.
+
 ## 2026.10.28.2
 - Added boundary set `historic_districts` (Historic Districts): 199 areas named by `name_1`, from DataSF [63x5-g3m4](https://data.sf.gov/d/63x5-g3m4). Raw copy: `data/uploads/Historic_Districts_20261028.geojson`.
 
