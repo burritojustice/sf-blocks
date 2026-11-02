@@ -1,5 +1,7 @@
 # On every pull request: the JSON files parse, and every boundary set passes get_layers.py --check
 # (no duplicate ids, every area has its key, expected counts).
+# Pull requests opened by the Add action don't trigger this (GitHub's rule for action-made PRs), so that
+# action runs the same checks itself; keep the two in step.
 name: Check data
 on:
   pull_request:

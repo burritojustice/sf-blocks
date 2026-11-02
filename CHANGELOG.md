@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026.11.02.2
+- **Density breaks:** the census sets' `choropleth` has `breaks` (5,000 · 10,000 · 20,000 · 40,000 · 80,000 · 160,000 people per sq mi). Each class doubles the one before (a log scale), and Joiner and Block Party both use them, so the same block gets the same color in both.
+- **The Add action checks its own pull request.** GitHub doesn't run other workflows on a pull request an action opened, so "Check data" never ran on them (it showed as failed with no steps). The action now runs the same checks before it opens the pull request, and the report says they passed.
+
 ## 2026.11.02
 - **Census blocks 2020** (`census_blocks`, DataSF p2fw-hsrv): 5,986 blocks with population (`pop20`), housing units (`housing20`), land area (`aland20`, m²) and people per square mile (`density`). Block and tract ids have their leading zeros back (`060750101011001`, tract `010101`), so they match other census data by GEOID.
 - **Census tracts** now carry `pop20`, `housing20`, `aland20` and `density`, summed from the blocks (both total 873,965 people).

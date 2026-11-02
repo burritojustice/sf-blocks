@@ -63,14 +63,14 @@ Sometimes a set needs more than the city publishes: ids with their leading zeros
 "numbers": ["pop20", "housing20", "aland20"],
 "rollup":  { "from": "census_blocks", "by": "tractce20", "to": "tractce", "sum": ["pop20", "housing20", "aland20"] },
 "derive":  { "density": { "divide": ["pop20", "aland20"], "times": 2589988.11, "round": 0 } },
-"choropleth": { "prop": "density", "label": "People per sq mi", "palette": "viridis" }
+"choropleth": { "prop": "density", "label": "People per sq mi", "palette": "viridis", "breaks": [5000, 10000, 20000, 40000, 80000, 160000] }
 ```
 
 - **`pad`** zero-pads ids back to their width. Census ids that went through a number column lose their leading zero and stop matching.
 - **`numbers`** keeps counts as numbers rather than text.
 - **`rollup`** adds up another set's fields into this one (blocks into tracts). That set must come earlier in `sources.json`.
 - **`derive`** divides one field by another (here people per square mile; land area is in square metres).
-- **`choropleth`** tells Joiner and Block Party which field to color the set by, its name and palette.
+- **`choropleth`** tells Joiner and Block Party which field to color the set by, its name, palette and class breaks (here each break doubles the last, a log scale). Without `breaks`, the apps use quantiles.
 
 Edit the entry in a pull request, then run the Action with just the set id to rebuild it.
 
@@ -84,7 +84,7 @@ Edit the entry in a pull request, then run the Action with just the set id to re
 
 ## Rules
 
-- **Pull requests, not direct commits to `main`.** The apps read `main` live; the **Check data** action runs on every pull request.
+- **Pull requests, not direct commits to `main`.** The apps read `main` live; the **Check data** action runs on every pull request you open, and the Add action runs the same checks on its own pull requests.
 - **Don't rename or move published files.** Live links would break. Add the new path, update the apps, then remove the old one.
 - **Public data only.** No names, emails or phone numbers of private people. Contact lists only when the city or the organization publishes them, with `source_url` and `checked` columns.
 - **Note the source.** The set's `page` in `sources.json` links to where it came from; the action fills it in for DataSF.
