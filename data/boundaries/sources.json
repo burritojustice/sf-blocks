@@ -222,7 +222,7 @@
         "label": "People per sq mi",
         "palette": "viridis",
         "source": "2020 Census"
-      },
+      , "breaks": [5000, 10000, 20000, 40000, 80000, 160000]},
       "match": {
         "caseInsensitive": true,
         "collapseSpace": true
@@ -283,7 +283,7 @@
         "label": "People per sq mi",
         "palette": "viridis",
         "source": "2020 Census"
-      }
+      , "breaks": [5000, 10000, 20000, 40000, 80000, 160000]}
     },
     {
       "id": "cultural_districts",

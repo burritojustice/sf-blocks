@@ -60,6 +60,12 @@ jobs:
           python3 scripts/add_boundary_set.py --id "$IN_ID" --source "$IN_SOURCE" --name "$IN_NAME" --label "$IN_LABEL" \
             --tab "$IN_TAB" --keep "$IN_KEEP" --branch "$BRANCH" --summary "$RUNNER_TEMP/summary.md"
           cat "$RUNNER_TEMP/summary.md" >> "$GITHUB_STEP_SUMMARY"
+      # the same checks as check.yml: GitHub doesn't run workflows on pull requests an action opens
+      - name: Check data
+        run: |
+          for f in region.json data/aliases.json data/boundaries/*.json; do python3 -m json.tool "$f" > /dev/null || { echo "Bad JSON: $f"; exit 1; }; done
+          python3 scripts/get_layers.py --check
+          printf '\n**Checks passed:** the JSON files parse and every boundary set passes `get_layers.py --check`.\n' >> "$RUNNER_TEMP/summary.md"
       - name: Commit and open a pull request
         env:
           GH_TOKEN: ${{ github.token }}
