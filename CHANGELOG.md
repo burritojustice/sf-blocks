@@ -1,7 +1,10 @@
 # Changelog
 
 ## 2026.11.02
-- Added boundary set `census_blocks` (Census Blocks): 5986 areas named by `geoid20`, from DataSF [p2fw-hsrv](https://data.sf.gov/d/p2fw-hsrv). Raw copy: `data/uploads/Census_2020_Blocks_for_San_Francisco_20261102.geojson`.
+- **Census blocks 2020** (`census_blocks`, DataSF p2fw-hsrv): 5,986 blocks with population (`pop20`), housing units (`housing20`), land area (`aland20`, m²) and people per square mile (`density`). Block and tract ids have their leading zeros back (`060750101011001`, tract `010101`), so they match other census data by GEOID.
+- **Census tracts** now carry `pop20`, `housing20`, `aland20` and `density`, summed from the blocks (both total 873,965 people).
+- `get_layers.py` can add fields to a set, set in `sources.json`: `pad` (zero-pad ids), `numbers` (keep counts as numbers), `rollup` (sum another set's fields, like blocks into tracts) and `derive` (one field divided by another, like density). `choropleth` tells the apps which field to color a set by, and how. See ADDING-DATA.md.
+- `add_boundary_set.py` keeps up to 12 fields (was 6) and skips shape sizes, label points and load times, so counts like `housing20` aren't left out.
 
 ## 2026.10.30
 - Added boundary set `community_benefit_district` (Community Benefit Districts): 16 areas named by `community_benefit_district`, from DataSF [c28a-f6gs](https://data.sf.gov/d/c28a-f6gs). Raw copy: `data/uploads/Community_Benefits_Districts_20261030.geojson`.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# sf-blocks 2026.10.28: master copy.
+# sf-blocks 2026.11.02: master copy.
 """Add a boundary set to sf-blocks, or refresh one, in one step. This is what the "Add or refresh a boundary
 set" GitHub Action runs, so nobody needs a command line; it works the same from one.
 
@@ -172,11 +172,14 @@ def main(argv):
     elif existing:
         keep = [k for k in existing['keep'] if k in fields] or [name]
     else:
+        # fields worth keeping: they vary, they're mostly filled, and they aren't ids, shape measurements,
+        # label points or load timestamps. Counts (population, housing units) and short text both count.
+        SKIP = re.compile(r'^(shape_|intpt|data_(as_of|loaded_at)|last_?(edited|updated)|created_|globalid|mtfcc|funcstat)', re.I)
         def readable(k):
             v = text_values(feats, k)
-            return (k != name and not ID_LIKE.search(k) and len(v) >= len(feats) * 0.5 and len(set(v)) > 1
-                    and sum(map(len, v)) / len(v) <= 80)
-        keep = [name] + [k for k in fields if readable(k)][:6]
+            return (k != name and not ID_LIKE.search(k) and not SKIP.search(k) and len(v) >= len(feats) * 0.5
+                    and len(set(v)) > 1 and sum(map(len, v)) / len(v) <= 80)
+        keep = [name] + [k for k in fields if readable(k)][:12]
     missing = [k for k in keep if k not in fields]
     if missing:
         sys.exit(f'not in the data: {", ".join(missing)}; fields: {", ".join(fields)}')
