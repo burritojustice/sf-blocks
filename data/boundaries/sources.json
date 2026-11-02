@@ -466,6 +466,28 @@
         "caseInsensitive": true,
         "collapseSpace": true
       }
+    },
+    {
+      "id": "census_blocks",
+      "label": "Census Blocks",
+      "tab": "Other",
+      "dataset": "p2fw-hsrv",
+      "page": "https://data.sf.gov/d/p2fw-hsrv",
+      "key": "geoid20",
+      "name": "geoid20",
+      "keep": [
+        "geoid20",
+        "pop20",
+        "aland20",
+        "tractce20",
+        "awater20",
+        "intptlon20",
+        "intptlat20"
+      ],
+      "match": {
+        "caseInsensitive": true,
+        "collapseSpace": true
+      }
     }
   ]
 }

@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.11.02
+- Added boundary set `census_blocks` (Census Blocks): 5986 areas named by `geoid20`, from DataSF [p2fw-hsrv](https://data.sf.gov/d/p2fw-hsrv). Raw copy: `data/uploads/Census_2020_Blocks_for_San_Francisco_20261102.geojson`.
+
 ## 2026.10.30
 - Added boundary set `community_benefit_district` (Community Benefit Districts): 16 areas named by `community_benefit_district`, from DataSF [c28a-f6gs](https://data.sf.gov/d/c28a-f6gs). Raw copy: `data/uploads/Community_Benefits_Districts_20261030.geojson`.
 

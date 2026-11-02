@@ -666,6 +666,36 @@
       "page": "https://data.sf.gov/d/c28a-f6gs",
       "source": "file:Community_Benefits_Districts_20261030.geojson",
       "retrieved": "2026-10-30"
+    },
+    {
+      "id": "census_blocks",
+      "label": "Census Blocks",
+      "tab": "Other",
+      "file": "census_blocks.geojson",
+      "key": "geoid20",
+      "name": "geoid20",
+      "match": {
+        "caseInsensitive": true,
+        "collapseSpace": true
+      },
+      "count": 5986,
+      "bbox": [
+        -122.61228,
+        37.70672,
+        -122.28178,
+        37.92982
+      ],
+      "extent": [
+        -123.17382,
+        37.63983,
+        -122.28178,
+        37.92982
+      ],
+      "bytes": 3580828,
+      "dataset": "p2fw-hsrv",
+      "page": "https://data.sf.gov/d/p2fw-hsrv",
+      "source": "file:Census_2020_Blocks_for_San_Francisco_20261102.geojson",
+      "retrieved": "2026-11-02"
     }
   ]
 }
