@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# sf-blocks 2026.10.27.2: master copy, ported from civic-joy-fund/joiner's scripts/get_layers.mjs (v42).
+# sf-blocks 2026.11.02: master copy, ported from civic-joy-fund/joiner's scripts/get_layers.mjs (v42).
 """Build the boundary sets in data/boundaries/ from DataSF (or local files) for Joiner, Block Party and
 anything else that joins to San Francisco's areas.
 
@@ -364,7 +364,7 @@ def clean(layer, gj, cfg):
     p = cfg.get('precision', 6)
     by_key, warnings = {}, []
     for f in gj['features']:
-        props = f.get('properties') or {}
+        props = pad_fields(layer, f.get('properties') or {})
         raw = props.get(layer['key'])
         key = '' if raw is None else js_str(raw).strip()
         if not key:
@@ -385,6 +385,8 @@ def clean(layer, gj, cfg):
             v = props.get(k)
             if v is not None and v != '':
                 kept[k] = DATE_T.sub(r'\1', v.strip()) if isinstance(v, str) else v
+                if k in layer.get('numbers', ()):
+                    kept[k] = as_number(kept[k])
         by_key[key] = {'type': 'Feature', 'id': key, 'properties': kept,
                        'geometry': {'type': 'MultiPolygon', 'coordinates': polys}, '_parts': 1}
     merged = [f"{f['id']}×{f['_parts']}" for f in by_key.values() if f['_parts'] > 1]
@@ -392,6 +394,63 @@ def clean(layer, gj, cfg):
     if layer.get('expectCount') and len(features) != layer['expectCount']:
         warnings.append(f"expected {layer['expectCount']} features, got {len(features)}")
     return features, merged, warnings
+
+
+# ── fields added to a set (all optional, set in sources.json) ──────────────────────────────────────
+#   "pad":     {"geoid20": 15}            digits zero-padded back to their width (ids that went through a
+#                                         spreadsheet or a number column lose their leading zeros)
+#   "numbers": ["pop20", "housing20"]     kept as numbers, not text ("15.0" → 15)
+#   "rollup":  {"from": "census_blocks", "by": "tractce20", "to": "tractce", "sum": ["pop20", ...]}
+#              sums another set's fields over its features whose "by" equals this feature's "to" (blocks
+#              into tracts). The other set is read as built, so it must come earlier in sources.json.
+#   "derive":  {"density": {"divide": ["pop20", "aland20"], "times": 2589988.11, "round": 0}}
+#              a new field from two others (here people per square mile: land area is in m²); left out
+#              where the divisor is 0 or missing
+# Data from another source joined by a key (school enrollment, say) would be one more step here.
+def as_number(v):
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return v
+    return int(f) if f.is_integer() else f
+
+
+def pad_fields(layer, props):
+    if not layer.get('pad'):
+        return props
+    props = dict(props)
+    for k, width in layer['pad'].items():
+        v = props.get(k)
+        if v is None or v == '':
+            continue
+        t = js_str(v).strip()
+        if re.fullmatch(r'\d+(\.0+)?', t):
+            props[k] = t.split('.')[0].zfill(width)
+    return props
+
+
+def add_fields(layer, features):
+    roll = layer.get('rollup')
+    if roll:
+        src = json.loads((OUT / f"{roll['from']}.geojson").read_text(encoding='utf-8'))
+        sums = {}
+        for f in src['features']:
+            k = js_str(f['properties'].get(roll['by'], '')).strip()
+            acc = sums.setdefault(k, {n: 0 for n in roll['sum']})
+            for n in roll['sum']:
+                acc[n] += as_number(f['properties'].get(n, 0)) or 0
+        for f in features:
+            got = sums.get(js_str(f['properties'].get(roll['to'], '')).strip())
+            if got:
+                f['properties'].update({n: as_number(round(v, 6)) for n, v in got.items()})
+    for name, d in (layer.get('derive') or {}).items():
+        a, b = d['divide']
+        for f in features:
+            x, y = as_number(f['properties'].get(a)), as_number(f['properties'].get(b))
+            if isinstance(x, (int, float)) and isinstance(y, (int, float)) and y:
+                v = x / y * d.get('times', 1)
+                f['properties'][name] = as_number(round(v, d['round'])) if 'round' in d else v
+    return features
 
 
 def serialize(fc):
@@ -411,6 +470,7 @@ def manifest_entry(layer, fc, nbytes, source):
     if layer.get('match'): e['match'] = layer['match']
     if layer.get('regional'): e['regional'] = True
     if layer.get('dissolve'): e['dissolve'] = layer['dissolve']
+    if layer.get('choropleth'): e['choropleth'] = layer['choropleth']
     e.update(count=len(fc['features']), bbox=fc['bbox'], extent=fc['extent'], bytes=nbytes)
     if layer.get('dataset'): e['dataset'] = layer['dataset']
     e.update(page=layer.get('page'), source=source, retrieved=date.today().isoformat())
@@ -421,6 +481,7 @@ def process_layer(layer, cfg, files):
     print(f"{layer['id']} ({layer.get('dataset') or 'local files'})")
     gj, source = load(layer, cfg, files)
     features, merged, warnings = clean(layer, gj, cfg)
+    features = add_fields(layer, features)
     extent, view, offshore = bboxes(features, [-180, -90, 180, 90] if layer.get('regional') else cfg['mainlandBbox'])
     fc = {'type': 'FeatureCollection', 'name': layer['id'], 'bbox': [jround(n, 5) for n in view],
           'extent': [jround(n, 5) for n in extent], 'features': features}

@@ -54,6 +54,28 @@ Then branch, commit, push and open the pull request yourself. `python3 scripts/g
 
 Run the action (or the script) with just the **Set id**. It downloads the dataset again, keeps the same name field and settings, and opens a pull request only if something changed.
 
+## Adding fields to a set
+
+Sometimes a set needs more than the city publishes: ids with their leading zeros back, a rate worked out from two fields, totals from a smaller set, or numbers from a different dataset. These go in the set's entry in `data/boundaries/sources.json`, so they're redone every time the set is rebuilt (by the Action or `get_layers.py`):
+
+```json
+"pad":     { "geoid20": 15 },
+"numbers": ["pop20", "housing20", "aland20"],
+"rollup":  { "from": "census_blocks", "by": "tractce20", "to": "tractce", "sum": ["pop20", "housing20", "aland20"] },
+"derive":  { "density": { "divide": ["pop20", "aland20"], "times": 2589988.11, "round": 0 } },
+"choropleth": { "prop": "density", "label": "People per sq mi", "palette": "viridis" }
+```
+
+- **`pad`** zero-pads ids back to their width. Census ids that went through a number column lose their leading zero and stop matching.
+- **`numbers`** keeps counts as numbers rather than text.
+- **`rollup`** adds up another set's fields into this one (blocks into tracts). That set must come earlier in `sources.json`.
+- **`derive`** divides one field by another (here people per square mile; land area is in square metres).
+- **`choropleth`** tells Joiner and Block Party which field to color the set by, its name and palette.
+
+Edit the entry in a pull request, then run the Action with just the set id to rebuild it.
+
+**Data from somewhere else** (school enrollment from the state, say) is a different case: it's its own dataset with its own source and date. The plan is to save it in `data/uploads/` like any download, and add a `"join"` step that matches it to the set by a shared key (the school's CDS code) and copies the chosen fields in. It isn't built yet.
+
 ## After it's merged
 
 - **Joiner:** the set appears right away in the tab given (Other by default), named by its title. Nothing to change in Joiner.
