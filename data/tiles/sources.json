@@ -77,8 +77,8 @@
     {
       "id": "businesses",
       "label": "Businesses",
-      "dataset": "kvj8-g7jh",
-      "page": "https://data.sf.gov/Economy-and-Community/Active-Business-Locations/kvj8-g7jh",
+      "dataset": "g8m3-pdis",
+      "page": "https://data.sf.gov/Economy-and-Community/Registered-Business-Locations-San-Francisco/g8m3-pdis",
       "format": "csv",
       "point": {
         "wkt": "location"
@@ -91,10 +91,13 @@
         "address": "text:full_business_address",
         "zip": "text:business_zip",
         "mail": "text:mailing_address_1",
+        "mail_place": "text:mail_city+mail_state+mail_zipcode",
         "since": "date:location_start_date",
         "lic": "text:lic_code_description",
-        "corridor": "text:business_corridor",
-        "cat": "bizcat:lic_code_descriptions_list|lic_code_description"
+        "naics": "naics:self_reported_naics_code",
+        "sector": "sector:self_reported_naics_code",
+        "cat": "bizcategory:lic_code_descriptions_list,self_reported_naics_code",
+        "corridor": "text:business_corridor"
       },
       "drop": {
         "dba": "^(N/A|Same As Ownership)$",
@@ -114,7 +117,10 @@
           "dba",
           "owner",
           "mail",
+          "mail_place",
           "lic",
+          "sector",
+          "naics",
           "cat",
           "since",
           "kind"
@@ -126,6 +132,7 @@
       },
       "categories": [
         "cat",
+        "sector",
         "lic",
         "corridor",
         "kind"
@@ -138,9 +145,14 @@
           "maxzoom": 14,
           "fields": [
             "n",
-            "food"
+            "cat"
           ]
         }
+      },
+      "where": "location_end_date IS NULL AND dba_end_date IS NULL",
+      "note": "Open locations from Registered Business Locations (the same rows as Active Business Locations, kvj8-g7jh), which also has each business's self-reported NAICS code and the mailing city and ZIP.",
+      "empty_with": {
+        "mail_place": "mail"
       }
     },
     {
