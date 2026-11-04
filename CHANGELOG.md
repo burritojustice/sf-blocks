@@ -1,7 +1,9 @@
 # Changelog
 
 ## 2026.11.03.2
-- **Business names on each address point:** `name` (the first storefront's business name) and `name_all` (the first of any), so the apps can label addresses on the map without reading the `items` list. `businesses.pmtiles` is 5.6 MB (was 4.6).
+- **Business names on each address point:** `name` (the first storefront's business name) and `name_all` (the first of any), so the apps can label addresses on the map without reading the `items` list. `businesses.pmtiles` is 5.5 MB (was 4.6).
+- **No personal names as labels:** a business name is used for a label only when it reads as a company (Inc, LLC, Co…) or differs from the owner's name. A sole proprietor's or landlord's own name ("Anne Perkins" for owner "Perkins Anne M") is left off the map; it stays on cards and in exports. In a Mission tile, 1,030 of 1,308 points get a label. A few bare personal names still get through (a stylist's name under a salon's registration, say).
+- The placeholder business name "Same As Ownership" is dropped, like "N/A".
 
 ## 2026.11.03
 - **Map layers** in `data/tiles/`, built by the new `scripts/build_tiles.py` from `data/tiles/sources.json`, and listed in `region.json` as `tiles`:

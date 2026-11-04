@@ -63,7 +63,7 @@
       "file": "businesses.pmtiles",
       "format": "pmtiles",
       "layer": "businesses",
-      "bytes": 5625521,
+      "bytes": 5467541,
       "features": 69727,
       "records": 100913,
       "geometry": "Point",

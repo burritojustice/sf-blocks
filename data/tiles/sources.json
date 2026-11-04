@@ -97,7 +97,7 @@
         "cat": "bizcat:lic_code_descriptions_list|lic_code_description"
       },
       "drop": {
-        "dba": "^N/A$",
+        "dba": "^(N/A|Same As Ownership)$",
         "mail": "^0000 "
       },
       "same_as": {

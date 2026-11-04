@@ -191,7 +191,21 @@ def group(layer, records):
         pts = Counter(tuple(geom['coordinates']) for _, geom in rows)
         items = [{f: p.get(f) for f in g['list'] if p.get(f) is not None} for p, _ in rows]
         items.sort(key=lambda i: (i.get('kind') is not None, (i.get('dba') or i.get('owner') or '').lower()))
-        label = lambda i: i.get('dba') or i.get('owner')
+        # map labels: a business name that isn't a person's. `same_as` emptied `owner` where it matched the
+        # business name, so a name with no separate owner is only used when it reads as a company (a sole
+        # proprietor's or landlord's own name stays off the map; it's still on cards and in exports)
+        words = lambda v: {w for w in re.findall(r'[a-z]+', (v or '').lower()) if len(w) > 1}
+        def label(i):
+            d = i.get('dba')
+            if not d: return None
+            if COMPANY.search(d): return d
+            o = i.get('owner')
+            # no separate owner, or the business name is the owner's own words reordered ("Anne Perkins" /
+            # "Perkins Anne M"): a person's name
+            if not o or words(d) <= words(o): return None
+            last = re.findall(r'[a-z]+', d.lower())
+            # "Joe Wittenbrook" / "Wittenbrook Joseph": a short name ending in the owner's surname
+            return None if len(last) <= 3 and last and last[-1] in words(o) else d
         first = next((label(i) for i in items if not i.get('kind') and label(i)), None)
         props = {by: key, 'n': len(rows), 'shown': sum(1 for p, _ in rows if not p.get('kind')),
                  # for map labels: the first storefront's name (name), or the first of any (name_all)
