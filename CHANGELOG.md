@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026.11.03
+- **Map layers** in `data/tiles/`, built by the new `scripts/build_tiles.py` from `data/tiles/sources.json`, and listed in `region.json` as `tiles`:
+  - **Street trees** (`street_trees.pmtiles`, 4.8 MB): 138,778 trees with species, genus, trunk diameter, status, planted date, site, caretaker, CNN and address. Current.
+  - **Businesses** (`businesses.pmtiles`, 4.6 MB): 100,913 businesses at 69,727 addresses, grouped by address, with business name, owner, mailing address, license, start date, and a food / licensed / other category. Owners that aren't storefronts are labelled from `business_kinds.json`. Current.
+  - **Curbs and islands** (`curbs.pmtiles`, 2.7 MB, zooms 13–17): 7,195 lines. 2016.
+  - **Building footprints** (`buildings.pmtiles`, 8.3 MB): 177,023 buildings with id, block and lot, height, ground level and peak, in metres. 2016, heights from 2010 LiDAR.
+  - Each has a stats file: numbers and dates (min, max, mean, median, std dev, quantile breaks, dates by year) and category counts.
+- **"Add or refresh data"** (was "Add or refresh a boundary set"): a Kind choice, Boundary set or Map layer. A new map layer's first run proposes its fields (field report and a draft entry in `sources.json`), and a second run on the branch builds it; big raw downloads are archived as releases. tippecanoe is built once and cached.
+- **Contact data:** city-published registries are kept, owner names and mailing addresses included (see CLAUDE.md and ADDING-DATA.md).
+
 ## 2026.11.02.2
 - **Density breaks:** the census sets' `choropleth` has `breaks` (5,000 · 10,000 · 20,000 · 40,000 · 80,000 · 160,000 people per sq mi). Each class doubles the one before (a log scale), and Joiner and Block Party both use them, so the same block gets the same color in both.
 - **The Add action checks its own pull request.** GitHub doesn't run other workflows on a pull request an action opened, so "Check data" never ran on them (it showed as failed with no steps). The action now runs the same checks before it opens the pull request, and the report says they passed.

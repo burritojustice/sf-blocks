@@ -1,19 +1,27 @@
-# Add a boundary set from DataSF (or from a file uploaded to data/uploads/), or refresh one, without a
-# command line: Actions → "Add or refresh a boundary set" → Run workflow. It runs
-# scripts/add_boundary_set.py and opens a pull request with a report and preview links.
+# Add or refresh data without a command line: Actions → "Add or refresh data" → Run workflow.
+#   Boundary set: areas to join to (scripts/add_boundary_set.py), from DataSF or a file in data/uploads/.
+#   Map layer: points, lines or polygons for the maps (scripts/build_tiles.py), tiled with tippecanoe when
+#     big. A new layer's first run only proposes its fields (a report and an entry in data/tiles/sources.json
+#     to edit on the branch); run it again on that branch to build. A layer already listed is rebuilt.
+# It opens a pull request with a report (or adds a commit to the branch it's run on).
 # Run it on main to get a new branch and PR; run it on another branch (say, one where you uploaded a file)
 # to add a commit to that branch.
 # Needs: Settings → Actions → General → Workflow permissions: "Read and write", and
 # "Allow GitHub Actions to create and approve pull requests".
-name: Add or refresh a boundary set
+name: Add or refresh data
 on:
   workflow_dispatch:
     inputs:
+      kind:
+        description: 'What it is'
+        type: choice
+        options: [Boundary set, Map layer]
+        default: Boundary set
       id:
         description: 'Set id: lowercase words joined by _, e.g. historic_districts'
         required: true
       source:
-        description: 'DataSF dataset id or page link (63x5-g3m4), or a file in data/uploads/. Blank: refresh from its dataset'
+        description: 'DataSF dataset id or page link (63x5-g3m4), or a file in data/uploads/ (boundary sets). Blank: refresh from its dataset'
         required: false
       name_field:
         description: 'Field that names each area (what rows match). Blank: pick one'
@@ -21,8 +29,11 @@ on:
       label:
         description: "Title in the apps, e.g. Historic Districts. Blank: the dataset's name"
         required: false
+      year:
+        description: 'Map layers: the year the data describes (2016), or current. Blank: current'
+        required: false
       tab:
-        description: 'Joiner tab'
+        description: 'Joiner tab (boundary sets)'
         type: choice
         options: [Other, Neighborhood, District, ZIP]
         default: Other
@@ -41,13 +52,16 @@ jobs:
         id: branch
         env:
           IN_ID: ${{ inputs.id }}
+          IN_KIND: ${{ inputs.kind }}
         run: |
           if ! [[ "$IN_ID" =~ ^[a-z][a-z0-9_]{2,40}$ ]]; then echo "Bad id: $IN_ID"; exit 1; fi
           if [ "$GITHUB_REF_NAME" = main ]; then
-            b="boundary-$IN_ID-$(date +%Y%m%d)-$GITHUB_RUN_NUMBER"; git checkout -b "$b"; echo "new=1" >> "$GITHUB_OUTPUT"
+            pre=$([ "$IN_KIND" = "Map layer" ] && echo layer || echo boundary)
+            b="$pre-$IN_ID-$(date +%Y%m%d)-$GITHUB_RUN_NUMBER"; git checkout -b "$b"; echo "new=1" >> "$GITHUB_OUTPUT"
           else b="$GITHUB_REF_NAME"; echo "new=0" >> "$GITHUB_OUTPUT"; fi
           echo "name=$b" >> "$GITHUB_OUTPUT"
       - name: Build the set
+        if: inputs.kind != 'Map layer'
         env:
           IN_ID: ${{ inputs.id }}
           IN_SOURCE: ${{ inputs.source }}
@@ -60,11 +74,68 @@ jobs:
           python3 scripts/add_boundary_set.py --id "$IN_ID" --source "$IN_SOURCE" --name "$IN_NAME" --label "$IN_LABEL" \
             --tab "$IN_TAB" --keep "$IN_KEEP" --branch "$BRANCH" --summary "$RUNNER_TEMP/summary.md"
           cat "$RUNNER_TEMP/summary.md" >> "$GITHUB_STEP_SUMMARY"
+      # map layers: tippecanoe (built once, then cached), then propose fields for a new layer or build a listed one
+      - name: tippecanoe
+        if: inputs.kind == 'Map layer'
+        id: tc
+        uses: actions/cache@v4
+        with:
+          path: ~/tippecanoe
+          key: tippecanoe-2.82.0
+      - name: Build tippecanoe
+        if: inputs.kind == 'Map layer' && steps.tc.outputs.cache-hit != 'true'
+        run: |
+          git clone -q --depth 1 --branch 2.82.0 https://github.com/felt/tippecanoe.git ~/tippecanoe-src
+          make -C ~/tippecanoe-src -j4 > /dev/null
+          mkdir -p ~/tippecanoe && cp ~/tippecanoe-src/tippecanoe ~/tippecanoe-src/tile-join ~/tippecanoe-src/tippecanoe-decode ~/tippecanoe/
+      - name: Build the layer
+        if: inputs.kind == 'Map layer'
+        env:
+          IN_ID: ${{ inputs.id }}
+          IN_SOURCE: ${{ inputs.source }}
+          IN_LABEL: ${{ inputs.label }}
+          IN_YEAR: ${{ inputs.year }}
+          IN_KEEP: ${{ inputs.keep }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ds=$(echo "$IN_SOURCE" | grep -oE '[a-z0-9]{4}-[a-z0-9]{4}' | tail -1 || true)
+          if python3 -c "import json,sys; sys.exit(0 if any(l['id']=='$IN_ID' for l in json.load(open('data/tiles/sources.json'))['layers']) else 1)"; then
+            mkdir -p "$RUNNER_TEMP/raw"
+            python3 scripts/build_tiles.py "$IN_ID" --tippecanoe ~/tippecanoe --raw "$RUNNER_TEMP/raw" --report "$RUNNER_TEMP/body.md"
+            # raw downloads: in data/uploads/ when small, otherwise attached to a release (archived, not served)
+            for f in "$RUNNER_TEMP"/raw/*; do
+              name="$(basename "${f%.*}")_$(date +%Y%m%d).${f##*.}"
+              if [ "$(stat -c %s "$f")" -lt 10000000 ]; then cp "$f" "data/uploads/$name"; echo "- Raw copy: \`data/uploads/$name\`" >> "$RUNNER_TEMP/body.md"
+              else
+                gzip -9 -c "$f" > "$RUNNER_TEMP/$name.gz"
+                tag="raw-$IN_ID-$(date +%Y%m%d)-$GITHUB_RUN_NUMBER"
+                gh release create "$tag" "$RUNNER_TEMP/$name.gz" --title "Raw download: $IN_ID $(date +%Y-%m-%d)" --notes "Archived by the Add or refresh data action (run $GITHUB_RUN_NUMBER). Not used by the apps." --target "$GITHUB_SHA" > /dev/null
+                echo "- Raw copy (too big for the repo): release [$tag]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$tag)" >> "$RUNNER_TEMP/body.md"
+              fi
+            done
+            title="Built map layer \`$IN_ID\`"
+          else
+            [ -n "$ds" ] || { echo "A new layer needs a DataSF dataset id in Source"; exit 1; }
+            python3 scripts/build_tiles.py --profile "$ds" --add "$IN_ID" --label "$IN_LABEL" --year "${IN_YEAR:-current}" --keep "$IN_KEEP" --report "$RUNNER_TEMP/body.md" > /dev/null
+            title="Proposed map layer \`$IN_ID\` (fields to review)"
+          fi
+          v=$(date +%Y.%m.%d); [ "$(cat VERSION)" \> "$v" ] || [ "$(cat VERSION)" = "$v" ] && v="$(cat VERSION).$GITHUB_RUN_NUMBER"
+          echo "$v" > VERSION
+          { echo "**$title**"; echo; cat "$RUNNER_TEMP/body.md"; } > "$RUNNER_TEMP/summary.md"
+          python3 - "$v" "$RUNNER_TEMP/summary.md" <<'PY'
+          import sys, pathlib
+          v, body = sys.argv[1], pathlib.Path(sys.argv[2]).read_text()
+          c = pathlib.Path('CHANGELOG.md'); s = c.read_text()
+          lines = [l for l in body.splitlines()[2:] if l.startswith('-')] or ['- ' + body.splitlines()[0].strip('*')]
+          c.write_text(s.replace('# Changelog\n\n', f'# Changelog\n\n## {v}\n' + '\n'.join(lines) + '\n\n', 1))
+          PY
+          cat "$RUNNER_TEMP/summary.md" >> "$GITHUB_STEP_SUMMARY"
       # the same checks as check.yml: GitHub doesn't run workflows on pull requests an action opens
       - name: Check data
         run: |
           for f in region.json data/aliases.json data/boundaries/*.json; do python3 -m json.tool "$f" > /dev/null || { echo "Bad JSON: $f"; exit 1; }; done
           python3 scripts/get_layers.py --check
+          python3 scripts/build_tiles.py --check
           printf '\n**Checks passed:** the JSON files parse and every boundary set passes `get_layers.py --check`.\n' >> "$RUNNER_TEMP/summary.md"
       - name: Commit and open a pull request
         env:
@@ -72,6 +143,7 @@ jobs:
           IN_ID: ${{ inputs.id }}
           BRANCH: ${{ steps.branch.outputs.name }}
           NEW: ${{ steps.branch.outputs.new }}
+          IN_KIND: ${{ inputs.kind }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -80,9 +152,9 @@ jobs:
           git commit -m "$(head -1 "$RUNNER_TEMP/summary.md" | tr -d '*')" -m "Run by ${GITHUB_ACTOR} with the Add or refresh a boundary set action."
           git push origin "HEAD:$BRANCH"
           if [ "$NEW" = 1 ]; then
-            gh pr create --base main --head "$BRANCH" --title "Boundary set: $IN_ID" --body-file "$RUNNER_TEMP/summary.md"
+            gh pr create --base main --head "$BRANCH" --title "$IN_KIND: $IN_ID" --body-file "$RUNNER_TEMP/summary.md"
           else
             pr=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number')
             if [ -n "$pr" ]; then gh pr comment "$pr" --body-file "$RUNNER_TEMP/summary.md"
-            else gh pr create --base main --head "$BRANCH" --title "Boundary set: $IN_ID" --body-file "$RUNNER_TEMP/summary.md"; fi
+            else gh pr create --base main --head "$BRANCH" --title "$IN_KIND: $IN_ID" --body-file "$RUNNER_TEMP/summary.md"; fi
           fi

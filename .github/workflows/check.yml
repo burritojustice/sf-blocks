@@ -16,3 +16,5 @@ jobs:
           for f in region.json data/aliases.json data/boundaries/*.json; do python3 -m json.tool "$f" > /dev/null || { echo "Bad JSON: $f"; exit 1; }; done
       - name: Boundary sets
         run: python3 scripts/get_layers.py --check
+      - name: Map layers
+        run: python3 scripts/build_tiles.py --check

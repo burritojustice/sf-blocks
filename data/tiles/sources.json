@@ -1,0 +1,174 @@
+{
+  "_doc": "Map layers built by scripts/build_tiles.py into data/tiles/<id>.pmtiles (or <id>.geojson when small), with <id>.stats.json and the manifest index.json. fields: name → \"type:source\" (see the script's --help). year: what the data describes, shown in the apps; confirm it by hand (a dataset's 'updated' date can be years after its data).",
+  "layers": [
+    {
+      "id": "curbs",
+      "label": "Curbs and islands",
+      "dataset": "emxt-b6yg",
+      "page": "https://data.sf.gov/City-Infrastructure/Curbs-and-Islands/emxt-b6yg",
+      "format": "geojson",
+      "year": "2016",
+      "fields": {
+        "kind": "lower:layer",
+        "id": "int:objectid"
+      },
+      "categories": [
+        "kind"
+      ],
+      "tiles": {
+        "minzoom": 13,
+        "maxzoom": 17
+      },
+      "ids": [
+        "id"
+      ]
+    },
+    {
+      "id": "street_trees",
+      "label": "Street trees",
+      "dataset": "tkzw-k3nq",
+      "page": "https://data.sf.gov/City-Infrastructure/San-Francisco-Street-Tree-Inventory/tkzw-k3nq",
+      "format": "csv",
+      "point": {
+        "lon": "longitude",
+        "lat": "latitude"
+      },
+      "year": "current",
+      "fields": {
+        "treeid": "int:treeid",
+        "species": "latin:species",
+        "common": "common:species",
+        "genus": "genus:species",
+        "dbh_in": "int:mapdbh",
+        "status": "text:legalstatus",
+        "planted": "date:planteddate",
+        "site": "text:siteinfo",
+        "caretaker": "text:waterresponsibility|planter",
+        "cnn": "int:cnn",
+        "address": "before_bar:description"
+      },
+      "categories": [
+        "genus",
+        "species",
+        "status",
+        "site",
+        "caretaker"
+      ],
+      "tiles": {
+        "minzoom": 15,
+        "maxzoom": 15,
+        "overview": {
+          "minzoom": 10,
+          "maxzoom": 14,
+          "fields": [
+            "genus",
+            "dbh_in"
+          ]
+        }
+      },
+      "ids": [
+        "treeid",
+        "cnn"
+      ],
+      "drop": {
+        "site": "^[\\s:]*$"
+      }
+    },
+    {
+      "id": "businesses",
+      "label": "Businesses",
+      "dataset": "kvj8-g7jh",
+      "page": "https://data.sf.gov/Economy-and-Community/Active-Business-Locations/kvj8-g7jh",
+      "format": "csv",
+      "point": {
+        "wkt": "location"
+      },
+      "year": "current",
+      "fields": {
+        "ttxid": "text:ttxid",
+        "dba": "text:dba_name",
+        "owner": "text:ownership_name",
+        "address": "text:full_business_address",
+        "zip": "text:business_zip",
+        "mail": "text:mailing_address_1",
+        "since": "date:location_start_date",
+        "lic": "text:lic_code_description",
+        "corridor": "text:business_corridor",
+        "cat": "bizcat:lic_code_descriptions_list|lic_code_description"
+      },
+      "drop": {
+        "dba": "^N/A$",
+        "mail": "^0000 "
+      },
+      "same_as": {
+        "mail": "address",
+        "owner": "dba"
+      },
+      "kinds": {
+        "file": "business_kinds.json",
+        "by": "owner"
+      },
+      "group": {
+        "by": "address",
+        "list": [
+          "dba",
+          "owner",
+          "mail",
+          "lic",
+          "cat",
+          "since",
+          "kind"
+        ],
+        "keep": [
+          "zip",
+          "corridor"
+        ]
+      },
+      "categories": [
+        "cat",
+        "lic",
+        "corridor",
+        "kind"
+      ],
+      "tiles": {
+        "minzoom": 15,
+        "maxzoom": 15,
+        "overview": {
+          "minzoom": 10,
+          "maxzoom": 14,
+          "fields": [
+            "n",
+            "food"
+          ]
+        }
+      }
+    },
+    {
+      "id": "buildings",
+      "label": "Building footprints",
+      "dataset": "ynuv-fyni",
+      "page": "https://data.sf.gov/Geographic-Locations-and-Boundaries/Building-Footprints/ynuv-fyni",
+      "format": "geojson",
+      "select": [
+        "sf16_bldgid",
+        "mblr",
+        "hgt_median_m",
+        "gnd_min_m",
+        "peak_1st_m",
+        "shape"
+      ],
+      "year": "2016 (heights from 2010 LiDAR)",
+      "fields": {
+        "id": "text:sf16_bldgid",
+        "blklot": "text:mblr",
+        "height_m": "num1:hgt_median_m",
+        "ground_m": "num1:gnd_min_m",
+        "peak_m": "num1:peak_1st_m"
+      },
+      "tiles": {
+        "minzoom": 15,
+        "maxzoom": 15
+      }
+    }
+  ]
+}

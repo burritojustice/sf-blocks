@@ -1,0 +1,21 @@
+{
+ "id": "curbs",
+ "records": 7195,
+ "built": "2026-11-03",
+ "fields": {
+  "kind": {
+   "type": "category",
+   "n": 7195,
+   "missing": 0,
+   "distinct": 6,
+   "values": {
+    "curbs": 5721,
+    "islands": 1168,
+    "curbs_alt": 298,
+    "ne-curb": 5,
+    "walkway": 2,
+    "se-curb": 1
+   }
+  }
+ }
+}
