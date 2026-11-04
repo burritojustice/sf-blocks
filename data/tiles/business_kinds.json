@@ -1,11 +1,11 @@
 {
-  "_doc": "Businesses that aren't storefronts you'd hand a notice to, by owner (ownership_name). Block Party hides these kinds unless 'Show all registrations' is on. 'owners': a kind for named companies. 'storefronts': owners at many addresses that are real storefronts (kept). 'rule': any other owner at this many addresses or more gets that kind, which covers landlords registering each rental without naming anyone here. Each build lists new owners over the rule in its report so they can be added to one list or the other.",
+  "_doc": "Businesses that aren't storefronts you'd hand a notice to, by owner (ownership_name). Block Party hides these kinds unless 'Show all registrations' is on. 'owners': a kind for named companies. 'storefronts': owners at many addresses that are real storefronts (kept). 'rule': any other owner at this many addresses or more gets that kind, which covers landlords registering each rental without naming anyone here. Each build lists new owners over the rule in its report so they can be added to one list or the other. 'naics': a kind for every business whose self-reported NAICS code starts with this (5311: lessors of real estate, people and companies registering rentals).",
   "kinds": {
     "contractor": "Contractor at a client's site",
     "parking": "Parking operator",
     "telecom": "Antenna or phone equipment",
     "atm": "ATM",
-    "property": "Property owner or manager",
+    "property": "Landlord or property manager",
     "multi-site": "Registered at many addresses"
   },
   "owners": {
@@ -53,5 +53,11 @@
     "Safeway Inc",
     "Peet's Coffee & Tea Inc"
   ],
-  "rule": { "min_addresses": 25, "kind": "multi-site" }
+  "rule": {
+    "min_addresses": 25,
+    "kind": "multi-site"
+  },
+  "naics": {
+    "5311": "property"
+  }
 }

@@ -1,7 +1,7 @@
 {
  "id": "businesses",
  "records": 100913,
- "built": "2026-11-03",
+ "built": "2026-11-04",
  "fields": {
   "since": {
    "type": "date",
@@ -229,6 +229,47 @@
    },
    "others": 295
   },
+  "sector": {
+   "type": "category",
+   "n": 77343,
+   "missing": 23570,
+   "distinct": 21,
+   "values": {
+    "Real estate and rental": 18013,
+    "Professional services": 12295,
+    "Food and lodging": 7484,
+    "Other services": 6004,
+    "Health care": 5954,
+    "Retail": 5659,
+    "Construction": 4250,
+    "Information": 3105,
+    "Arts and recreation": 2979,
+    "Admin and support": 2453,
+    "Finance and insurance": 2263,
+    "Manufacturing": 2142,
+    "Education": 1856,
+    "Wholesale": 1463,
+    "Transportation": 593,
+    "Agriculture": 281,
+    "Management": 201,
+    "Warehousing": 121,
+    "Public administration": 118,
+    "Utilities": 62,
+    "Mining": 47
+   }
+  },
+  "cat": {
+   "type": "category",
+   "n": 100913,
+   "missing": 0,
+   "distinct": 4,
+   "values": {
+    "other": 81704,
+    "food": 8556,
+    "services": 5953,
+    "retail": 4700
+   }
+  },
   "corridor": {
    "type": "category",
    "n": 12911,
@@ -264,27 +305,16 @@
     "Larkin Street, Lower Polk": 8
    }
   },
-  "cat": {
-   "type": "category",
-   "n": 100913,
-   "missing": 0,
-   "distinct": 3,
-   "values": {
-    "other": 89034,
-    "food": 6695,
-    "licensed": 5184
-   }
-  },
   "kind": {
    "type": "category",
-   "n": 1629,
-   "missing": 99284,
+   "n": 13191,
+   "missing": 87722,
    "distinct": 6,
    "values": {
+    "property": 11821,
     "contractor": 831,
     "parking": 262,
-    "property": 231,
-    "multi-site": 160,
+    "multi-site": 132,
     "telecom": 104,
     "atm": 41
    }

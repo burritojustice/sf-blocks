@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# sf-blocks 2026.11.03.2
+# sf-blocks 2026.11.04
 """Build map layers (points, lines, polygons too big for a plain GeoJSON file) into data/tiles/.
 
     python3 scripts/build_tiles.py                     every layer in data/tiles/sources.json
@@ -21,7 +21,8 @@ writes:
 
 Field types: text, lower, int, id (a number that's an identifier: no stats), num, num1 (one decimal), date
 (YYYY-MM-DD), latin / common / genus (from "Latin name :: Common name"), before_bar (text before "|"),
-bizcat (food / licensed / other, from license descriptions).
+bizcat (food / licensed, from license descriptions), bizcategory:lic,naics (food / retail / services / other), sector (a NAICS
+code's sector), and "a+b+c" to join fields (a street address with its city and ZIP).
 Layer options: drop {field: regex} empties matching values; same_as {field: other} empties a field equal
 to another; kinds {file, by} labels rows from a reviewed list (business_kinds.json); group {by, list, keep}
 makes one feature per value of `by` with a count `n`, `shown` (rows without a kind), `name` / `name_all` (the first row's name, for labels) and the rows as JSON in `items`; tiles {minzoom,
@@ -30,7 +31,7 @@ where dense) only its fields.
 
 Needs tippecanoe and tile-join on PATH (or --tippecanoe DIR) for tiled layers. Standard library only.
 """
-import argparse, csv, io, json, math, os, re, statistics, subprocess, sys, tempfile, time, urllib.request
+import argparse, csv, io, json, math, os, re, statistics, subprocess, sys, tempfile, time, urllib.parse, urllib.request
 from collections import Counter, defaultdict
 from datetime import date
 from pathlib import Path
@@ -61,6 +62,7 @@ def fetch(layer, raw_dir=None):
     """All rows from DataSF: CSV rows (dicts) or GeoJSON features, paged by row id."""
     ds, fmt = layer['dataset'], layer.get('format', 'csv')
     sel = ('&$select=' + ','.join(layer['select'])) if layer.get('select') else ''
+    if layer.get('where'): sel += '&$where=' + urllib.parse.quote(layer['where'])
     rows, off = [], 0
     raw = open(Path(raw_dir) / f"{layer['id']}.{'csv' if fmt == 'csv' else 'geojsonl'}", 'w') if raw_dir else None
     while True:
@@ -100,7 +102,7 @@ def convert(kind, v):
     v = v.strip() if isinstance(v, str) else v
     if v == '': return None
     if isinstance(v, dict): v = v.get('url') or json.dumps(v)
-    if kind in ('text',): return v
+    if kind in ('text', 'naics'): return v
     if kind == 'lower': return v.lower()
     if kind in ('int', 'id'):
         try: return int(float(v))
@@ -117,7 +119,26 @@ def convert(kind, v):
     if kind == 'genus': return species_parts(v)[2]
     if kind == 'before_bar': return v.split('|')[0].strip() or None
     if kind == 'bizcat': return 'food' if FOOD.search(v) else 'licensed'
+    if kind == 'sector': return SECTORS.get(re.sub(r'\D', '', v)[:2])
     raise SystemExit(f'unknown field type {kind}')
+
+
+# NAICS sectors (first two digits), for businesses
+SECTORS = {'11': 'Agriculture', '21': 'Mining', '22': 'Utilities', '23': 'Construction', '31': 'Manufacturing', '32': 'Manufacturing',
+           '33': 'Manufacturing', '42': 'Wholesale', '44': 'Retail', '45': 'Retail', '48': 'Transportation', '49': 'Warehousing',
+           '51': 'Information', '52': 'Finance and insurance', '53': 'Real estate and rental', '54': 'Professional services',
+           '55': 'Management', '56': 'Admin and support', '61': 'Education', '62': 'Health care', '71': 'Arts and recreation',
+           '72': 'Food and lodging', '81': 'Other services', '92': 'Public administration'}
+
+
+def business_category(lic, naics):
+    """food (restaurants, bars, markets, caterers: by license or NAICS 722), retail (NAICS 44–45), services (81: hair,
+    nails, repair, laundry…), or other."""
+    n = re.sub(r'\D', '', naics or '')
+    if (lic and FOOD.search(lic)) or n.startswith('722'): return 'food'
+    if n[:2] in ('44', '45'): return 'retail'
+    if n[:2] == '81': return 'services'
+    return 'other'
 
 
 def field_types(layer):
@@ -131,6 +152,12 @@ def props_of(layer, src):
     for name, spec in layer['fields'].items():
         kind, _, cols = spec.partition(':')
         val = None
+        if kind == 'bizcategory':            # license descriptions, NAICS code
+            a, b = cols.split(',')
+            out[name] = business_category(src.get(a) or '', src.get(b) or ''); continue
+        if '+' in cols:                       # several fields joined: "1 Main St, Oakland, CA 94612"
+            parts = [str(src.get(c) or '').strip() for c in cols.split('+')]
+            out[name] = ', '.join(x for x in [parts[0], ' '.join(x for x in parts[1:] if x)] if x) or None; continue
         for c in cols.split('|'):
             val = convert(kind, src.get(c))
             if val is not None: break
@@ -140,6 +167,8 @@ def props_of(layer, src):
         if out.get(f) is not None and re.search(rx, str(out[f])): out[f] = None
     for f, other in (layer.get('same_as') or {}).items():
         if out.get(f) and out.get(other) and str(out[f]).strip().lower() == str(out[other]).strip().lower(): out[f] = None
+    for f, other in (layer.get('empty_with') or {}).items():     # mail_place goes when mail does
+        if not out.get(other): out[f] = None
     return out
 
 
@@ -174,9 +203,12 @@ def apply_kinds(layer, records):
     addrs = defaultdict(set)
     for p, _ in records: addrs[p.get(by)].add(p.get('address'))
     over = sorted((len(a), o) for o, a in addrs.items() if o and len(a) >= rule.get('min_addresses', 1e9))
+    by_naics = sorted((conf.get('naics') or {}).items(), key=lambda kv: -len(kv[0]))
     for p, _ in records:
         o = p.get(by)
-        p['kind'] = named.get(o) or (None if o in keep else rule.get('kind') if o and len(addrs[o]) >= rule.get('min_addresses', 1e9) else None)
+        n = re.sub(r'\D', '', p.get('naics') or '')
+        p['kind'] = (named.get(o) or (None if o in keep else next((k for pre, k in by_naics if n.startswith(pre)), None))
+                     or (None if o in keep else rule.get('kind') if o and len(addrs[o]) >= rule.get('min_addresses', 1e9) else None))
     # owners the rule caught that aren't in either list yet, for the report
     return [(n, o) for n, o in reversed(over) if o not in named and o not in keep]
 
@@ -211,6 +243,9 @@ def group(layer, records):
                  # for map labels: the first storefront's name (name), or the first of any (name_all)
                  'name': first, 'name_all': next((label(i) for i in items if label(i)), None),
                  'food': any(p.get('cat') == 'food' for p, _ in rows), 'items': json.dumps(items, separators=(',', ':'), ensure_ascii=False)}
+        # the address's color: its most storefront-like business that isn't hidden (food, retail, services, other)
+        cats = {p.get('cat') for p, _ in rows if not p.get('kind')} or {p.get('cat') for p, _ in rows}
+        props['cat'] = next((c for c in ('food', 'retail', 'services', 'other') if c in cats), 'other')
         for f in g.get('keep', []):
             v = Counter(p.get(f) for p, _ in rows if p.get(f)).most_common(1)
             if v: props[f] = v[0][0]
@@ -323,12 +358,12 @@ def build(layer, src_rows, bbox, tdir):
     (OUT / f"{layer['id']}.stats.json").write_text(json.dumps(stats, indent=1, ensure_ascii=False) + '\n')
     gtypes = Counter(g['type'].replace('Multi', '') for _, g in feats)
     # field → number, date, id or text; grouped layers list each row's fields under items_fields
-    simple = lambda t: 'number' if t in ('int', 'num', 'num1') else t if t in ('date', 'id') else 'text'
+    simple = lambda t: 'number' if t in ('int', 'num', 'num1') else t if t in ('date', 'id') else 'text'   # naics, sector, category: text
     rowf = {**{n: simple(t) for n, t in field_types(layer).items()}, **({'kind': 'text'} if layer.get('kinds') else {})}
     if layer.get('group'):
         g = layer['group']
         fields_out = {g['by']: 'text', **{f: rowf.get(f, 'text') for f in g.get('keep', [])},
-                      'n': 'count', 'shown': 'count', 'name': 'text', 'name_all': 'text', 'food': 'bool', 'items': 'json'}
+                      'n': 'count', 'shown': 'count', 'name': 'text', 'name_all': 'text', 'cat': 'text', 'food': 'bool', 'items': 'json'}
     else: fields_out = rowf
     entry = {'id': layer['id'], 'label': layer['label'], 'year': layer.get('year'), 'file': out.name,
              'format': 'pmtiles' if tiled else 'geojson', 'layer': layer['id'], 'bytes': out.stat().st_size,
