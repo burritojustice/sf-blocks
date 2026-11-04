@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# sf-blocks 2026.11.04
+# sf-blocks 2026.11.04.1
 """Build map layers (points, lines, polygons too big for a plain GeoJSON file) into data/tiles/.
 
     python3 scripts/build_tiles.py                     every layer in data/tiles/sources.json
@@ -250,7 +250,33 @@ def group(layer, records):
             v = Counter(p.get(f) for p, _ in rows if p.get(f)).most_common(1)
             if v: props[f] = v[0][0]
         feats.append((props, {'type': 'Point', 'coordinates': list(pts.most_common(1)[0][0])}))
-    return feats
+    return stack(g, feats) if g.get('stack') else feats
+
+
+# `stack`: groups that land on the same point become one feature (the city puts 1601 and 1603 Church on one
+# point, and every suite of an office building), so one dot can't hide another. Its first group (one with
+# storefronts, then by street number) gives the label, color and `by`; `addresses` (`by`, plural) counts the groups, and each
+# item carries its own `by` value.
+plural = lambda w: w + ('es' if w.endswith('s') else 's')
+
+
+def stack(g, feats):
+    by, at = g['by'], defaultdict(list)
+    for p, geom in feats: at[tuple(geom['coordinates'])].append(p)
+    num = lambda v: int(m.group()) if (m := re.match(r'\d+', str(v or ''))) else 0
+    out = []
+    for c, ps in at.items():
+        if len(ps) == 1:
+            out.append((ps[0], {'type': 'Point', 'coordinates': list(c)})); continue
+        ps.sort(key=lambda p: (p['shown'] == 0, num(p.get(by)), str(p.get(by))))
+        items = [{**i, by: p.get(by)} for p in ps for i in json.loads(p['items'])]
+        cats = {p['cat'] for p in ps if p['shown']} or {p['cat'] for p in ps}
+        q = {**ps[0], plural(by): len(ps), 'n': sum(p['n'] for p in ps), 'shown': sum(p['shown'] for p in ps),
+             'name': next((p['name'] for p in ps if p['name']), None), 'name_all': next((p['name_all'] for p in ps if p['name_all']), None),
+             'food': any(p['food'] for p in ps), 'cat': next(k for k in ('food', 'retail', 'services', 'other') if k in cats),
+             'items': json.dumps(items, separators=(',', ':'), ensure_ascii=False)}
+        out.append((q, {'type': 'Point', 'coordinates': list(c)}))
+    return out
 
 
 # ---------- stats ----------
@@ -363,6 +389,7 @@ def build(layer, src_rows, bbox, tdir):
     if layer.get('group'):
         g = layer['group']
         fields_out = {g['by']: 'text', **{f: rowf.get(f, 'text') for f in g.get('keep', [])},
+                      **({plural(g['by']): 'count'} if g.get('stack') else {}),
                       'n': 'count', 'shown': 'count', 'name': 'text', 'name_all': 'text', 'cat': 'text', 'food': 'bool', 'items': 'json'}
     else: fields_out = rowf
     entry = {'id': layer['id'], 'label': layer['label'], 'year': layer.get('year'), 'file': out.name,
@@ -374,7 +401,8 @@ def build(layer, src_rows, bbox, tdir):
              'retrieved': date.today().isoformat()}
     if layer.get('group'):
         entry['grouped_by'] = layer['group']['by']
-        entry['items_fields'] = {f: rowf.get(f, 'text') for f in layer['group']['list']}
+        entry['items_fields'] = {f: rowf.get(f, 'text') for f in layer['group']['list'] + ([layer['group']['by']] if layer['group'].get('stack') else [])}
+        if layer['group'].get('stack'): entry['stacked'] = True
     log(f"  → data/tiles/{out.name}: {len(feats):,} features from {len(records):,} rows ({skipped:,} outside the region or without a location), "
         f"{out.stat().st_size / 1e6:.1f} MB")
     return entry, review, skipped

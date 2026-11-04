@@ -63,9 +63,9 @@
       "file": "businesses.pmtiles",
       "format": "pmtiles",
       "layer": "businesses",
-      "bytes": 6324905,
-      "features": 69727,
-      "records": 100913,
+      "bytes": 5813989,
+      "features": 42843,
+      "records": 100952,
       "geometry": "Point",
       "minzoom": 10,
       "maxzoom": 15,
@@ -74,6 +74,7 @@
         "address": "text",
         "zip": "text",
         "corridor": "text",
+        "addresses": "count",
         "n": "count",
         "shown": "count",
         "name": "text",
@@ -97,8 +98,10 @@
         "naics": "text",
         "cat": "text",
         "since": "date",
-        "kind": "text"
-      }
+        "kind": "text",
+        "address": "text"
+      },
+      "stacked": true
     },
     {
       "id": "buildings",

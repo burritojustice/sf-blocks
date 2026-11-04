@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.11.04.1
+- **Businesses stacked by point:** the city puts many addresses on the same point (1601 and 1603 Church St; every suite of an office building; mailbox stores like 548 Market St with 250 addresses). About half of all business addresses shared a point with another, so one dot hid the others. With `"stack": true` in a layer's `group`, groups on the same point become one feature: `n`, `shown`, color and label cover them all (storefronts first, then by street number), `addresses` counts the addresses, and each item in `items` carries its own `address`. Points with one address are unchanged.
+
 ## 2026.11.04
 - **Businesses from Registered Business Locations** (`g8m3-pdis`), limited to open locations (no location or business end date): the same 127,981 rows as Active Business Locations, plus what that view leaves out:
   - **Industry:** each business's self-reported NAICS code (`naics`, filled for 79%) and its sector (`sector`: Retail, Real estate and rental, Professional services…).
