@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.11.03.2
+- **Business names on each address point:** `name` (the first storefront's business name) and `name_all` (the first of any), so the apps can label addresses on the map without reading the `items` list. `businesses.pmtiles` is 5.6 MB (was 4.6).
+
 ## 2026.11.03
 - **Map layers** in `data/tiles/`, built by the new `scripts/build_tiles.py` from `data/tiles/sources.json`, and listed in `region.json` as `tiles`:
   - **Street trees** (`street_trees.pmtiles`, 4.8 MB): 138,778 trees with species, genus, trunk diameter, status, planted date, site, caretaker, CNN and address. Current.

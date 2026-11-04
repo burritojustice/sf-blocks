@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# sf-blocks 2026.11.03
+# sf-blocks 2026.11.03.2
 """Build map layers (points, lines, polygons too big for a plain GeoJSON file) into data/tiles/.
 
     python3 scripts/build_tiles.py                     every layer in data/tiles/sources.json
@@ -24,7 +24,7 @@ Field types: text, lower, int, id (a number that's an identifier: no stats), num
 bizcat (food / licensed / other, from license descriptions).
 Layer options: drop {field: regex} empties matching values; same_as {field: other} empties a field equal
 to another; kinds {file, by} labels rows from a reviewed list (business_kinds.json); group {by, list, keep}
-makes one feature per value of `by` with a count `n` and the rows as JSON in `items`; tiles {minzoom,
+makes one feature per value of `by` with a count `n`, `shown` (rows without a kind), `name` / `name_all` (the first row's name, for labels) and the rows as JSON in `items`; tiles {minzoom,
 maxzoom, overview: {minzoom, maxzoom, fields}}: the detail zooms carry every field, the overview (thinned
 where dense) only its fields.
 
@@ -191,7 +191,11 @@ def group(layer, records):
         pts = Counter(tuple(geom['coordinates']) for _, geom in rows)
         items = [{f: p.get(f) for f in g['list'] if p.get(f) is not None} for p, _ in rows]
         items.sort(key=lambda i: (i.get('kind') is not None, (i.get('dba') or i.get('owner') or '').lower()))
+        label = lambda i: i.get('dba') or i.get('owner')
+        first = next((label(i) for i in items if not i.get('kind') and label(i)), None)
         props = {by: key, 'n': len(rows), 'shown': sum(1 for p, _ in rows if not p.get('kind')),
+                 # for map labels: the first storefront's name (name), or the first of any (name_all)
+                 'name': first, 'name_all': next((label(i) for i in items if label(i)), None),
                  'food': any(p.get('cat') == 'food' for p, _ in rows), 'items': json.dumps(items, separators=(',', ':'), ensure_ascii=False)}
         for f in g.get('keep', []):
             v = Counter(p.get(f) for p, _ in rows if p.get(f)).most_common(1)
@@ -310,7 +314,7 @@ def build(layer, src_rows, bbox, tdir):
     if layer.get('group'):
         g = layer['group']
         fields_out = {g['by']: 'text', **{f: rowf.get(f, 'text') for f in g.get('keep', [])},
-                      'n': 'count', 'shown': 'count', 'food': 'bool', 'items': 'json'}
+                      'n': 'count', 'shown': 'count', 'name': 'text', 'name_all': 'text', 'food': 'bool', 'items': 'json'}
     else: fields_out = rowf
     entry = {'id': layer['id'], 'label': layer['label'], 'year': layer.get('year'), 'file': out.name,
              'format': 'pmtiles' if tiled else 'geojson', 'layer': layer['id'], 'bytes': out.stat().st_size,

@@ -63,7 +63,7 @@
       "file": "businesses.pmtiles",
       "format": "pmtiles",
       "layer": "businesses",
-      "bytes": 4564484,
+      "bytes": 5625521,
       "features": 69727,
       "records": 100913,
       "geometry": "Point",
@@ -76,6 +76,8 @@
         "corridor": "text",
         "n": "count",
         "shown": "count",
+        "name": "text",
+        "name_all": "text",
         "food": "bool",
         "items": "json"
       },
