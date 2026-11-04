@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026.11.04
+- **Businesses from Registered Business Locations** (`g8m3-pdis`), limited to open locations (no location or business end date): the same 127,981 rows as Active Business Locations, plus what that view leaves out:
+  - **Industry:** each business's self-reported NAICS code (`naics`, filled for 79%) and its sector (`sector`: Retail, Real estate and rental, Professional services…).
+  - **Category** (`cat`): food & drink (by license or NAICS 722), retail (44–45), services (81: hair, nails, repair, laundry…), or everything else. Each address point is colored by its most storefront-like business: food, then retail, services, other. In SF: 8,556 food, 4,700 retail, 5,953 services, 81,704 other.
+  - **Mailing city and ZIP** (`mail_place`), when the mailing address isn't the business's own.
+- **Landlords by industry:** `business_kinds.json` gains `naics`: every business coded 5311 (lessors of real estate: people and companies registering rentals, 11,821 in SF) gets the kind "property", hidden in Block Party until "Show all registrations".
+- `build_tiles.py`: a layer can have a `where` filter for its download, `empty_with`, and fields joined with `+`.
+
 ## 2026.11.03.2
 - **Business names on each address point:** `name` (the first storefront's business name) and `name_all` (the first of any), so the apps can label addresses on the map without reading the `items` list. `businesses.pmtiles` is 5.5 MB (was 4.6).
 - **No personal names as labels:** a business name is used for a label only when it reads as a company (Inc, LLC, Co…) or differs from the owner's name. A sole proprietor's or landlord's own name ("Anne Perkins" for owner "Perkins Anne M") is left off the map; it stays on cards and in exports. In a Mission tile, 1,030 of 1,308 points get a label. A few bare personal names still get through (a stylist's name under a salon's registration, say).

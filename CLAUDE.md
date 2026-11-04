@@ -5,6 +5,7 @@ The **main copy** of San Francisco's map data: boundaries, aliases, city layers,
 ## Working rules
 
 - **Ship as a PR:** make a branch, commit, push it, and open the PR (`gh api repos/burritojustice/sf-blocks/pulls -f head=<branch> -f base=main ...`; GraphQL is blocked here).
+- **Check a PR is still open before pushing to its branch** (`gh api repos/burritojustice/sf-blocks/pulls/<n> --jq .merged_at`). A commit pushed after the merge never reaches `main`, and editing the closed PR hides it. If it was merged, branch from `main`, cherry-pick, and open a new PR.
 - **Version every change:** bump `VERSION` (date style, `2026.10.23`), the version in each changed script's first line, and add an entry at the top of `CHANGELOG.md`. Docs-only changes don't need it.
 - **Change here first:** then copy the files into Block Party (and other users) with their "Copied from burritojustice/sf-blocks <version>" header, and open a PR there too.
 - **Dates are YYYY-MM-DD:** `build_data.py`'s `ymd()` normalizes both the API's and the Export's date formats.
