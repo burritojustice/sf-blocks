@@ -8,6 +8,7 @@ sf-blocks is the one copy of San Francisco's map data that Joiner, Block Party a
 | --- | --- | --- |
 | Areas people join rows to or want to know a block is in: districts, neighborhoods, historic districts | `data/boundaries/` | `scripts/add_boundary_set.py` (below) |
 | Points or lines for a map layer: schools, stations, bike lanes | `data/layers/` | `scripts/build_layers.py` |
+| Big map layers: street trees, businesses, curbs, building footprints | `data/tiles/` | `scripts/build_tiles.py` (below) |
 | A public contact list that goes with areas (published by the city or the group itself) | `reference/<name>/` | by hand, with a README; never private contacts |
 | Other names people use for an area ("Calle 24") | `data/aliases.json`, under the set's id | by hand |
 
@@ -76,6 +77,25 @@ Edit the entry in a pull request, then run the Action with just the set id to re
 
 **Data from somewhere else** (school enrollment from the state, say) is a different case: it's its own dataset with its own source and date. The plan is to save it in `data/uploads/` like any download, and add a `"join"` step that matches it to the set by a shared key (the school's CDS code) and copies the chosen fields in. It isn't built yet.
 
+## Adding a map layer
+
+For points, lines or polygons people look at on the map rather than join rows to: trees, businesses, curbs, building footprints.
+
+1. **Actions → Add or refresh data → Run workflow**, Kind **Map layer**, a new **Set id** (`street_trees`), the DataSF dataset in **Source**, and the **Year** the data describes (`2016`, or `current`). Socrata's "updated" date can be years after the data itself (building footprints say 2026; they're from 2016), so check it.
+2. The first run doesn't build anything. Its pull request has a **field report** (each field's type, how often it's filled, how many distinct values, examples, and keep or drop) and a size estimate, and adds a first entry for the layer to `data/tiles/sources.json`.
+3. On the PR's branch, edit that entry:
+   - `fields`: remove what you don't want, and set each one's type, `int`, `num1` (one decimal), `date`, `id` (a number that's an identifier) or `text`. `"a|b"` uses the first of two fields with a value.
+   - `categories`: fields to count each value of (species, license type), for chips and legends.
+   - `tiles`: `minzoom` / `maxzoom` for full detail (15, like Parcels, by default), and an optional `overview` (zooms 10–14 with only a few fields, thinned where dense) to show the spread when zoomed out.
+4. Run the action again **on that branch** with the same id. It downloads every row, keeps the chosen fields, and writes `data/tiles/<id>.pmtiles` (or `.geojson` when small: under 20,000 features and 5 MB), `<id>.stats.json` and the manifest `index.json`. The raw download goes in `data/uploads/` when it's under 10 MB, and otherwise into a GitHub release (archived, not served to the apps).
+5. Check the report in the PR, then merge.
+
+A layer already in `sources.json` is rebuilt from its dataset whenever the action runs with its id.
+
+**Stats** (`<id>.stats.json`): for each number and date field, min, max, mean, median, standard deviation and quantile breaks for 5, 7 and 10 classes (dates also by year); for each category field, how many rows have each value (the top 60, then a count of the rest). The apps use these for legends, palettes and chips without reading the tiles.
+
+**Businesses** are grouped by address: one point per address, with `n` businesses and each one's name, owner, mailing address, license and start date in `items`. Owners that aren't storefronts you'd hand a notice to (cafeteria contractors, parking operators, antennas, ATMs, landlords) are labelled from the reviewed list `data/tiles/business_kinds.json`; any other owner at 25+ addresses gets "Registered at many addresses" until it's added to `owners` or `storefronts` there. Each build's report lists new ones (companies by name; people only counted).
+
 ## After it's merged
 
 - **Joiner:** the set appears right away in the tab given (Other by default), named by its title. Nothing to change in Joiner.
@@ -86,7 +106,7 @@ Edit the entry in a pull request, then run the Action with just the set id to re
 
 - **Pull requests, not direct commits to `main`.** The apps read `main` live; the **Check data** action runs on every pull request you open, and the Add action runs the same checks on its own pull requests.
 - **Don't rename or move published files.** Live links would break. Add the new path, update the apps, then remove the old one.
-- **Public data only.** No names, emails or phone numbers of private people. Contact lists only when the city or the organization publishes them, with `source_url` and `checked` columns.
+- **Public data only.** No names, emails or phone numbers of private people, except in registries the city itself publishes (Active Business Locations), which are kept because they're how organizers reach their neighbors. Other contact lists only when the city or the organization publishes them, with `source_url` and `checked` columns.
 - **Note the source.** The set's `page` in `sources.json` links to where it came from; the action fills it in for DataSF.
 - **Version:** the action bumps `VERSION` and adds a `CHANGELOG.md` entry. By hand, do the same.
 

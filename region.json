@@ -27,6 +27,7 @@
   "boundaries": "data/boundaries/index.json",
   "aliases": "data/aliases.json",
   "layers": "data/layers/",
+  "tiles": "data/tiles/index.json",
   "streets": {
     "segments": "data/sf_streets.csv",
     "intersections": "data/sf_intersections.csv",
