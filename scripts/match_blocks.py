@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# sf-blocks 2026.10.06: master copy. Projects that use it (civic-joy-fund/block-party, burritojustice/sf-striping)
+# sf-blocks 2026.11.05: master copy. Projects that use it (civic-joy-fund/block-party, burritojustice/sf-striping)
 # keep their own copies; change it here, bump VERSION, then copy it into them.
 """
 Match free-text block descriptions ("Sanchez between 27th St and Duncan", "100 block of Winfield",
@@ -8,6 +8,11 @@ Match free-text block descriptions ("Sanchez between 27th St and Duncan", "100 b
 Usage (from the repo root):
   python3 scripts/match_blocks.py applications.csv
   python3 scripts/match_blocks.py applications.csv --column "Block you want to party on" --out matched.csv
+  python3 scripts/match_blocks.py intersections.csv --street Street --cross Cross
+
+With --street and --cross, the street names are already in two columns: one cross street ("Hayes",
+"Octavia") is read as an intersection, two ("Sansome", "Bush and Sutter") as the block between them.
+--cross2 names a column holding the second cross street, if there is one.
 
 Reads data/streets.json (built by scripts/build_data.py). Standard library only.
 
@@ -614,17 +619,38 @@ def point_wkt(pts):
     return "MULTIPOINT (" + ", ".join(f"({x:.5f} {y:.5f})" for x, y in pts) + ")"
 
 
+def from_columns(street, cross, cross2=""):
+    """Street names already split into columns -> a description parse() reads: "Hayes & Octavia" for one cross
+    street, "Sansome between Bush and Sutter" for two (in the cross column, or cross and cross2)."""
+    street, cross, cross2 = ((v or "").strip() for v in (street, cross, cross2))
+    if not street:
+        return cross
+    crosses = [c for c in ([cross, cross2] if cross2 else re.split(r"\s*(?:&|/|,|\band\b|\bto\b)\s*", cross, flags=re.I)) if c.strip()]
+    if len(crosses) >= 2:
+        return f"{street} between {crosses[0]} and {crosses[1]}"
+    return f"{street} & {crosses[0]}" if crosses else street
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("csv")
     ap.add_argument("--column", default="Block you want to party on")
     ap.add_argument("--data", default=os.path.join(ROOT, "data", "streets.json"))
+    ap.add_argument("--street", help="column with the street name, when streets are in separate columns")
+    ap.add_argument("--cross", help="column with the cross street (or two: \"Bush and Sutter\")")
+    ap.add_argument("--cross2", help="column with a second cross street, for a block between two")
     ap.add_argument("--out")
     a = ap.parse_args()
+    if bool(a.street) != bool(a.cross):
+        sys.exit("--street and --cross go together")
     st = Streets(*load(a.data))
     rows = list(csv.DictReader(open(a.csv, newline="", encoding="utf-8-sig")))
-    if rows and a.column not in rows[0]:
-        sys.exit(f'column "{a.column}" not found; columns are: {list(rows[0])}')
+    need = [c for c in (a.street, a.cross, a.cross2) if c] if a.street else [a.column]
+    for c in need:
+        if rows and c not in rows[0]:
+            sys.exit(f'column "{c}" not found; columns are: {list(rows[0])}')
+    describe = (lambda row: from_columns(row.get(a.street), row.get(a.cross), row.get(a.cross2) if a.cross2 else "")) \
+        if a.street else (lambda row: row.get(a.column, "") or "")
     out_path = a.out or re.sub(r"\.csv$", "", a.csv) + "_matched.csv"
     extra = ["source_row", "part", "parts", "matched_text", "type", "cnn", "nearby_cnns", "street", "from_street", "to_street",
              "address_low", "address_high", "address_ranges", "supervisor_district", "nhood", "wkt",
@@ -635,7 +661,7 @@ def main():
         w.writeheader()
         for i, row in enumerate(rows, 1):
             try:
-                text = row.get(a.column, "") or ""
+                text = describe(row)
                 results = parse(st, text)
                 cap = "low" if len(text) > 400 else "medium" if len(text) > 250 else None
                 for r in results:
@@ -643,7 +669,7 @@ def main():
                         r["confidence"] = cap
                         r["notes"].append("long description; check this is the main location")
             except Exception as e:     # never lose a row
-                results = [result("none", [], "none", "", row.get(a.column, "")[:80], notes=[f"error: {e}"])]
+                results = [result("none", [], "none", "", describe(row)[:80], notes=[f"error: {e}"])]
             for p, r in enumerate(results, 1):
                 segs = sorted({s["cnn"]: s for s in r["segs"]}.values(), key=lambda s: s["cnn"])
                 nodes = r.get("nodes", [])
