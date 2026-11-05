@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.11.05
+- **`match_blocks.py` reads streets from two columns:** `--street Street --cross Cross` for a CSV where the street and cross street are already split out. One cross street is matched as an intersection ("Hayes" / "Octavia"); two ("Sansome" / "Bush and Sutter") as the block between them, and `--cross2` takes the second from its own column. Spelling fixes work as before ("Divisdero" → Divisadero). The free-text `--column` mode is unchanged.
+
 ## 2026.11.04.1
 - **Businesses stacked by point:** the city puts many addresses on the same point (1601 and 1603 Church St; every suite of an office building; mailbox stores like 548 Market St with 250 addresses). About half of all business addresses shared a point with another, so one dot hid the others. With `"stack": true` in a layer's `group`, groups on the same point become one feature: `n`, `shown`, color and label cover them all (storefronts first, then by street number), `addresses` counts the addresses, and each item in `items` carries its own `address`. Points with one address are unchanged.
 

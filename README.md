@@ -117,7 +117,10 @@ Run on a CSV:
 ```
 python3 scripts/match_blocks.py applications.csv                       # writes applications_matched.csv
 python3 scripts/match_blocks.py applications.csv --column "Location"   # a different column
+python3 scripts/match_blocks.py intersections.csv --street Street --cross Cross   # names already in two columns
 ```
+
+When the street and cross street are already separate columns, `--street` and `--cross` name them. One cross street ("Hayes", "Octavia") is matched as an intersection; two in the cross column ("Sansome", "Bush and Sutter") as the block between them. `--cross2` names a column with a second cross street.
 
 Output adds: `type` (block or intersection), `cnn`, `nearby_cnns` (for intersections), street, cross streets, address range, supervisor district, neighborhood, `wkt` (LINESTRING / POINT), `confidence` (high / medium / low / none), `method`, and `notes`. A description naming several blocks becomes several rows.
 
