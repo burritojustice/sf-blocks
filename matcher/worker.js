@@ -1,14 +1,13 @@
 // Matcher's background worker (a module worker, as Pyodide needs): runs sf-blocks' own Python matchers (scripts/match_blocks.py and
 // scripts/match_polygons.py) in Pyodide, so the page and the command line give the same answers.
-// Messages in:  {id, op: 'init', base, pyodide?} | {id, op: 'rows', rows, mode, start} | {id, op: 'polygons', features, nameField}
+// Messages in:  {id, op: 'init', base, pyodide}   (pyodide: the Pyodide folder to load; matcher.js picks it) | {id, op: 'rows', rows, mode, start} | {id, op: 'polygons', features, nameField}
 //               {id, op: 'manual', cnns, nodes, text}
 // Messages out: {id, ok, result} | {id, error} | {op: 'status', text} while starting up.
-const PYODIDE = 'https://cdn.jsdelivr.net/npm/pyodide@314.0.7/';
 let py, ready;
 
 const say = text => postMessage({ op: 'status', text });
 
-async function start(base, pyodide = PYODIDE) {
+async function start(base, pyodide) {
     say('Loading Python…');
     const { loadPyodide } = await import(pyodide + 'pyodide.mjs');
     py = await loadPyodide({ indexURL: pyodide });
@@ -51,7 +50,7 @@ def run_manual(cnns_json, nodes_json, text):
 onmessage = async ({ data: m }) => {
     try {
         let result;
-        if (m.op === 'init') result = await (ready ||= start(m.base, m.pyodide || undefined));
+        if (m.op === 'init') result = await (ready ||= start(m.base, m.pyodide));
         else {
             await ready;
             if (m.op === 'rows')

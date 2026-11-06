@@ -2,7 +2,7 @@
 // own Python scripts (run in a worker with Pyodide); show and fix results on a map and in a table; save
 // the enhanced file. Nothing leaves the browser except requests for the map and the libraries.
 'use strict';
-const MATCHER_VERSION = '1';
+const MATCHER_VERSION = '2';
 const BASE = new URL('../', location.href).href;          // the sf-blocks site root
 const STYLE = key => `https://api.protomaps.com/styles/v5/white/en.json?key=${key}`;
 const DEFAULT_KEY = '071e272e8d5e13b7';                   // burritojustice.github.io (localhost accepts any key)
@@ -34,33 +34,62 @@ const S = {
 };
 
 // ------------------------------------------------------------------ worker
-const worker = new Worker('worker.js', { type: 'module' });
-let nextId = 1;
+// Pyodide 314 (Python 3.14) crashes while starting on Safari 18 ("Out of bounds memory access" in
+// _PyRun_SimpleString); Safari 26 is fine. When a version fails to start, Matcher starts a fresh worker
+// with the next one. Pyodide 0.27 (Python 3.12) works on Safari 18, and the scripts give the same
+// answers on 3.12.
+const PYODIDE_VERSIONS = ['https://cdn.jsdelivr.net/npm/pyodide@314.0.7/', 'https://cdn.jsdelivr.net/npm/pyodide@0.27.7/'];
+// ?pyodide=<url>[,<url>…] loads Python from other copies, in that order (for tests without the CDN).
+const PYODIDE_OVERRIDE = new URLSearchParams(location.search).get('pyodide');
+const PYODIDE_URLS = PYODIDE_OVERRIDE ? PYODIDE_OVERRIDE.split(',').map(u => new URL(u, location.href).href) : PYODIDE_VERSIONS;
+let worker, nextId = 1;
 const waiting = new Map();
-worker.onmessage = ({ data: m }) => {
-    if (m.op === 'status') { $('engine').textContent = m.text; return; }
-    const w = waiting.get(m.id); waiting.delete(m.id);
-    if (!w) return;
-    m.error ? w.reject(new Error(m.error)) : w.resolve(m.result);
-};
+function newWorker() {
+    worker?.terminate();
+    for (const w of waiting.values()) w.reject(new Error('Python stopped'));
+    waiting.clear();
+    worker = new Worker('worker.js', { type: 'module' });
+    worker.onmessage = ({ data: m }) => {
+        if (m.op === 'status') { $('engine').textContent = m.text; return; }
+        const w = waiting.get(m.id); waiting.delete(m.id);
+        if (!w) return;
+        m.error ? w.reject(new Error(m.error)) : w.resolve(m.result);
+    };
+    // a worker that crashes outright (rather than reporting an error) fails whatever was waiting on it
+    worker.onerror = e => { for (const w of waiting.values()) w.reject(new Error(e.message || 'Python stopped')); waiting.clear(); };
+}
 const ask = (op, data = {}) => new Promise((resolve, reject) => {
     const id = nextId++;
     waiting.set(id, { resolve, reject });
     worker.postMessage({ id, op, ...data });
 });
-// ?pyodide=<url> loads Python from another copy (for tests without the CDN).
-const PYODIDE_OVERRIDE = new URLSearchParams(location.search).get('pyodide');
-const engine = ask('init', { base: BASE, pyodide: PYODIDE_OVERRIDE && new URL(PYODIDE_OVERRIDE, location.href).href }).then(info => {
+async function startEngine() {
+    let last;
+    for (const [i, url] of PYODIDE_URLS.entries()) {
+        newWorker();
+        try {
+            const info = await ask('init', { base: BASE, pyodide: url });
+            if (i) console.info(`[matcher] started with ${url} after: ${last.message}`);
+            return info;
+        } catch (e) {
+            last = e;
+            console.warn(`[matcher] Python from ${url} didn't start: ${e.message}`);
+            if (i + 1 < PYODIDE_URLS.length) $('engine').textContent = 'Trying another Python…';
+        }
+    }
+    throw last;
+}
+const engine = startEngine().then(info => {
     S.version = info.version;
     $('engine').textContent = `sf-blocks ${info.version} · ready`;
     $('engine').classList.add('ready');
-    $('logo').title = `Matcher ${MATCHER_VERSION} · sf-blocks ${info.version} · Python ${info.python}`;
+    $('logo').title = `Matcher ${MATCHER_VERSION} · sf-blocks ${info.version} · Pyodide ${info.python}`;
     return info;
 }).catch(e => {
     $('engine').textContent = "Python didn't start";
     $('engine').classList.add('bad');
     $('engine').title = e.message;
-    toast(`Matching can't start: ${e.message}. Try reloading the page.`, null, 8000);
+    toast(`Matching can't start in this browser (${e.message}). Updating the browser, or trying Chrome or Firefox, should fix it.`, null, 12000);
     throw e;
 });
 

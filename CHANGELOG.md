@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.11.05.2
+- **Matcher works on Safari 18.** Pyodide 314 crashes while starting there ("Out of bounds memory access"); Safari 26, Chrome and Firefox are fine. When Python fails to start, Matcher now starts again with Pyodide 0.27 (Python 3.12), which gives the same results; tested identical to the command line. If neither starts, it says to update the browser or try Chrome or Firefox.
+
 ## 2026.11.05.1
 - **Matcher** (`matcher/`, at https://burritojustice.github.io/sf-blocks/matcher/): a web page that runs `match_blocks.py` and `match_polygons.py` in the browser with Pyodide. Drop in a CSV, Excel workbook or GeoJSON, paste a link or rows, pick the columns, and see the results on a map and in a table, with the rows that need a look first. Fix a row by clicking the right block or intersection, or mark it as no match; for polygons, add or remove blocks. Save as CSV (the command line's columns), GeoJSON or Excel. Files never leave the browser.
 - **`match_blocks.py` streams:** `match_rows()` matches one row at a time and yields its results, and the command line writes each row as it's matched instead of reading the whole file first. `manual()` gives the output columns for blocks or intersections picked by hand. Output is byte-identical to before.
