@@ -130,3 +130,28 @@ td.check input { margin: 0; }
 tr.only td { color: var(--muted); }
 .conf.polygon { background: #5b6475; }
 #poly-back { align-self: flex-start; }
+
+/* Load card once a file is in: one line with the file and two buttons */
+.load-inputs { display: flex; flex-direction: column; gap: 10px; }
+.loaded-file { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.loaded-file #loaded-name { font-weight: 600; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.loaded-buttons { display: flex; gap: 6px; }
+.btn.drive { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.btn.drive::before { content: ""; width: 16px; height: 14px; background: conic-gradient(from 30deg, #0f9d58 0 120deg, #f4b400 0 240deg, #4285f4 0); clip-path: polygon(50% 0, 100% 86%, 0 86%); }
+
+/* map / satellite switch */
+.basemap-switch { display: flex; }
+.maplibregl-ctrl-group.basemap-switch { display: flex; }
+.maplibregl-ctrl-group.basemap-switch button { width: auto; height: auto; display: block; font: 600 12px/1 var(--body); padding: 8px 10px; border: 0; background: var(--paper); color: var(--muted); cursor: pointer; }
+.maplibregl-ctrl-group.basemap-switch button + button { border-top: 0; border-left: 1px solid var(--line); }
+.maplibregl-ctrl-group.basemap-switch button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+
+/* a matched polygon's blocks and intersections, under its row */
+tr.detail td { background: #fafbfd; padding: 0 8px 8px 36px; cursor: default; }
+tr.detail:hover td { background: #fafbfd; }
+.parts-head { display: flex; align-items: center; gap: 8px; padding: 6px 0; color: var(--muted); font-size: 12.5px; }
+.parts { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.parts td { padding: 3px 6px; border-bottom: 1px solid #eef0f4; background: transparent; }
+.parts tr { cursor: pointer; }
+.parts tr.hi td { background: #f1ecfb; }
+.parts .x { text-align: right; width: 1%; }

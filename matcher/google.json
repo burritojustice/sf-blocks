@@ -1,0 +1,5 @@
+{
+  "_about": "Google Drive settings for each site Matcher runs on. These values are public (they identify the app to Google); they are not secrets. See matcher/README.md, 'Google Drive', for how to make them.",
+  "https://burritojustice.github.io": { "clientId": "", "apiKey": "", "appId": "" },
+  "http://localhost:8000": { "clientId": "", "apiKey": "", "appId": "" }
+}

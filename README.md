@@ -134,10 +134,11 @@ Standard library only; no installs.
 
 [Matcher](https://burritojustice.github.io/sf-blocks/matcher/) runs the same two scripts in the browser, so anyone can match a file without installing Python:
 
-- **Load** a CSV, an Excel workbook (.xlsx or .xls; it opens on the sheet with the most rows), a GeoJSON file, a link (Google Sheets shared to anyone with the link, DataSF datasets, any CSV or GeoJSON link the site allows other pages to load), or rows pasted in.
+- **Load** a file from Google Drive (a Google Sheet or a file stored there, through Google's picker), a CSV, an Excel workbook (.xlsx or .xls; it opens on the sheet with the most rows), a GeoJSON file, a link (Google Sheets shared to anyone with the link, DataSF datasets, any CSV or GeoJSON link the site allows other pages to load), or rows pasted in.
 - **Polygons:** the table lists them before matching. Delete the ones you don't need, keep some as plain polygons with no matching, and choose blocks only or blocks and intersections.
 - **Pick what to match:** one column that describes each location, or street and cross street columns. Matcher reads the first 80 rows of each column, suggests which hold street names or locations, and labels each column with what it found (the same check as `--suggest`). GeoJSON with polygons matches the blocks and intersections inside each polygon.
-- **Check and fix:** the map and table color each row by confidence, with the ones that need a look first. **Fix** lets you click the right block (shift-click for several) or intersection on the map, or mark a row as no match. Fixed rows say `method: manual`. For polygons, Fix adds or removes blocks.
+- **Map or Satellite:** switch the background to check a match against the street itself.
+- **Check and fix:** the map and table color each row by confidence, with the ones that need a look first. **Fix** lets you click the right block (shift-click for several) or intersection on the map, or mark a row as no match. Fixed rows say `method: manual`. For polygons, Fix adds or removes blocks and intersections, and the table lists each polygon's parts with a Remove button.
 - **Save** a CSV with the same columns the command line writes, GeoJSON, or Excel.
 
 Nothing is uploaded: the file stays in the browser, and the matching runs there with [Pyodide](https://pyodide.org) (Python compiled for the browser). The page loads `scripts/match_blocks.py`, `scripts/match_polygons.py` and `data/streets.json` from this site, so a change to a script reaches Matcher as soon as it's merged. The first visit downloads Python (about 10 MB, cached after that); 4,000 rows take about 10 seconds.
