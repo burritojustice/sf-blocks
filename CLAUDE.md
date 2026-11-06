@@ -34,7 +34,9 @@ The **main copy** of San Francisco's map data: boundaries, aliases, city layers,
   - `--areas` tags each block with `hood_analysis|sffind|planning|realtor|wof` from `data/boundaries/`, checking at 25/50/75% along the block. A block on a boundary gets "; "-joined names, most-covered first.
   - Optional fields are appended after `geom`. Read fields by `SEG_FIELDS.index(...)`, never by position.
 - **`scripts/match_blocks.py`**: free-text block descriptions in a CSV to CNNs.
-- **`scripts/match_polygons.py`**: polygons in GeoJSON to the blocks and intersections inside them. Narrow strips list blocks running along them; wider areas list blocks fully or partly inside. It also retries medians and falls back to the nearest block. Planned: port it to a single `match.js` for a web matching tool (see Block Party's `TODO.md`).
+- **`scripts/match_polygons.py`**: polygons in GeoJSON to the blocks and intersections inside them. Narrow strips list blocks running along them; wider areas list blocks fully or partly inside. It also retries medians and falls back to the nearest block.
+- **`matcher/`** is the web page for both matchers. `worker.js` (a module worker; Pyodide 314 refuses classic workers) loads Pyodide from jsDelivr, fetches the two scripts and `data/streets.json` from the site, and calls `match_rows`, `match_features` and `manual`. Keep those functions' signatures, and keep the scripts standard library only so they run there unchanged. `matcher.js` mirrors `OUT_FIELDS`, `CSV_FIELDS` and `from_columns()`; change them together.
+  - Testing: Playwright doesn't intercept a worker's requests, so serve Pyodide locally and open `matcher/?pyodide=<local url>/`. Compare Matcher's saved CSV with the command line's output; they should be identical.
 
 ## Data
 

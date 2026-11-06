@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026.11.05.1
+- **Matcher** (`matcher/`, at https://burritojustice.github.io/sf-blocks/matcher/): a web page that runs `match_blocks.py` and `match_polygons.py` in the browser with Pyodide. Drop in a CSV, Excel workbook or GeoJSON, paste a link or rows, pick the columns, and see the results on a map and in a table, with the rows that need a look first. Fix a row by clicking the right block or intersection, or mark it as no match; for polygons, add or remove blocks. Save as CSV (the command line's columns), GeoJSON or Excel. Files never leave the browser.
+- **`match_blocks.py` streams:** `match_rows()` matches one row at a time and yields its results, and the command line writes each row as it's matched instead of reading the whole file first. `manual()` gives the output columns for blocks or intersections picked by hand. Output is byte-identical to before.
+- **`match_polygons.py` streams too:** `match_features()` yields each polygon's rows and feature; output is byte-identical.
+- **About 4 times faster:** the fuzzy spelling search skips street names too long or short to pass its cutoff, and looks each spelling up once. Same answers: 4,000 test rows go from 21.5 s to 4.9 s with identical output.
+
 ## 2026.11.05
 - **`match_blocks.py` reads streets from two columns:** `--street Street --cross Cross` for a CSV where the street and cross street are already split out. One cross street is matched as an intersection ("Hayes" / "Octavia"); two ("Sansome" / "Bush and Sutter") as the block between them, and `--cross2` takes the second from its own column. Spelling fixes work as before ("Divisdero" → Divisadero). The free-text `--column` mode is unchanged.
 
