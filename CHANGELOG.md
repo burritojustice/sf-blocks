@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026.11.05.4
+- **Matcher: choose the polygons before matching.** After a GeoJSON loads, the table lists its polygons with their areas. Select them with the checkboxes or by clicking on the map, then **Delete selected** (Bring back undoes it), **Keep as polygons** (saved as they are, with no matching), or **Match these**.
+- **Matcher: blocks only, or blocks and intersections.** A choice under "List for each polygon". The command line has the same choice: `match_polygons.py --no-intersections`.
+- **Matcher: "Just a polygon".** After matching, Fix on a polygon offers Just a polygon, for shapes that aren't about streets; Change the polygon list goes back to the list. Kept polygons are saved with their own properties, `shape: polygon only`, and no blocks.
+
 ## 2026.11.05.3
 - **Matcher suggests the columns.** After a file loads, it looks through the first 80 rows of every column for street names, pairs of street names ("Bush and Sutter") and locations it can match, then picks the columns and labels each one ("Corridor · street names 100%", "Where is it · locations 90%"). Headers don't have to say "Street" or "Location". A column you've already picked is left alone.
 - **Matcher: clicking a polygon before Match no longer clears the map.**

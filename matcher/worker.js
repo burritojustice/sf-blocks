@@ -1,6 +1,6 @@
 // Matcher's background worker (a module worker, as Pyodide needs): runs sf-blocks' own Python matchers (scripts/match_blocks.py and
 // scripts/match_polygons.py) in Pyodide, so the page and the command line give the same answers.
-// Messages in:  {id, op: 'init', base, pyodide}   (pyodide: the Pyodide folder to load; matcher.js picks it) | {id, op: 'rows', rows, mode, start} | {id, op: 'polygons', features, nameField}
+// Messages in:  {id, op: 'init', base, pyodide}   (pyodide: the Pyodide folder to load; matcher.js picks it) | {id, op: 'rows', rows, mode, start} | {id, op: 'polygons', features, nameField, intersections}
 //               {id, op: 'manual', cnns, nodes, text} | {id, op: 'suggest', rows, columns}
 // Messages out: {id, ok, result} | {id, error} | {op: 'status', text} while starting up.
 let py, ready;
@@ -33,12 +33,12 @@ def run_rows(rows_json, mode_json, start):
     describe = mb.describer(**mode)
     return json.dumps([outs for _, _, outs in mb.match_rows(ST, rows, describe, start)])
 
-def run_polygons(features_json, name_field):
+def run_polygons(features_json, name_field, intersections=True):
     global POLY
     if POLY is None:
         POLY = mp.load_streets('/sfb/streets.json')
     out = [dict(index=i, rows=rows, feature=feat) for i, rows, feat in
-           mp.match_features(json.loads(features_json), *POLY, name_field=name_field)]
+           mp.match_features(json.loads(features_json), *POLY, mp.Options(intersections=bool(intersections)), name_field)]
     return json.dumps(out)
 
 def run_suggest(rows_json, columns_json):
@@ -59,7 +59,7 @@ onmessage = async ({ data: m }) => {
             if (m.op === 'rows')
                 result = JSON.parse(py.globals.get('run_rows')(JSON.stringify(m.rows), JSON.stringify(m.mode), m.start));
             else if (m.op === 'polygons')
-                result = JSON.parse(py.globals.get('run_polygons')(JSON.stringify(m.features), m.nameField || 'name'));
+                result = JSON.parse(py.globals.get('run_polygons')(JSON.stringify(m.features), m.nameField || 'name', m.intersections !== false));
             else if (m.op === 'suggest')
                 result = JSON.parse(py.globals.get('run_suggest')(JSON.stringify(m.rows), JSON.stringify(m.columns)));
             else if (m.op === 'manual')

@@ -135,6 +135,7 @@ Standard library only; no installs.
 [Matcher](https://burritojustice.github.io/sf-blocks/matcher/) runs the same two scripts in the browser, so anyone can match a file without installing Python:
 
 - **Load** a CSV, an Excel workbook (.xlsx or .xls; it opens on the sheet with the most rows), a GeoJSON file, a link (Google Sheets shared to anyone with the link, DataSF datasets, any CSV or GeoJSON link the site allows other pages to load), or rows pasted in.
+- **Polygons:** the table lists them before matching. Delete the ones you don't need, keep some as plain polygons with no matching, and choose blocks only or blocks and intersections.
 - **Pick what to match:** one column that describes each location, or street and cross street columns. Matcher reads the first 80 rows of each column, suggests which hold street names or locations, and labels each column with what it found (the same check as `--suggest`). GeoJSON with polygons matches the blocks and intersections inside each polygon.
 - **Check and fix:** the map and table color each row by confidence, with the ones that need a look first. **Fix** lets you click the right block (shift-click for several) or intersection on the map, or mark a row as no match. Fixed rows say `method: manual`. For polygons, Fix adds or removes blocks.
 - **Save** a CSV with the same columns the command line writes, GeoJSON, or Excel.
@@ -154,6 +155,7 @@ Nothing is uploaded: the file stays in the browser, and the matching runs there 
 
 ```
 python3 scripts/match_polygons.py projects.geojson      # writes projects_cnns.csv and projects_cnns.geojson next to it
+python3 scripts/match_polygons.py projects.geojson --no-intersections      # blocks only
 ```
 
 - **Street strips** (narrower than 35 m, or at least 4 times as long as wide and under 60 m): blocks running along the strip, with half the block inside or an inside stretch covering half the strip. Cross streets that only cut across are left out; their corners are in the intersection list. `full` = 90%+ of the block inside, otherwise `partial`.

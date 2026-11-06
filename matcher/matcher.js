@@ -2,7 +2,7 @@
 // own Python scripts (run in a worker with Pyodide); show and fix results on a map and in a table; save
 // the enhanced file. Nothing leaves the browser except requests for the map and the libraries.
 'use strict';
-const MATCHER_VERSION = '3';
+const MATCHER_VERSION = '4';
 const BASE = new URL('../', location.href).href;          // the sf-blocks site root
 const STYLE = key => `https://api.protomaps.com/styles/v5/white/en.json?key=${key}`;
 const DEFAULT_KEY = '071e272e8d5e13b7';                   // burritojustice.github.io (localhost accepts any key)
@@ -13,8 +13,8 @@ const OUT_FIELDS = ['source_row', 'part', 'parts', 'matched_text', 'type', 'cnn'
     'confidence', 'method', 'notes'];
 const POLY_FIELDS = ['polygon_index', 'polygon_name', 'polygon_id', 'shape', 'width_m', 'type', 'cnn', 'street',
     'from_street', 'to_street', 'layer', 'inside_pct', 'near_m', 'status', 'note', 'wkt'];
-const CONF = ['high', 'medium', 'low', 'none', 'manual'];
-const COLORS = { high: '#22814f', medium: '#c48a00', low: '#d4572a', none: '#8a93a3', manual: '#7a4bd1' };
+const CONF = ['high', 'medium', 'low', 'none', 'manual', 'polygon'];
+const COLORS = { high: '#22814f', medium: '#c48a00', low: '#d4572a', none: '#8a93a3', manual: '#7a4bd1', polygon: '#5b6475' };
 const EXCLUDED_LAYERS = new Set(['FREEWAYS', 'PAPER', 'PAPER_FWYS', 'PAPER_WATER', 'PSEUDO', 'PRIVATE_PARKING']);
 
 const $ = id => document.getElementById(id);
@@ -26,7 +26,9 @@ const S = {
     kind: null,          // 'rows' or 'polygons'
     name: '', ext: '',   // file name without extension, and its type
     headers: [], rows: [], features: [], workbook: null,
-    results: [],         // rows: {key, src, out, fixed}; polygons: {key, index, name, feature, rows, fixed}
+    results: [],         // rows: {key, src, out, fixed}; polygons: {key, index, name, feature, rows, fixed, only}
+    polys: [],           // polygons loaded, before matching: {index (in the file), feature, removed, only}
+    prepSel: new Set(),  // polygons selected in that list (file indexes)
     filter: 'all', query: '', selected: null,
     pick: null,          // {key, cnns: Set, nodes: Set}
     streets: null,       // {segs: Map cnn -> {street, f, t, coords}, nodes: Map cnn -> {streets, xy}}
@@ -128,8 +130,8 @@ async function startMap() {
         map.addSource('polys', { type: 'geojson', data: empty() });
         map.addSource('results', { type: 'geojson', data: empty() });
         map.addSource('picked', { type: 'geojson', data: empty() });
-        map.addLayer({ id: 'polys-fill', type: 'fill', source: 'polys', paint: { 'fill-color': '#2f5fd0', 'fill-opacity': ['case', ['get', 'sel'], 0.16, 0.06] } }, before);
-        map.addLayer({ id: 'polys-line', type: 'line', source: 'polys', paint: { 'line-color': '#2f5fd0', 'line-width': ['case', ['get', 'sel'], 2.5, 1.2], 'line-opacity': 0.8 } }, before);
+        map.addLayer({ id: 'polys-fill', type: 'fill', source: 'polys', paint: { 'fill-color': ['case', ['get', 'only'], '#5b6475', '#2f5fd0'], 'fill-opacity': ['case', ['get', 'sel'], 0.22, 0.06] } }, before);
+        map.addLayer({ id: 'polys-line', type: 'line', source: 'polys', paint: { 'line-color': ['case', ['get', 'only'], '#5b6475', '#2f5fd0'], 'line-width': ['case', ['get', 'sel'], 3, 1.2], 'line-opacity': 0.85 } }, before);
         map.addLayer({ id: 'streets-pick', type: 'line', source: 'streets', layout: { visibility: 'none', 'line-cap': 'round' },
             paint: { 'line-color': ['case', ['boolean', ['feature-state', 'hover'], false], '#7a4bd1', '#9aa3b5'],
                      'line-width': ['interpolate', ['linear'], ['zoom'], 13, 2, 17, 7], 'line-opacity': 0.55 } });
@@ -207,6 +209,12 @@ function hookMap() {
         map.getCanvas().style.cursor = f ? 'pointer' : '';
         if (!f) return popup.remove();
         const r = S.results.find(x => x.key === f.properties.key);
+        if (!r && S.kind === 'polygons') {
+            const p = S.polys.find(x => `p${x.index}` === f.properties.key);
+            if (!p) return popup.remove();
+            return popup.setLngLat(e.lngLat).setHTML(`<div class="pop-title">${esc(polyName(p) || `Polygon ${p.index + 1}`)}</div>
+                <div class="pop-sub">${fmtArea(areaM2(p.feature.geometry))} · click to ${S.prepSel.has(p.index) ? 'unselect' : 'select'}</div>`).addTo(map);
+        }
         if (!r) return popup.remove();
         popup.setLngLat(e.lngLat).setHTML(popupHtml(r)).addTo(map);
     });
@@ -214,6 +222,7 @@ function hookMap() {
     map.on('click', e => {
         if (S.pick) return pickClick(e);
         const f = map.queryRenderedFeatures(e.point, { layers: hoverable })[0];
+        if (f && S.kind === 'polygons' && !S.results.length) return togglePrep(Number(f.properties.key.slice(1)));
         if (f) select(f.properties.key, { fly: false, scroll: true });
     });
 }
@@ -376,6 +385,7 @@ function useJson(j, name, ext) {
 function reset() {
     S.results = []; S.selected = null; S.filter = 'all'; S.query = ''; $('search').value = '';
     $('sheet-field').hidden = true;
+    S.polys = []; S.prepSel = new Set(); $('poly-back').hidden = true;
     endPick(); $('card-results').hidden = true; $('drawer').hidden = true;
     if (map?.getSource('results')) { map.getSource('results').setData(empty()); map.getSource('polys').setData(empty()); }
 }
@@ -435,7 +445,8 @@ function usePolygons(feats, name, ext) {
     reset();
     const headers = [...new Set(feats.flatMap(f => Object.keys(f.properties || {})))];
     Object.assign(S, { kind: 'polygons', headers, rows: [], features: feats, name, ext, workbook: null });
-    const n = feats.filter(f => /Polygon$/.test(f.geometry?.type || '')).length;
+    S.polys = feats.map((feature, index) => ({ index, feature, removed: false, only: false })).filter(p => /Polygon$/.test(p.feature.geometry?.type || ''));
+    const n = S.polys.length;
     $('text-opts').hidden = true; $('poly-opts').hidden = false;
     $('loaded').innerHTML = `${esc(name)} <span>· ${fmt(n)} polygons${feats.length > n ? `, ${fmt(feats.length - n)} other features skipped` : ''}</span>`;
     $('col-name').innerHTML = ['', ...headers].map(h => `<option value="${esc(h)}">${esc(h || '(numbered)')}</option>`).join('');
@@ -446,8 +457,65 @@ function usePolygons(feats, name, ext) {
     const b = new maplibregl.LngLatBounds();
     polys.features.forEach(f => extend(b, f.geometry));
     if (!b.isEmpty()) map.fitBounds(b, { padding: 40, maxZoom: 16 });
-    done(`Loaded ${fmt(n)} polygons from ${name}. Press Match.`);
+    showPrep();
+    done(`Loaded ${fmt(n)} polygons from ${name}. Delete any you don't need, then Match.`);
 }
+
+// ------------------------------------------------------------------ polygons before matching
+const polyName = p => { const f = $('col-name').value; return f ? String(p.feature.properties?.[f] ?? '') : ''; };
+$('col-name').addEventListener('change', () => { if (!S.results.length) showPrep(); });
+
+// Rough area in square meters (equirectangular; fine for a city).
+function areaM2(g) {
+    const ring = r => { let a = 0; const k = Math.cos(r[0][1] * Math.PI / 180) * 111320 * 110540;
+        for (let i = 0, j = r.length - 1; i < r.length; j = i++) a += (r[j][0] - r[i][0]) * (r[j][1] + r[i][1]); return Math.abs(a / 2) * k; };
+    const poly = p => ring(p[0]) - p.slice(1).reduce((t, h) => t + ring(h), 0);
+    return g.type === 'Polygon' ? poly(g.coordinates) : g.coordinates.reduce((t, p) => t + poly(p), 0);
+}
+const fmtArea = m2 => m2 >= 10000 ? `${(m2 / 10000).toFixed(m2 >= 1e5 ? 0 : 1)} ha` : `${fmt(Math.round(m2))} m²`;
+
+function showPrep() {
+    $('drawer').hidden = false;
+    $('card-results').hidden = true;
+    const live = S.polys.filter(p => !p.removed), gone = S.polys.length - live.length;
+    const sel = [...S.prepSel].filter(i => live.some(p => p.index === i));
+    S.prepSel = new Set(sel);
+    $('chips').innerHTML = `<div class="prep-actions">
+        <span class="count">${fmt(live.length)} polygons${sel.length ? `, ${fmt(sel.length)} selected` : ''}</span>
+        <button type="button" class="btn small" data-prep="all">Select all</button>
+        <button type="button" class="btn small" data-prep="none"${sel.length ? '' : ' disabled'}>Clear</button>
+        <button type="button" class="btn small" data-prep="delete"${sel.length ? '' : ' disabled'}>Delete selected</button>
+        <button type="button" class="btn small" data-prep="only"${sel.length ? '' : ' disabled'}>Keep as polygons</button>
+        <button type="button" class="btn small" data-prep="match"${sel.length ? '' : ' disabled'}>Match these</button>
+        ${gone ? `<button type="button" class="btn ghost small" data-prep="restore">Bring back ${fmt(gone)} deleted</button>` : ''}</div>`;
+    const q = S.query;
+    const rows = live.filter(p => !q || polyName(p).toLowerCase().includes(q));
+    $('table').innerHTML = `<thead><tr><th></th><th>#</th><th>Polygon</th><th>Area</th><th>Will be</th></tr></thead><tbody>${rows.slice(0, SHOW).map(p => `
+        <tr data-k="p${p.index}" class="${S.prepSel.has(p.index) ? 'sel' : ''}${p.only ? ' only' : ''}">
+        <td class="check"><input type="checkbox" data-pick="${p.index}"${S.prepSel.has(p.index) ? ' checked' : ''} aria-label="Select polygon ${p.index + 1}"></td>
+        <td class="num">${p.index + 1}</td><td class="desc">${esc(polyName(p) || `Polygon ${p.index + 1}`)}</td>
+        <td class="num">${fmtArea(areaM2(p.feature.geometry))}</td>
+        <td>${p.only ? 'kept as a polygon' : 'matched to blocks'}</td></tr>`).join('')}
+        ${rows.length > SHOW ? `<tr class="more"><td colspan="5">Showing ${fmt(SHOW)} of ${fmt(rows.length)}. Search to find others.</td></tr>` : ''}
+        ${!rows.length ? `<tr class="more"><td colspan="5">${live.length ? 'No polygons match the search.' : 'All the polygons are deleted.'}</td></tr>` : ''}</tbody>`;
+    $('go').disabled = !live.length;
+    $('go').textContent = live.length && live.every(p => p.only) ? 'Continue' : 'Match';
+    map?.getSource('polys')?.setData(polyCollection());
+}
+
+$('chips').addEventListener('click', e => {
+    const b = e.target.closest('[data-prep]');
+    if (!b) return;
+    const act = b.dataset.prep, live = S.polys.filter(p => !p.removed);
+    if (act === 'all') live.forEach(p => S.prepSel.add(p.index));
+    if (act === 'none') S.prepSel.clear();
+    if (act === 'delete') { const n = S.prepSel.size; live.forEach(p => { if (S.prepSel.has(p.index)) p.removed = true; }); S.prepSel.clear(); done(`Deleted ${fmt(n)} ${n === 1 ? 'polygon' : 'polygons'}. They won't be matched or saved.`); }
+    if (act === 'only' || act === 'match') { live.forEach(p => { if (S.prepSel.has(p.index)) p.only = act === 'only'; }); S.prepSel.clear(); }
+    if (act === 'restore') S.polys.forEach(p => { p.removed = false; });
+    showPrep();
+});
+function togglePrep(i) { S.prepSel.has(i) ? S.prepSel.delete(i) : S.prepSel.add(i); showPrep(); }
+$('poly-back').addEventListener('click', () => { S.results = []; S.selected = null; S.filter = 'all'; endPick(); map.getSource('results').setData(empty()); showPrep(); });
 
 // Which columns hold the location? Header names first, then what's in the cells.
 function guessColumns(headers, rows) {
@@ -521,31 +589,38 @@ async function matchPolygons() {
     try {
         if (!S.version) toast('Starting Python… (only the first time)');
         await engine;
-        S.results = []; S.selected = null;
-        const all = S.features, n = all.length, nameField = $('col-name').value, step = 10;
+        S.results = []; S.selected = null; S.filter = 'all';
+        const live = S.polys.filter(p => !p.removed), todo = live.filter(p => !p.only), n = todo.length, step = 10;
+        const intersections = document.querySelector('input[name=ix]:checked').value === 'yes';
+        const nameField = $('col-name').value;
+        for (const p of live.filter(p => p.only)) S.results.push(polygonOnly(p));
         for (let i = 0; i < n; i += step) {
             toast(`Matching polygon ${fmt(Math.min(i + step, n))} of ${fmt(n)}…`, i / n);
-            const res = await ask('polygons', { features: all.slice(i, i + step), nameField: nameField || '__none__' });
+            const batch = todo.slice(i, i + step);
+            const res = await ask('polygons', { features: batch.map(p => p.feature), nameField: nameField || '__none__', intersections });
             for (const r of res) {
-                const index = i + r.index;
-                r.rows.forEach(x => { x.polygon_index = index; });
-                const name = nameField ? String(all[index].properties?.[nameField] ?? '') : '';
-                S.results.push({ key: `p${index}`, index, name, feature: r.feature, rows: r.rows, fixed: false });
+                const p = batch[r.index];
+                r.rows.forEach(x => { x.polygon_index = p.index; });
+                S.results.push({ key: `p${p.index}`, index: p.index, name: polyName(p), feature: r.feature, rows: r.rows, fixed: false, only: false });
             }
+            S.results.sort((a, b) => a.index - b.index);
             showResults(false);
         }
+        S.results.sort((a, b) => a.index - b.index);
         showResults(true);
-        done(`Matched ${fmt(S.results.length)} polygons.`);
+        const kept = live.length - n;
+        done(`Matched ${fmt(n)} ${n === 1 ? 'polygon' : 'polygons'}${kept ? `; ${fmt(kept)} kept as plain polygons` : ''}.`);
     } catch (e) {
         done(`Matching stopped: ${e.message}`, 9000);
     } finally { $('go').disabled = false; }
 }
 
 // ------------------------------------------------------------------ results: tally, chips, table, map
-const POLY_STATE = { blocks: 'high', 'intersections only': 'medium', 'nearest only': 'low', 'nothing inside': 'none' };
-const label = r => r.fixed ? 'fixed' : S.kind === 'polygons' ? polyState(r) : r.out.confidence;
-const confOf = r => r.fixed ? 'manual' : S.kind === 'polygons' ? POLY_STATE[polyState(r)] : r.out.confidence;
+const POLY_STATE = { blocks: 'high', 'intersections only': 'medium', 'nearest only': 'low', 'nothing inside': 'none', 'polygon only': 'polygon' };
+const label = r => r.only ? 'polygon only' : r.fixed ? 'fixed' : S.kind === 'polygons' ? polyState(r) : r.out.confidence;
+const confOf = r => r.only ? 'polygon' : r.fixed ? 'manual' : S.kind === 'polygons' ? POLY_STATE[polyState(r)] : r.out.confidence;
 function polyState(r) {
+    if (r.only) return 'polygon only';
     const p = r.feature.properties;
     if (p.block_cnns.length || p.partial_cnns.length) return 'blocks';
     if (p.intersection_cnns.length) return 'intersections only';
@@ -556,8 +631,9 @@ function counts() {
     for (const r of S.results) c[confOf(r)]++;
     return c;
 }
-const TEXT_NAMES = { high: 'High', medium: 'Medium', low: 'Low', none: 'No match', manual: 'Fixed' };
-const POLY_NAMES = { high: 'Blocks', medium: 'Intersections only', low: 'Nearest block only', none: 'Nothing inside', manual: 'Fixed' };
+const TEXT_NAMES = { high: 'High', medium: 'Medium', low: 'Low', none: 'No match', manual: 'Fixed', polygon: 'Polygon only' };
+const POLY_NAMES = { high: 'Blocks', medium: 'Intersections only', low: 'Nearest block only', none: 'Nothing inside', manual: 'Fixed', polygon: 'Polygon only' };
+const shown = (k, c) => !['manual', 'polygon'].includes(k) || c[k] > 0;
 let NAMES = TEXT_NAMES;
 
 function showResults(final) {
@@ -565,14 +641,15 @@ function showResults(final) {
     $('card-results').hidden = false;
     $('drawer').hidden = false;
     const c = counts(), total = S.results.length || 1;
-    $('tally').innerHTML = CONF.filter(k => k !== 'manual' || c.manual).map(k => `
+    $('poly-back').hidden = S.kind !== 'polygons';
+    $('tally').innerHTML = CONF.filter(k => shown(k, c)).map(k => `
         <div class="tally-row${S.kind === 'polygons' ? ' wide' : ''}" data-f="${k}"><span class="tally-label">${NAMES[k]}</span>
         <span class="tally-bar"><i style="width:${(c[k] / total * 100).toFixed(1)}%;background:${COLORS[k]}"></i></span>
         <span class="tally-n">${fmt(c[k])}</span></div>`).join('');
     $('tally').querySelectorAll('.tally-row').forEach(el => el.onclick = () => setFilter(el.dataset.f));
     const look = c.medium + c.low + c.none;
     $('results-hint').textContent = S.kind === 'polygons'
-        ? 'Click a polygon in the table, then Fix to add or remove blocks.'
+        ? 'Click a polygon in the table, then Fix to add or remove blocks, or to keep it as a plain polygon.'
         : look ? `${fmt(look)} ${look === 1 ? 'location needs' : 'locations need'} a look. They're at the top of the table; Fix lets you pick the right block on the map.`
             : 'Everything matched with high confidence.';
     drawChips(c);
@@ -581,12 +658,12 @@ function showResults(final) {
 }
 
 function drawChips(c) {
-    const list = [['all', 'All', S.results.length], ['look', 'Needs a look', c.medium + c.low + c.none], ...CONF.filter(k => k !== 'manual' || c.manual).map(k => [k, NAMES[k], c[k]])];
+    const list = [['all', 'All', S.results.length], ['look', 'Needs a look', c.medium + c.low + c.none], ...CONF.filter(k => shown(k, c)).map(k => [k, NAMES[k], c[k]])];
     $('chips').innerHTML = list.map(([k, n, v]) => `<button type="button" class="chip${S.filter === k ? ' on' : ''}" data-f="${k}">${n}<b>${fmt(v)}</b></button>`).join('');
     $('chips').querySelectorAll('.chip').forEach(el => el.onclick = () => setFilter(el.dataset.f));
 }
 function setFilter(f) { S.filter = f; drawChips(counts()); drawTable(); }
-$('search').addEventListener('input', e => { S.query = e.target.value.trim().toLowerCase(); drawTable(); });
+$('search').addEventListener('input', e => { S.query = e.target.value.trim().toLowerCase(); S.kind === 'polygons' && !S.results.length ? showPrep() : drawTable(); });
 $('drawer-toggle').addEventListener('click', () => {
     const c = $('drawer').classList.toggle('collapsed');
     $('drawer-toggle').textContent = c ? 'Show table' : 'Hide table';
@@ -594,7 +671,7 @@ $('drawer-toggle').addEventListener('click', () => {
     setTimeout(() => map.resize(), 0);
 });
 
-const ORDER = { none: 0, low: 1, medium: 2, manual: 3, high: 4 };
+const ORDER = { none: 0, low: 1, medium: 2, manual: 3, high: 4, polygon: 5 };
 function visible() {
     const q = S.query;
     let list = S.results.filter(r => {
@@ -618,7 +695,7 @@ function drawTable() {
             const p = r.feature.properties;
             return `<tr data-k="${r.key}"${S.selected === r.key ? ' class="sel"' : ''}>
                 <td><span class="conf ${confOf(r)}">${esc(label(r))}</span></td><td class="num">${r.index + 1}</td>
-                <td class="desc">${esc(r.name || `Polygon ${r.index + 1}`)}</td><td>${esc(p.cnn_shape)}, ${p.cnn_width_m} m</td>
+                <td class="desc">${esc(r.name || `Polygon ${r.index + 1}`)}</td><td>${r.only ? 'not matched' : `${esc(p.cnn_shape)}, ${p.cnn_width_m} m`}</td>
                 <td class="num">${p.block_cnns.length}</td><td class="num">${p.partial_cnns.length}</td><td class="num">${p.intersection_cnns.length}</td>
                 <td class="mono">${esc(p.nearest_cnn ?? '')}</td><td><button type="button" class="btn small" data-fix="${r.key}">Fix</button></td></tr>`;
         }).join('');
@@ -640,6 +717,13 @@ function drawTable() {
 }
 
 $('table').addEventListener('click', e => {
+    const box = e.target.closest('[data-pick]');
+    if (box) { e.stopPropagation(); return togglePrep(Number(box.dataset.pick)); }
+    if (S.kind === 'polygons' && !S.results.length) {
+        const tr = e.target.closest('tr[data-k]');
+        if (tr) flyToPoly(Number(tr.dataset.k.slice(1)));
+        return;
+    }
     const fix = e.target.closest('[data-fix]');
     if (fix) { e.stopPropagation(); return startPick(fix.dataset.fix); }
     const tr = e.target.closest('tr[data-k]');
@@ -678,9 +762,28 @@ function drawMap(fit) {
 
 // The polygons on the map: the matched ones, or before Match, the ones loaded from the file.
 function polyCollection() {
-    const list = S.results.length ? S.results.map(r => ({ key: r.key, geometry: r.feature.geometry }))
-        : S.features.map((f, i) => ({ key: `p${i}`, geometry: f.geometry })).filter(x => /Polygon$/.test(x.geometry?.type || ''));
-    return { type: 'FeatureCollection', features: list.map(x => ({ type: 'Feature', geometry: x.geometry, properties: { key: x.key, sel: x.key === S.selected } })) };
+    const list = S.results.length ? S.results.map(r => ({ key: r.key, geometry: r.feature.geometry, only: !!r.only, sel: r.key === S.selected }))
+        : S.polys.filter(p => !p.removed).map(p => ({ key: `p${p.index}`, geometry: p.feature.geometry, only: p.only, sel: S.prepSel.has(p.index) || S.selected === `p${p.index}` }));
+    return { type: 'FeatureCollection', features: list.map(x => ({ type: 'Feature', geometry: x.geometry, properties: { key: x.key, sel: x.sel, only: x.only } })) };
+}
+function flyToPoly(i) {
+    const p = S.polys.find(x => x.index === i);
+    if (!p) return;
+    S.selected = `p${i}`;
+    map.getSource('polys').setData(polyCollection());
+    const b = extend(new maplibregl.LngLatBounds(), p.feature.geometry);
+    if (!b.isEmpty()) map.fitBounds(b, { padding: 80, maxZoom: 17, duration: 500 });
+}
+
+// A polygon kept as is: saved with its properties and no blocks, so it can still be joined by shape later.
+function polygonOnly(p) {
+    const props = p.feature.properties || {};
+    return { key: `p${p.index}`, index: p.index, name: polyName(p), only: true, fixed: false,
+        feature: { type: 'Feature', geometry: p.feature.geometry, properties: { ...props, cnn_shape: 'polygon only', cnn_width_m: null,
+            block_cnns: [], partial_cnns: [], nearest_cnn: null, intersection_cnns: [] } },
+        rows: [{ polygon_index: p.index, polygon_name: polyName(p), polygon_id: props['felt:id'] || props.id || '', shape: 'polygon only', width_m: '',
+            type: '', cnn: '', street: '', from_street: '', to_street: '', layer: '', inside_pct: '', near_m: '', status: 'polygon only',
+            note: 'kept as a polygon; not matched', wkt: '' }] };
 }
 
 function select(key, { fly = false, scroll = false } = {}) {
@@ -705,13 +808,15 @@ function startPick(key) {
         $('pick-title').textContent = `Fixing ${r.name || `polygon ${r.index + 1}`}`;
         $('pick-help').textContent = 'Click blocks to add them to this polygon or take them out.';
         $('pick-use').textContent = 'Done';
-        $('pick-none').hidden = true;
+        $('pick-none').textContent = r.only ? 'Keep as a polygon' : 'Just a polygon';
+        $('pick-none').hidden = false;
     } else {
         const o = r.out, cnns = o.cnn ? o.cnn.split(';').map(Number) : [];
         S.pick = { key, cnns: new Set(o.type === 'block' ? cnns : []), nodes: new Set(o.type === 'intersection' ? cnns : []) };
         $('pick-title').textContent = `Row ${o.source_row}: ${describe(S.rows[r.src]) || '(empty)'}`;
         $('pick-help').textContent = 'Click the right block (shift-click for more than one) or zoom in and click an intersection.';
         $('pick-use').textContent = 'Use selection';
+        $('pick-none').textContent = 'No match';
         $('pick-none').hidden = false;
     }
     $('pickbar').hidden = false;
@@ -796,6 +901,13 @@ $('pick-use').addEventListener('click', async () => {
 });
 $('pick-none').addEventListener('click', () => {
     const r = S.results.find(x => x.key === S.pick.key);
+    if (S.kind === 'polygons') {
+        const p = S.polys.find(x => x.index === r.index);
+        Object.assign(r, polygonOnly(p));
+        p.only = true;
+        endPick(); showResults(false);
+        return done(`${r.name || `Polygon ${r.index + 1}`} kept as a plain polygon.`);
+    }
     Object.assign(r.out, { type: '', cnn: '', nearby_cnns: '', street: '', from_street: '', to_street: '', address_low: '', address_high: '',
         address_ranges: '', supervisor_district: '', nhood: '', wkt: '', confidence: 'none', method: 'manual', notes: 'marked as no match' });
     r.fixed = true;
@@ -805,6 +917,11 @@ $('pick-none').addEventListener('click', () => {
 
 // Polygons: blocks picked by hand are added with status "manual"; blocks taken out are dropped.
 function applyPolygonFix(r, P) {
+    if (r.only) {          // matching a polygon that was kept as is
+        r.only = false; r.rows = [];
+        Object.assign(r.feature.properties, { cnn_shape: 'manual', cnn_width_m: null });
+        const p = S.polys.find(x => x.index === r.index); if (p) p.only = false;
+    }
     const before = new Set(r.rows.filter(x => x.type === 'block').map(x => Number(x.cnn)));
     const base = { polygon_index: r.index, polygon_name: r.name, polygon_id: r.rows[0]?.polygon_id ?? (r.feature.properties.id || ''),
         shape: r.feature.properties.cnn_shape, width_m: r.feature.properties.cnn_width_m };

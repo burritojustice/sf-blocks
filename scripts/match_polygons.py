@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# sf-blocks 2026.11.05.1: master copy.
+# sf-blocks 2026.11.05.4: master copy.
 """
 Find the street blocks (segment CNNs) and intersections (node CNNs) inside polygons.
 
@@ -242,8 +242,9 @@ CSV_FIELDS = ["polygon_index", "polygon_name", "polygon_id", "shape", "width_m",
 
 class Options:
     """The matching thresholds, with the command line's defaults."""
-    def __init__(self, thin_m=35, max_strip_m=60, near_m=40, min_partial=0.1):
+    def __init__(self, thin_m=35, max_strip_m=60, near_m=40, min_partial=0.1, intersections=True):
         self.thin_m, self.max_strip_m, self.near_m, self.min_partial = thin_m, max_strip_m, near_m, min_partial
+        self.intersections = intersections
 
 
 def match_features(features, segs, nodes, a=None, name_field="name"):
@@ -256,6 +257,8 @@ def match_features(features, segs, nodes, a=None, name_field="name"):
             continue
         poly = Poly(g)
         shape, rows = match(poly, segs, nodes, a)
+        if not getattr(a, "intersections", True):
+            rows = [r for r in rows if r["type"] != "intersection"]
         name, pid = p.get(name_field, ""), p.get("felt:id") or p.get("id") or ""
         csv_rows = [dict(polygon_index=i, polygon_name=name, polygon_id=pid, shape=shape,
                          width_m=round(poly.width), **r) for r in rows]
@@ -277,6 +280,8 @@ def main():
     ap.add_argument("--max-strip-m", type=float, default=60, help="long strips up to this wide still count as thin (default 60 m)")
     ap.add_argument("--near-m", type=float, default=40, help="polygons with nothing inside: nearest block within this (default 40 m)")
     ap.add_argument("--min-partial", type=float, default=0.1, help="area polygons: smallest share of a block to list (default 0.1)")
+    ap.add_argument("--no-intersections", dest="intersections", action="store_false",
+                    help="list blocks only, not the intersections inside each polygon")
     ap.add_argument("--out-dir", default=None)
     a = ap.parse_args()
 

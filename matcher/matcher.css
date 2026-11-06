@@ -119,3 +119,14 @@ tr.more td { text-align: center; color: var(--muted); cursor: default; }
   #search { width: 120px; }
 }
 @media (prefers-reduced-motion: reduce) { .toast .bar i { transition: none; } }
+
+/* polygons before matching: select, delete, keep as polygons */
+.choice { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.choice legend { color: var(--muted); padding: 0; margin-bottom: 4px; }
+.prep-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; flex: 1; }
+.prep-actions .count { color: var(--muted); font-size: 12.5px; margin-right: 4px; }
+td.check { width: 28px; }
+td.check input { margin: 0; }
+tr.only td { color: var(--muted); }
+.conf.polygon { background: #5b6475; }
+#poly-back { align-self: flex-start; }
