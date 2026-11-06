@@ -2,7 +2,7 @@
 // own Python scripts (run in a worker with Pyodide); show and fix results on a map and in a table; save
 // the enhanced file. Nothing leaves the browser except requests for the map and the libraries.
 'use strict';
-const MATCHER_VERSION = '2';
+const MATCHER_VERSION = '3';
 const BASE = new URL('../', location.href).href;          // the sf-blocks site root
 const STYLE = key => `https://api.protomaps.com/styles/v5/white/en.json?key=${key}`;
 const DEFAULT_KEY = '071e272e8d5e13b7';                   // burritojustice.github.io (localhost accepts any key)
@@ -73,7 +73,8 @@ async function startEngine() {
             return info;
         } catch (e) {
             last = e;
-            console.warn(`[matcher] Python from ${url} didn't start: ${e.message}`);
+            // expected on Safari 18 with Pyodide 314; the next version usually starts
+            (i + 1 < PYODIDE_URLS.length ? console.info : console.warn)(`[matcher] Pyodide ${url.match(/pyodide@([\d.]+)/)?.[1] || url} couldn't start here (${e.message})${i + 1 < PYODIDE_URLS.length ? '; trying the next version' : ''}.`);
             if (i + 1 < PYODIDE_URLS.length) $('engine').textContent = 'Trying another Python…';
         }
     }
@@ -391,10 +392,44 @@ function useRows(headers, rows, name, ext) {
     $('col-text').value = g.text || headers[0];
     $('col-street').value = g.street || ''; $('col-cross').value = g.cross || ''; $('col-cross2').value = g.cross2 || '';
     document.querySelector(`input[name=mode][value=${g.street && g.cross ? 'columns' : 'column'}]`).checked = true;
+    S.picked = false;
+    $('suggest').textContent = 'Looking through the columns…';
     showMode();
     $('card-match').hidden = false;
     done(`Loaded ${fmt(rows.length)} rows from ${name}. Check the columns, then Match.`);
+    suggest(S.rows);
 }
+
+// Ask the matcher which columns hold street names or locations (match_blocks.suggest_columns), then
+// label each column with what's in it and switch to the suggestion unless the columns were already picked.
+async function suggest(rows) {
+    try {
+        await engine;
+        const g = await ask('suggest', { rows: rows.slice(0, 80), columns: S.headers });
+        if (rows !== S.rows) return;                       // another file was loaded meanwhile
+        const pct = x => `${Math.round(x * 100)}%`;
+        const note = h => { const r = g.report[h]; if (!r?.filled) return '';
+            return r.street >= 0.3 ? ` · street names ${pct(r.street)}` : r.place >= 0.2 ? ` · locations ${pct(r.place)}` : r.pair >= 0.3 ? ` · two streets ${pct(r.pair)}` : ''; };
+        for (const id of ['col-text', 'col-street', 'col-cross', 'col-cross2'])
+            for (const o of $(id).options) if (o.value) o.textContent = o.value + note(o.value);
+        if (!S.picked) {
+            if (g.mode === 'columns') {
+                $('col-street').value = g.street; $('col-cross').value = g.cross; $('col-cross2').value = g.cross2 || '';
+            }
+            if (g.column) $('col-text').value = g.column;
+            document.querySelector(`input[name=mode][value=${g.mode}]`).checked = true;
+            showMode();
+        }
+        const parts = [];
+        if (g.mode === 'columns') parts.push(`street names in ${q(g.street)} and ${q(g.cross)}${g.cross2 ? ` and ${q(g.cross2)}` : ''}`);
+        if (g.column) parts.push(`locations in ${q(g.column)}`);
+        $('suggest').textContent = parts.length ? `Looks like ${parts.join('; ')}.` : "None of the columns look like street names or locations. Pick the one to match.";
+    } catch (e) {
+        $('suggest').textContent = '';
+        console.warn('[suggest]', e);
+    }
+}
+const q = s => `“${s}”`;
 
 function usePolygons(feats, name, ext) {
     reset();
@@ -406,7 +441,7 @@ function usePolygons(feats, name, ext) {
     $('col-name').innerHTML = ['', ...headers].map(h => `<option value="${esc(h)}">${esc(h || '(numbered)')}</option>`).join('');
     $('col-name').value = headers.find(h => /^(name|title|label)$/i.test(h)) || headers.find(h => /name|title/i.test(h)) || '';
     $('card-match').hidden = false;
-    const polys = { type: 'FeatureCollection', features: feats.filter(f => /Polygon$/.test(f.geometry?.type || '')).map((f, i) => ({ ...f, properties: { key: `p${feats.indexOf(f)}`, sel: false } })) };
+    const polys = polyCollection();
     map?.getSource('polys')?.setData(polys);
     const b = new maplibregl.LngLatBounds();
     polys.features.forEach(f => extend(b, f.geometry));
@@ -430,8 +465,8 @@ function guessColumns(headers, rows) {
     return { text, street, cross: street ? cross : null, cross2: street && cross ? cross2 : null };
 }
 
-document.querySelectorAll('input[name=mode]').forEach(r => r.addEventListener('change', showMode));
-['col-text', 'col-street', 'col-cross', 'col-cross2'].forEach(id => $(id).addEventListener('change', showMode));
+document.querySelectorAll('input[name=mode]').forEach(r => r.addEventListener('change', () => { S.picked = true; showMode(); }));
+['col-text', 'col-street', 'col-cross', 'col-cross2'].forEach(id => $(id).addEventListener('change', () => { S.picked = true; showMode(); }));
 const mode = () => document.querySelector('input[name=mode]:checked').value;
 
 function showMode() {
@@ -633,14 +668,19 @@ function drawMap(fit) {
         }
     }
     map.getSource('results').setData({ type: 'FeatureCollection', features: feats });
-    if (S.kind === 'polygons') {
-        map.getSource('polys').setData({ type: 'FeatureCollection', features: S.results.map(r => ({ type: 'Feature', geometry: r.feature.geometry, properties: { key: r.key, sel: r.key === S.selected } })) });
-    }
+    if (S.kind === 'polygons') map.getSource('polys').setData(polyCollection());
     if (fit) {
         const b = new maplibregl.LngLatBounds();
         S.results.forEach(r => extend(b, geomOf(r)));
         if (!b.isEmpty()) map.fitBounds(b, { padding: 50, maxZoom: 16, duration: 600 });
     }
+}
+
+// The polygons on the map: the matched ones, or before Match, the ones loaded from the file.
+function polyCollection() {
+    const list = S.results.length ? S.results.map(r => ({ key: r.key, geometry: r.feature.geometry }))
+        : S.features.map((f, i) => ({ key: `p${i}`, geometry: f.geometry })).filter(x => /Polygon$/.test(x.geometry?.type || ''));
+    return { type: 'FeatureCollection', features: list.map(x => ({ type: 'Feature', geometry: x.geometry, properties: { key: x.key, sel: x.key === S.selected } })) };
 }
 
 function select(key, { fly = false, scroll = false } = {}) {

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# sf-blocks 2026.11.05.1: master copy. Projects that use it (civic-joy-fund/block-party, burritojustice/sf-striping)
+# sf-blocks 2026.11.05.3: master copy. Projects that use it (civic-joy-fund/block-party, burritojustice/sf-striping)
 # keep their own copies; change it here, bump VERSION, then copy it into them.
 """
 Match free-text block descriptions ("Sanchez between 27th St and Duncan", "100 block of Winfield",
@@ -722,6 +722,63 @@ def manual(st, cnns=(), nodes=(), text=""):
     return output_fields(st, r)
 
 
+PAIR_SPLIT = re.compile(r"\s*(?:&|/|@|\band\b|\bat\b|\bto\b|,)\s*", re.I)
+
+
+def is_street(st, text):
+    """Is this whole value one street's name ("Hayes", "16th St", "Divisdero")?"""
+    if not re.search(r"[a-z]", text, re.I):       # "15" alone is a number, not 15th Avenue
+        return False
+    words = norm_words(text)
+    return 0 < len(words) <= 5 and bool(st.candidates(words)[0])
+
+
+def column_report(st, rows, columns, sample=80):
+    """What each column looks like, from its first `sample` filled values: the share that are one street name
+    (`street`), two street names ("Bush and Sutter", `pair`), and a location the matcher finds with high or
+    medium confidence (`place`, from a smaller sample)."""
+    report = {}
+    for c in columns:
+        vals = [v for v in (str(r.get(c, "") or "").strip() for r in rows) if v][:sample]
+        if not vals:
+            report[c] = dict(filled=0, street=0, pair=0, place=0)
+            continue
+        street = sum(is_street(st, v) for v in vals) / len(vals)
+        pair = sum(len(ps) == 2 and all(is_street(st, x) for x in ps)
+                   for ps in ([x for x in PAIR_SPLIT.split(v) if x.strip()] for v in vals)) / len(vals)
+        place = 0
+        long_vals = [v for v in vals if re.search(r"[a-z]", v, re.I) and len(v) > 4][:40]
+        if long_vals and street < 0.6:
+            place = sum(any((r["segs"] or r.get("nodes")) and r["confidence"] in ("high", "medium")
+                            for r in match_text(st, v)) for v in long_vals) / len(long_vals)
+        report[c] = dict(filled=len(vals), street=round(street, 2), pair=round(pair, 2), place=round(place, 2))
+    return report
+
+
+def suggest_columns(st, rows, columns, sample=80):
+    """Recommend how to match a table: {"mode": "columns", "street", "cross", "cross2"} when the street and
+    cross street are in separate columns, else {"mode": "column", "column"}; plus the column_report."""
+    rep = column_report(st, rows, columns, sample)
+    order = {c: i for i, c in enumerate(columns)}
+    best = lambda cs, key: max(cs, key=lambda c: (key(rep[c]), -order[c])) if cs else None
+    streets = [c for c in columns if rep[c]["street"] >= 0.6]
+    crossish = [c for c in columns if rep[c]["street"] + rep[c]["pair"] >= 0.6]
+    out = dict(report=rep, mode="column", column=None, street=None, cross=None, cross2=None)
+    street = best(streets, lambda r: r["street"])
+    cross = best([c for c in crossish if c != street], lambda r: r["street"] + r["pair"])
+    if street and cross:
+        # the street column comes first in most tables ("Street, Cross"); keep the left one as the street
+        if order[cross] < order[street] and rep[cross]["pair"] == 0:
+            street, cross = cross, street
+        cross2 = best([c for c in streets if c not in (street, cross)], lambda r: r["street"])
+        out.update(mode="columns", street=street, cross=cross, cross2=cross2)
+    places = [c for c in columns if rep[c]["place"] >= 0.3]
+    out["column"] = best(places, lambda r: r["place"])
+    if out["mode"] == "column" and not out["column"]:
+        out["column"] = best([c for c in columns if rep[c]["filled"]], lambda r: r["place"] + r["pair"])
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("csv")
@@ -731,6 +788,7 @@ def main():
     ap.add_argument("--cross", help="column with the cross street (or two: \"Bush and Sutter\")")
     ap.add_argument("--cross2", help="column with a second cross street, for a block between two")
     ap.add_argument("--out")
+    ap.add_argument("--suggest", action="store_true", help="look through the columns, say which hold streets or locations, and stop")
     a = ap.parse_args()
     if bool(a.street) != bool(a.cross):
         sys.exit("--street and --cross go together")
@@ -738,6 +796,15 @@ def main():
     src = open(a.csv, newline="", encoding="utf-8-sig")
     reader = csv.DictReader(src)
     fields = reader.fieldnames or []
+    if a.suggest:
+        g = suggest_columns(st, list(reader), fields)
+        for c in fields:
+            r = g["report"][c]
+            print(f"  {c[:30]:30}  filled {r['filled']:>3}  street names {r['street']:>4.0%}  two streets {r['pair']:>4.0%}  locations {r['place']:>4.0%}")
+        if g["mode"] == "columns":
+            print(f'suggest: --street "{g["street"]}" --cross "{g["cross"]}"' + (f' --cross2 "{g["cross2"]}"' if g["cross2"] else ""))
+        print(f'suggest: --column "{g["column"]}"' if g["column"] else "no column looks like locations")
+        return
     need = [c for c in (a.street, a.cross, a.cross2) if c] if a.street else [a.column]
     for c in need:
         if fields and c not in fields:

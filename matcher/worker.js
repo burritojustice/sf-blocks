@@ -1,7 +1,7 @@
 // Matcher's background worker (a module worker, as Pyodide needs): runs sf-blocks' own Python matchers (scripts/match_blocks.py and
 // scripts/match_polygons.py) in Pyodide, so the page and the command line give the same answers.
 // Messages in:  {id, op: 'init', base, pyodide}   (pyodide: the Pyodide folder to load; matcher.js picks it) | {id, op: 'rows', rows, mode, start} | {id, op: 'polygons', features, nameField}
-//               {id, op: 'manual', cnns, nodes, text}
+//               {id, op: 'manual', cnns, nodes, text} | {id, op: 'suggest', rows, columns}
 // Messages out: {id, ok, result} | {id, error} | {op: 'status', text} while starting up.
 let py, ready;
 
@@ -41,6 +41,9 @@ def run_polygons(features_json, name_field):
            mp.match_features(json.loads(features_json), *POLY, name_field=name_field)]
     return json.dumps(out)
 
+def run_suggest(rows_json, columns_json):
+    return json.dumps(mb.suggest_columns(ST, json.loads(rows_json), json.loads(columns_json)))
+
 def run_manual(cnns_json, nodes_json, text):
     return json.dumps(mb.manual(ST, json.loads(cnns_json), json.loads(nodes_json), text))
 `);
@@ -57,6 +60,8 @@ onmessage = async ({ data: m }) => {
                 result = JSON.parse(py.globals.get('run_rows')(JSON.stringify(m.rows), JSON.stringify(m.mode), m.start));
             else if (m.op === 'polygons')
                 result = JSON.parse(py.globals.get('run_polygons')(JSON.stringify(m.features), m.nameField || 'name'));
+            else if (m.op === 'suggest')
+                result = JSON.parse(py.globals.get('run_suggest')(JSON.stringify(m.rows), JSON.stringify(m.columns)));
             else if (m.op === 'manual')
                 result = JSON.parse(py.globals.get('run_manual')(JSON.stringify(m.cnns || []), JSON.stringify(m.nodes || []), m.text || ''));
             else throw new Error('unknown op ' + m.op);

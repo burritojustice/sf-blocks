@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026.11.05.3
+- **Matcher suggests the columns.** After a file loads, it looks through the first 80 rows of every column for street names, pairs of street names ("Bush and Sutter") and locations it can match, then picks the columns and labels each one ("Corridor · street names 100%", "Where is it · locations 90%"). Headers don't have to say "Street" or "Location". A column you've already picked is left alone.
+- **Matcher: clicking a polygon before Match no longer clears the map.**
+- **Matcher:** the note when Safari 18 falls back to the older Python is now a quiet console message.
+- **`match_blocks.py --suggest`** prints the same column report and suggestion for a CSV. New library functions `column_report()` and `suggest_columns()`; matching itself is unchanged (byte-identical on 4,000 test rows).
+
 ## 2026.11.05.2
 - **Matcher works on Safari 18.** Pyodide 314 crashes while starting there ("Out of bounds memory access"); Safari 26, Chrome and Firefox are fine. When Python fails to start, Matcher now starts again with Pyodide 0.27 (Python 3.12), which gives the same results; tested identical to the command line. If neither starts, it says to update the browser or try Chrome or Firefox.
 
