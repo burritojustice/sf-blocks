@@ -2,7 +2,7 @@
 // own Python scripts (run in a worker with Pyodide); show and fix results on a map and in a table; save
 // the enhanced file. Nothing leaves the browser except requests for the map and the libraries.
 'use strict';
-const MATCHER_VERSION = '4';
+const MATCHER_VERSION = '5';
 const BASE = new URL('../', location.href).href;          // the sf-blocks site root
 const STYLE = key => `https://api.protomaps.com/styles/v5/white/en.json?key=${key}`;
 const DEFAULT_KEY = '071e272e8d5e13b7';                   // burritojustice.github.io (localhost accepts any key)
@@ -26,6 +26,7 @@ const S = {
     kind: null,          // 'rows' or 'polygons'
     name: '', ext: '',   // file name without extension, and its type
     headers: [], rows: [], features: [], workbook: null,
+    drive: null,         // the Google Drive file this came from: {id, name, kind, tabs?}
     results: [],         // rows: {key, src, out, fixed}; polygons: {key, index, name, feature, rows, fixed, only}
     polys: [],           // polygons loaded, before matching: {index (in the file), feature, removed, only}
     prepSel: new Set(),  // polygons selected in that list (file indexes)
@@ -109,7 +110,7 @@ function toast(text, frac = null, hideAfter = 0) {
 const done = (text, ms = 3500) => toast(text, null, ms);
 
 // ------------------------------------------------------------------ map
-let map, popup, hoverSeg = null;
+let map, popup, hoverSeg = null, HOME = [[-122.5149, 37.7081], [-122.357, 37.8324]];
 const empty = () => ({ type: 'FeatureCollection', features: [] });
 
 async function startMap() {
@@ -118,9 +119,17 @@ async function startMap() {
     const keys = region.basemap?.keys || {};
     const key = keys[location.origin] || DEFAULT_KEY;
     const bbox = region.bbox || [-122.5149, 37.7081, -122.357, 37.8324];
+    HOME = [[bbox[0], bbox[1]], [bbox[2], bbox[3]]];
     map = new maplibregl.Map({ container: 'map', style: STYLE(key), bounds: [[bbox[0], bbox[1]], [bbox[2], bbox[3]]],
         fitBoundsOptions: { padding: 20 }, attributionControl: { compact: true }, hash: false });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+    map.addControl({ onAdd() {
+        const el = document.createElement('div');
+        el.className = 'maplibregl-ctrl maplibregl-ctrl-group basemap-switch';
+        el.innerHTML = '<button type="button" data-b="map" aria-pressed="true">Map</button><button type="button" data-b="sat" aria-pressed="false">Satellite</button>';
+        el.onclick = e => { const b = e.target.closest('[data-b]'); if (b) setBasemap(b.dataset.b === 'sat'); };
+        return el;
+    }, onRemove() {} }, 'top-right');
     popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 8 });
     map.on('load', () => {
         fixCreeks();
@@ -130,6 +139,11 @@ async function startMap() {
         map.addSource('polys', { type: 'geojson', data: empty() });
         map.addSource('results', { type: 'geojson', data: empty() });
         map.addSource('picked', { type: 'geojson', data: empty() });
+        // Satellite: Esri World Imagery, drawn under the basemap's labels and above everything else of it
+        map.addSource('satellite', { type: 'raster', tileSize: 256, maxzoom: 19,
+            tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+            attribution: 'Imagery © <a href="https://www.esri.com">Esri</a>, Maxar, Earthstar Geographics' });
+        map.addLayer({ id: 'satellite', type: 'raster', source: 'satellite', layout: { visibility: 'none' } }, before);
         map.addLayer({ id: 'polys-fill', type: 'fill', source: 'polys', paint: { 'fill-color': ['case', ['get', 'only'], '#5b6475', '#2f5fd0'], 'fill-opacity': ['case', ['get', 'sel'], 0.22, 0.06] } }, before);
         map.addLayer({ id: 'polys-line', type: 'line', source: 'polys', paint: { 'line-color': ['case', ['get', 'only'], '#5b6475', '#2f5fd0'], 'line-width': ['case', ['get', 'sel'], 3, 1.2], 'line-opacity': 0.85 } }, before);
         map.addLayer({ id: 'streets-pick', type: 'line', source: 'streets', layout: { visibility: 'none', 'line-cap': 'round' },
@@ -150,8 +164,17 @@ async function startMap() {
         map.addLayer({ id: 'picked-pt', type: 'circle', source: 'picked', filter: ['==', ['geometry-type'], 'Point'],
             paint: { 'circle-color': '#7a4bd1', 'circle-radius': 9, 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 } });
         hookMap();
+        let sat = false;
+        try { sat = localStorage.getItem('matcher.basemap') === 'satellite'; } catch { }
+        setBasemap(sat);
         loadStreets();
     });
+}
+
+function setBasemap(sat) {
+    if (map.getLayer('satellite')) map.setLayoutProperty('satellite', 'visibility', sat ? 'visible' : 'none');
+    document.querySelectorAll('.basemap-switch button').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.b === 'sat') === sat)));
+    try { localStorage.setItem('matcher.basemap', sat ? 'satellite' : 'map'); } catch { }
 }
 
 // Creek fix (same as Block Party, Selecter and Joiner): Protomaps tags many Bay Area creeks as rivers,
@@ -274,7 +297,8 @@ $('paste-go').addEventListener('click', () => loadPasted($('paste').value));
 
 const stem = name => name.replace(/\.[^.]+$/, '');
 
-async function loadFile(file) {
+async function loadFile(file, drive = null) {
+    S.drive = drive;
     const ext = (file.name.match(/\.([^.]+)$/)?.[1] || '').toLowerCase();
     toast(`Reading ${file.name}…`);
     try {
@@ -291,6 +315,37 @@ async function loadFile(file) {
     }
 }
 
+// Google Drive: Google's picker, then a Google Sheet (every tab) or a file in Drive. google-drive.js does
+// the signing in and reading; the settings for each site are in google.json.
+const DRIVE_TYPES = ['application/vnd.google-apps.spreadsheet', 'text/csv', 'text/tab-separated-values', 'text/plain',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel',
+    'application/geo+json', 'application/json', 'application/vnd.geo+json'];
+$('drive').addEventListener('click', async () => {
+    try {
+        if (!GoogleDrive.ready && !(await GoogleDrive.config('google.json')))
+            return done("Google Drive isn't set up for this site yet. The steps are in matcher/README.md.", 8000);
+        toast('Opening Google Drive…');
+        const doc = await GoogleDrive.pick(DRIVE_TYPES);
+        if (!doc) return done('No file picked.', 2500);
+        toast(`Reading ${doc.name} from Google Drive…`);
+        const got = await GoogleDrive.read(doc);
+        const drive = { id: got.id, name: got.name, kind: got.kind };
+        if (got.kind === 'file') return loadFile(got.file, drive);
+        // a Google Sheet: each tab becomes a sheet, so the Sheet menu and column guessing work as for Excel
+        const wb = XLSX.utils.book_new(), used = new Set();
+        for (const t of got.tabs) {
+            let n = t.title.replace(/[\\/?*[\]:]/g, ' ').slice(0, 31) || 'Sheet', k = 2;
+            while (used.has(n.toLowerCase())) n = `${n.slice(0, 28)} ${k++}`;
+            used.add(n.toLowerCase());
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(t.values.length ? t.values : [['']]), n);
+        }
+        S.drive = { ...drive, tabs: got.tabs.map(t => ({ title: t.title, sheetId: t.sheetId })) };
+        useWorkbook(wb, got.name, 'gsheet');
+    } catch (e) {
+        done(`Google Drive: ${e.message}.`, 8000);
+    }
+});
+
 // Google Sheets and DataSF links become their CSV exports; anything else is fetched as is.
 function linkUrl(u) {
     let m;
@@ -306,6 +361,7 @@ function linkUrl(u) {
 }
 
 async function loadLink(u) {
+    S.drive = null;
     let target;
     try { target = linkUrl(u); } catch { return done("That doesn't look like a link.", 5000); }
     toast(`Loading ${target.name}…`);
@@ -327,6 +383,7 @@ async function loadLink(u) {
 }
 
 function loadPasted(text) {
+    S.drive = null;
     text = text.trim();
     if (!text) return;
     const first = text.split('\n')[0];
@@ -390,10 +447,37 @@ function reset() {
     if (map?.getSource('results')) { map.getSource('results').setData(empty()); map.getSource('polys').setData(empty()); }
 }
 
+// After a file loads, the Load card shrinks to one line (the file, Load another, Start over).
+function loaded(name) {
+    $('loaded-name').textContent = name;
+    $('loaded-file').hidden = false;
+    $('load-inputs').hidden = true;
+}
+$('load-another').addEventListener('click', () => { $('load-inputs').hidden = false; reveal($('card-load')); });
+$('start-over').addEventListener('click', startOver);
+function startOver() {
+    reset();
+    Object.assign(S, { kind: null, name: '', ext: '', headers: [], rows: [], features: [], workbook: null, drive: null });
+    ['card-match', 'card-results', 'drawer', 'loaded-file'].forEach(id => { $(id).hidden = true; });
+    $('load-inputs').hidden = false;
+    $('link').value = ''; $('paste').value = '';
+    if (map?.getSource('polys')) {
+        ['results', 'polys', 'picked'].forEach(id => map.getSource(id).setData(empty()));
+        map.fitBounds(HOME, { padding: 20, duration: 500 });
+    }
+    $('toast').hidden = true;
+    document.querySelector('.side').scrollTop = 0;
+}
+// Scroll the sidebar so a card that just changed is in view down to its last button.
+function reveal(el) {
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    requestAnimationFrame(() => el.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' }));
+}
+
 function useRows(headers, rows, name, ext) {
     reset();
     Object.assign(S, { kind: 'rows', headers, rows: rows.map(r => Object.fromEntries(headers.map(h => [h, r[h] == null ? '' : String(r[h])]))), features: [], name, ext });
-    if (!['xlsx', 'xls', 'xlsm', 'ods'].includes(ext)) S.workbook = null;
+    if (!['xlsx', 'xls', 'xlsm', 'ods', 'gsheet'].includes(ext)) S.workbook = null;
     $('text-opts').hidden = false; $('poly-opts').hidden = true;
     $('loaded').innerHTML = `${esc(name)} <span>· ${fmt(rows.length)} rows, ${headers.length} columns</span>`;
     const opts = ['', ...headers].map(h => `<option value="${esc(h)}">${esc(h || '(none)')}</option>`).join('');
@@ -406,6 +490,8 @@ function useRows(headers, rows, name, ext) {
     $('suggest').textContent = 'Looking through the columns…';
     showMode();
     $('card-match').hidden = false;
+    loaded(`${name}${S.drive ? ' (Google Drive)' : ''}`);
+    reveal($('card-match'));
     done(`Loaded ${fmt(rows.length)} rows from ${name}. Check the columns, then Match.`);
     suggest(S.rows);
 }
@@ -452,6 +538,8 @@ function usePolygons(feats, name, ext) {
     $('col-name').innerHTML = ['', ...headers].map(h => `<option value="${esc(h)}">${esc(h || '(numbered)')}</option>`).join('');
     $('col-name').value = headers.find(h => /^(name|title|label)$/i.test(h)) || headers.find(h => /name|title/i.test(h)) || '';
     $('card-match').hidden = false;
+    loaded(`${name}${S.drive ? ' (Google Drive)' : ''}`);
+    reveal($('card-match'));
     const polys = polyCollection();
     map?.getSource('polys')?.setData(polys);
     const b = new maplibregl.LngLatBounds();
@@ -576,6 +664,7 @@ async function matchRows() {
             if (i === 0 || (i / BATCH) % 5 === 4) showResults(false);
         }
         showResults(true);
+        reveal($('card-results'));
         const c = counts();
         const secs = (performance.now() - t0) / 1000;
         done(`Matched ${fmt(n)} rows in ${secs < 1 ? 'under a second' : `${secs.toFixed(1)} s`}: ${fmt(c.high)} high, ${fmt(c.medium)} medium, ${fmt(c.low)} low, ${fmt(c.none)} no match.`, 6000);
@@ -608,6 +697,7 @@ async function matchPolygons() {
         }
         S.results.sort((a, b) => a.index - b.index);
         showResults(true);
+        reveal($('card-results'));
         const kept = live.length - n;
         done(`Matched ${fmt(n)} ${n === 1 ? 'polygon' : 'polygons'}${kept ? `; ${fmt(kept)} kept as plain polygons` : ''}.`);
     } catch (e) {
@@ -697,7 +787,8 @@ function drawTable() {
                 <td><span class="conf ${confOf(r)}">${esc(label(r))}</span></td><td class="num">${r.index + 1}</td>
                 <td class="desc">${esc(r.name || `Polygon ${r.index + 1}`)}</td><td>${r.only ? 'not matched' : `${esc(p.cnn_shape)}, ${p.cnn_width_m} m`}</td>
                 <td class="num">${p.block_cnns.length}</td><td class="num">${p.partial_cnns.length}</td><td class="num">${p.intersection_cnns.length}</td>
-                <td class="mono">${esc(p.nearest_cnn ?? '')}</td><td><button type="button" class="btn small" data-fix="${r.key}">Fix</button></td></tr>`;
+                <td class="mono">${esc(p.nearest_cnn ?? '')}</td><td><button type="button" class="btn small" data-fix="${r.key}">Fix</button></td></tr>
+                ${S.selected === r.key && !r.only && !S.pick ? partsRows(r) : ''}`;
         }).join('');
     } else {
         head = '<tr><th></th><th>Row</th><th>Description</th><th>Matched as</th><th>Type</th><th>CNN</th><th>Notes</th><th></th></tr>';
@@ -722,6 +813,22 @@ $('table').addEventListener('click', e => {
     if (S.kind === 'polygons' && !S.results.length) {
         const tr = e.target.closest('tr[data-k]');
         if (tr) flyToPoly(Number(tr.dataset.k.slice(1)));
+        return;
+    }
+    const del = e.target.closest('[data-del]');
+    if (del) {
+        const r = S.results.find(x => x.key === S.selected);
+        if (del.dataset.del === 'ix') r.rows = r.rows.filter(x => x.type !== 'intersection');
+        else r.rows.splice(Number(del.dataset.del), 1);
+        S.hiPart = null;
+        syncPolygon(r); showResults(false); highlightPart(null);
+        return;
+    }
+    const part = e.target.closest('tr[data-part]');
+    if (part) {
+        const r = S.results.find(x => x.key === S.selected), i = Number(part.dataset.part);
+        S.hiPart = S.hiPart === i ? null : i;
+        drawTable(); highlightPart(S.hiPart == null ? null : r.rows[i]);
         return;
     }
     const fix = e.target.closest('[data-fix]');
@@ -786,7 +893,15 @@ function polygonOnly(p) {
             note: 'kept as a polygon; not matched', wkt: '' }] };
 }
 
+// Show one block or intersection of a polygon in the highlight color, and bring it into view.
+function highlightPart(x) {
+    const g = x && parseWkt(x.wkt);
+    map.getSource('picked').setData(g ? { type: 'FeatureCollection', features: [...parts(g)].map(p => ({ type: 'Feature', geometry: p, properties: {} })) } : empty());
+    if (g) { const b = extend(new maplibregl.LngLatBounds(), g); if (!b.isEmpty() && !map.getBounds().contains(b.getCenter())) map.easeTo({ center: b.getCenter(), duration: 400 }); }
+}
+
 function select(key, { fly = false, scroll = false } = {}) {
+    if (S.hiPart != null || key !== S.selected) { S.hiPart = null; highlightPart(null); }
     S.selected = S.selected === key && !fly ? null : key;
     drawTable(); drawMap(false);
     const r = S.results.find(x => x.key === key);
@@ -804,9 +919,10 @@ function startPick(key) {
     S.selected = key;
     if (S.kind === 'polygons') {
         const blocks = r.rows.filter(x => x.type === 'block').map(x => Number(x.cnn));
-        S.pick = { key, cnns: new Set(blocks), nodes: new Set() };
+        const nodes = r.rows.filter(x => x.type === 'intersection').map(x => Number(x.cnn));
+        S.pick = { key, cnns: new Set(blocks), nodes: new Set(nodes) };
         $('pick-title').textContent = `Fixing ${r.name || `polygon ${r.index + 1}`}`;
-        $('pick-help').textContent = 'Click blocks to add them to this polygon or take them out.';
+        $('pick-help').textContent = 'Click blocks, or zoom in and click intersections, to add them to this polygon or take them out.';
         $('pick-use').textContent = 'Done';
         $('pick-none').textContent = r.only ? 'Keep as a polygon' : 'Just a polygon';
         $('pick-none').hidden = false;
@@ -862,8 +978,12 @@ function pickClick(e) {
     const f = pickAt(e.point);
     if (!f) return;
     const P = S.pick, cnn = Number(f.properties.cnn), multi = e.originalEvent.shiftKey || S.kind === 'polygons';
+    if (S.kind === 'polygons') {          // polygons: blocks and intersections toggle independently
+        const set = f.source === 'nodes' ? P.nodes : P.cnns;
+        set.has(cnn) ? set.delete(cnn) : set.add(cnn);
+        return drawPicked();
+    }
     if (f.source === 'nodes') {
-        if (S.kind === 'polygons') return;
         P.cnns.clear();
         if (!multi) P.nodes.clear();
         P.nodes.has(cnn) ? P.nodes.delete(cnn) : P.nodes.add(cnn);
@@ -922,22 +1042,47 @@ function applyPolygonFix(r, P) {
         Object.assign(r.feature.properties, { cnn_shape: 'manual', cnn_width_m: null });
         const p = S.polys.find(x => x.index === r.index); if (p) p.only = false;
     }
-    const before = new Set(r.rows.filter(x => x.type === 'block').map(x => Number(x.cnn)));
+    const had = t => new Set(r.rows.filter(x => x.type === t).map(x => Number(x.cnn)));
+    const beforeB = had('block'), beforeN = had('intersection');
     const base = { polygon_index: r.index, polygon_name: r.name, polygon_id: r.rows[0]?.polygon_id ?? (r.feature.properties.id || ''),
         shape: r.feature.properties.cnn_shape, width_m: r.feature.properties.cnn_width_m };
-    r.rows = r.rows.filter(x => x.type !== 'block' || P.cnns.has(Number(x.cnn)));
+    r.rows = r.rows.filter(x => (x.type === 'block' ? P.cnns : P.nodes).has(Number(x.cnn)));
     for (const c of P.cnns) {
-        if (before.has(c)) continue;
+        if (beforeB.has(c)) continue;
         const s = S.streets.segs.get(c);
         r.rows.push({ ...base, type: 'block', cnn: c, street: s.street, from_street: s.f, to_street: s.t, layer: '', inside_pct: '', near_m: '',
             status: 'manual', note: 'picked on the map', wkt: `LINESTRING (${s.coords.map(([x, y]) => `${x.toFixed(6)} ${y.toFixed(6)}`).join(', ')})` });
     }
+    for (const c of P.nodes) {
+        if (beforeN.has(c)) continue;
+        const n = S.streets.nodes.get(c);
+        r.rows.push({ ...base, type: 'intersection', cnn: c, street: n.streets[0] || '', from_street: n.streets.slice(1).join(' & '), to_street: '', layer: '',
+            inside_pct: '', near_m: '', status: 'manual', note: 'picked on the map', wkt: `POINT (${n.xy[0].toFixed(6)} ${n.xy[1].toFixed(6)})` });
+    }
+    syncPolygon(r);
+}
+
+// After blocks or intersections change by hand: keep the rows in the script's order and the feature's lists in step.
+function syncPolygon(r) {
     r.rows.sort((a, b) => (a.type !== 'block') - (b.type !== 'block') || String(a.street).localeCompare(b.street) || a.cnn - b.cnn);
     const p = r.feature.properties, blocks = r.rows.filter(x => x.type === 'block');
     p.block_cnns = blocks.filter(x => x.status === 'full' || x.status === 'manual').map(x => Number(x.cnn));
     p.partial_cnns = blocks.filter(x => x.status === 'partial').map(x => Number(x.cnn));
     p.nearest_cnn = blocks.find(x => x.status === 'nearest')?.cnn ?? null;
+    p.intersection_cnns = r.rows.filter(x => x.type === 'intersection').map(x => Number(x.cnn));
     r.fixed = true;
+}
+
+// The selected polygon's blocks and intersections, listed under its row, each with Remove.
+function partsRows(r) {
+    const nb = r.rows.filter(x => x.type === 'block').length, ni = r.rows.filter(x => x.type === 'intersection').length;
+    const list = r.rows.map((x, i) => !x.type ? '' : `<tr data-part="${i}"${S.hiPart === i ? ' class="hi"' : ''}>
+        <td>${x.type}</td><td>${esc(x.street)}</td><td>${esc(x.type === 'block' ? `${x.from_street} to ${x.to_street}` : x.from_street)}</td>
+        <td class="mono">${x.cnn}</td><td>${esc(x.status)}${x.inside_pct !== '' && x.inside_pct != null && x.type === 'block' ? `, ${x.inside_pct}% inside` : ''}</td>
+        <td class="x"><button type="button" class="btn small" data-del="${i}">Remove</button></td></tr>`).join('');
+    return `<tr class="detail"><td colspan="9"><div class="parts-head">${fmt(nb)} ${nb === 1 ? 'block' : 'blocks'}, ${fmt(ni)} ${ni === 1 ? 'intersection' : 'intersections'}
+        ${ni ? `<button type="button" class="btn small" data-del="ix">Remove all intersections</button>` : ''}</div>
+        ${r.rows.some(x => x.type) ? `<table class="parts"><tbody>${list}</tbody></table>` : ''}</td></tr>`;
 }
 
 // ------------------------------------------------------------------ saving

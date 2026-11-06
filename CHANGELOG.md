@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026.11.06
+- **Matcher: Open from Google Drive.** Google's own file picker: pick a Google Sheet (every tab comes in, and the Sheet menu picks the one with the most rows) or a CSV, Excel or GeoJSON file stored in Drive. It asks only for permission to open the files you pick. It needs a one-time Google Cloud setup; the values go in `matcher/google.json`, and the steps are in `matcher/README.md`. `matcher/google-drive.js` is self-contained so Joiner and Block Party can copy it.
+- **Matcher: Satellite.** A Map / Satellite switch on the map (Esri World Imagery under the street labels). It remembers your choice.
+- **Matcher: remove single blocks and intersections from a polygon.** Click a matched polygon in the table to list its blocks and intersections; click one to see it on the map, Remove to take it out, or Remove all intersections. Fix on the map now adds or removes intersections too, not just blocks.
+- **Matcher: Start over** clears everything without reloading the page. After a file loads, the Load card shrinks to one line (the file name, Load another, Start over), and the sidebar scrolls so each new step is in view down to its buttons, Save included.
+
 ## 2026.11.05.4
 - **Matcher: choose the polygons before matching.** After a GeoJSON loads, the table lists its polygons with their areas. Select them with the checkboxes or by clicking on the map, then **Delete selected** (Bring back undoes it), **Keep as polygons** (saved as they are, with no matching), or **Match these**.
 - **Matcher: blocks only, or blocks and intersections.** A choice under "List for each polygon". The command line has the same choice: `match_polygons.py --no-intersections`.

@@ -22,6 +22,15 @@
   <aside class="side">
     <section class="card" id="card-load">
       <h2><span class="step">1</span> Load</h2>
+      <div class="loaded-file" id="loaded-file" hidden>
+        <span id="loaded-name"></span>
+        <span class="loaded-buttons">
+          <button type="button" class="btn small" id="load-another">Load another</button>
+          <button type="button" class="btn small" id="start-over">Start over</button>
+        </span>
+      </div>
+      <div class="load-inputs" id="load-inputs">
+      <button type="button" class="btn drive" id="drive">Open from Google Drive</button>
       <label class="drop" id="drop" for="file">
         <strong>Drop a file here</strong>
         <span>CSV, Excel, or GeoJSON with polygons</span>
@@ -38,6 +47,7 @@
         <button type="button" class="btn" id="paste-go">Use these rows</button>
       </details>
       <p class="private">Your file stays on this computer. Matching runs in your browser; nothing is uploaded.</p>
+      </div>
     </section>
 
     <section class="card" id="card-match" hidden>
@@ -109,6 +119,7 @@
 <script src="https://unpkg.com/maplibre-gl@5.16.0/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="google-drive.js"></script>
 <script src="matcher.js"></script>
 </body>
 </html>
