@@ -55,6 +55,8 @@ textarea { width: 100%; resize: vertical; font-size: 13px; }
 .radio input { margin-top: 3px; }
 .sub { margin-left: 24px; display: flex; flex-direction: column; gap: 6px; }
 .field.sub { flex-direction: row; }
+.suggest { margin: 0; font-size: 13px; color: var(--ink); background: var(--accent-wash); border-radius: 6px; padding: 6px 8px; }
+.suggest:empty { display: none; }
 .hint, .example { margin: 0; font-size: 12.5px; color: var(--muted); }
 .example { font-family: var(--mono); font-size: 12px; background: var(--wash); border-radius: 6px; padding: 6px 8px; overflow-wrap: anywhere; }
 .example:empty { display: none; }

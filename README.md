@@ -119,6 +119,7 @@ Run on a CSV:
 python3 scripts/match_blocks.py applications.csv                       # writes applications_matched.csv
 python3 scripts/match_blocks.py applications.csv --column "Location"   # a different column
 python3 scripts/match_blocks.py intersections.csv --street Street --cross Cross   # names already in two columns
+python3 scripts/match_blocks.py anything.csv --suggest                           # which columns hold streets or locations?
 ```
 
 When the street and cross street are already separate columns, `--street` and `--cross` name them. One cross street ("Hayes", "Octavia") is matched as an intersection; two in the cross column ("Sansome", "Bush and Sutter") as the block between them. `--cross2` names a column with a second cross street.
@@ -134,7 +135,7 @@ Standard library only; no installs.
 [Matcher](https://burritojustice.github.io/sf-blocks/matcher/) runs the same two scripts in the browser, so anyone can match a file without installing Python:
 
 - **Load** a CSV, an Excel workbook (.xlsx or .xls; it opens on the sheet with the most rows), a GeoJSON file, a link (Google Sheets shared to anyone with the link, DataSF datasets, any CSV or GeoJSON link the site allows other pages to load), or rows pasted in.
-- **Pick what to match:** one column that describes each location, or street and cross street columns. Matcher guesses from the headers. GeoJSON with polygons matches the blocks and intersections inside each polygon.
+- **Pick what to match:** one column that describes each location, or street and cross street columns. Matcher reads the first 80 rows of each column, suggests which hold street names or locations, and labels each column with what it found (the same check as `--suggest`). GeoJSON with polygons matches the blocks and intersections inside each polygon.
 - **Check and fix:** the map and table color each row by confidence, with the ones that need a look first. **Fix** lets you click the right block (shift-click for several) or intersection on the map, or mark a row as no match. Fixed rows say `method: manual`. For polygons, Fix adds or removes blocks.
 - **Save** a CSV with the same columns the command line writes, GeoJSON, or Excel.
 
