@@ -13,6 +13,6 @@ It runs sf-blocks' own `scripts/match_blocks.py` and `scripts/match_polygons.py`
 | `worker.js` | Loads Pyodide and the scripts, and runs `match_rows`, `match_features` and `manual` |
 | `matcher.css` | Styles |
 
-Libraries, pinned: MapLibre GL 5.16.0, PapaParse 5.4.1, SheetJS 0.20.3 (from SheetJS's own CDN; the npm copy is out of date), Pyodide 314.0.7.
+Libraries, pinned: MapLibre GL 5.16.0, PapaParse 5.4.1, SheetJS 0.20.3 (from SheetJS's own CDN; the npm copy is out of date), Pyodide 314.0.7, with Pyodide 0.27.7 as the fallback for Safari 18, where 314 crashes while starting.
 
-For testing without the CDN, `?pyodide=<url>/` loads Pyodide from another copy.
+For testing without the CDN, `?pyodide=<url>/` loads Pyodide from another copy; a comma-separated list tries each in turn.
