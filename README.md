@@ -35,6 +35,7 @@ Another city can start its own repo with the same layout (nyc-blocks, london-blo
 | `scripts/add_boundary_set.py` | Adds or refreshes one boundary set in one step (what the Action runs) |
 | `scripts/get_layers.py` | DataSF (or a local export) → `data/boundaries/` and its `index.json` |
 | `scripts/build_neighborhood_groups.py` | SF Planning's list → `reference/neighborhood-groups/neighborhood_groups.json` |
+| `matcher/` | **Matcher**, the web page for the two matchers below: https://burritojustice.github.io/sf-blocks/matcher/ |
 | `scripts/match_blocks.py` | Matches free-text locations to blocks; also a library used by sf-striping |
 | `scripts/match_polygons.py` | Polygons (GeoJSON) → the blocks and intersections inside them |
 | `docs/apps-and-data.md` | What's in this repo, how Joiner, Block Party and sf-striping use it, Airtable, and the roadmap, with a diagram |
@@ -124,9 +125,20 @@ When the street and cross street are already separate columns, `--street` and `-
 
 Output adds: `type` (block or intersection), `cnn`, `nearby_cnns` (for intersections), street, cross streets, address range, supervisor district, neighborhood, `wkt` (LINESTRING / POINT), `confidence` (high / medium / low / none), `method`, and `notes`. A description naming several blocks becomes several rows.
 
-As a library (how sf-striping uses it): `Streets(*load("data/streets.json"))`, then `try_between`, `match_cross`, `candidates`, `intersection`, and `between`.
+As a library (how sf-striping uses it): `Streets(*load("data/streets.json"))`, then `try_between`, `match_cross`, `candidates`, `intersection`, and `between`. To match many rows, `match_rows(st, rows, describer(...))` streams them: it yields each row's results as it goes, which is what the command line and Matcher both use.
 
 Standard library only; no installs.
+
+## Matcher (the web page)
+
+[Matcher](https://burritojustice.github.io/sf-blocks/matcher/) runs the same two scripts in the browser, so anyone can match a file without installing Python:
+
+- **Load** a CSV, an Excel workbook (.xlsx or .xls; it opens on the sheet with the most rows), a GeoJSON file, a link (Google Sheets shared to anyone with the link, DataSF datasets, any CSV or GeoJSON link the site allows other pages to load), or rows pasted in.
+- **Pick what to match:** one column that describes each location, or street and cross street columns. Matcher guesses from the headers. GeoJSON with polygons matches the blocks and intersections inside each polygon.
+- **Check and fix:** the map and table color each row by confidence, with the ones that need a look first. **Fix** lets you click the right block (shift-click for several) or intersection on the map, or mark a row as no match. Fixed rows say `method: manual`. For polygons, Fix adds or removes blocks.
+- **Save** a CSV with the same columns the command line writes, GeoJSON, or Excel.
+
+Nothing is uploaded: the file stays in the browser, and the matching runs there with [Pyodide](https://pyodide.org) (Python compiled for the browser). The page loads `scripts/match_blocks.py`, `scripts/match_polygons.py` and `data/streets.json` from this site, so a change to a script reaches Matcher as soon as it's merged. The first visit downloads Python (about 10 MB, cached after that); 4,000 rows take about 10 seconds.
 
 ## Updating
 

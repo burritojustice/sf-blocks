@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Matcher · sf-blocks</title>
+<meta name="description" content="Match street names, intersections and polygons to San Francisco street blocks (CNNs), in your browser.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.16.0/dist/maplibre-gl.css">
+<link rel="stylesheet" href="matcher.css">
+</head>
+<body>
+<header class="top">
+  <h1 class="logo" id="logo">Matcher</h1>
+  <p class="tagline">Match street names and polygons to San Francisco blocks</p>
+  <span class="pill" id="engine" title="Matching runs sf-blocks' own Python scripts in your browser">Starting Python…</span>
+</header>
+
+<main class="app">
+  <aside class="side">
+    <section class="card" id="card-load">
+      <h2><span class="step">1</span> Load</h2>
+      <label class="drop" id="drop" for="file">
+        <strong>Drop a file here</strong>
+        <span>CSV, Excel, or GeoJSON with polygons</span>
+        <span class="btn">Choose file</span>
+        <input type="file" id="file" accept=".csv,.tsv,.txt,.xlsx,.xls,.geojson,.json">
+      </label>
+      <form class="link" id="link-form">
+        <input type="url" id="link" placeholder="or paste a link: Google Sheet, DataSF, CSV, GeoJSON" aria-label="Link to a file">
+        <button type="submit" class="btn">Load</button>
+      </form>
+      <details class="paste">
+        <summary>or paste rows</summary>
+        <textarea id="paste" rows="5" placeholder="Paste rows from a spreadsheet (with a header row), or one location per line:&#10;Hayes and Octavia&#10;Sanchez between 27th and Duncan"></textarea>
+        <button type="button" class="btn" id="paste-go">Use these rows</button>
+      </details>
+      <p class="private">Your file stays on this computer. Matching runs in your browser; nothing is uploaded.</p>
+    </section>
+
+    <section class="card" id="card-match" hidden>
+      <h2><span class="step">2</span> What to match</h2>
+      <p class="loaded" id="loaded"></p>
+      <label class="field" id="sheet-field" hidden>Sheet <select id="sheet"></select></label>
+      <div id="text-opts">
+        <label class="radio"><input type="radio" name="mode" value="column" checked> One column describes each location</label>
+        <label class="field sub" data-mode="column">Column <select id="col-text"></select></label>
+        <label class="radio"><input type="radio" name="mode" value="columns"> Street and cross street are in separate columns</label>
+        <div class="sub" data-mode="columns">
+          <label class="field">Street <select id="col-street"></select></label>
+          <label class="field">Cross street <select id="col-cross"></select></label>
+          <label class="field">Second cross street <select id="col-cross2"></select></label>
+          <p class="hint">One cross street finds the intersection. Two ("Bush and Sutter", or a second column) find the block between them.</p>
+        </div>
+        <p class="example" id="example"></p>
+      </div>
+      <div id="poly-opts" hidden>
+        <label class="field">Name polygons by <select id="col-name"></select></label>
+        <p class="hint">Each polygon lists the blocks and intersections inside it. Thin strips drawn along a street keep only the blocks running along them.</p>
+      </div>
+      <button type="button" class="btn primary" id="go">Match</button>
+    </section>
+
+    <section class="card" id="card-results" hidden>
+      <h2><span class="step">3</span> Results</h2>
+      <div class="tally" id="tally"></div>
+      <p class="hint" id="results-hint"></p>
+      <div class="saves">
+        <button type="button" class="btn" id="save-csv">Save CSV</button>
+        <button type="button" class="btn" id="save-geojson">Save GeoJSON</button>
+        <button type="button" class="btn" id="save-xlsx">Save Excel</button>
+      </div>
+    </section>
+    <p class="foot" id="foot">Uses <a href="https://github.com/burritojustice/sf-blocks">sf-blocks</a>' match_blocks.py and match_polygons.py.</p>
+  </aside>
+
+  <section class="stage">
+    <div id="map"></div>
+    <div class="pickbar" id="pickbar" hidden>
+      <div class="pick-text"><strong id="pick-title"></strong><span id="pick-help"></span></div>
+      <div class="pick-buttons">
+        <button type="button" class="btn primary" id="pick-use">Use selection</button>
+        <button type="button" class="btn" id="pick-none">No match</button>
+        <button type="button" class="btn ghost" id="pick-cancel">Cancel</button>
+      </div>
+    </div>
+    <div class="drawer" id="drawer" hidden>
+      <div class="drawer-bar">
+        <div class="chips" id="chips"></div>
+        <input type="search" id="search" placeholder="Search rows" aria-label="Search rows">
+        <button type="button" class="btn ghost" id="drawer-toggle" aria-expanded="true">Hide table</button>
+      </div>
+      <div class="table-wrap" id="table-wrap"><table id="table"></table></div>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast" hidden><span id="toast-text"></span><div class="bar"><i id="toast-bar"></i></div></div>
+
+<script src="https://unpkg.com/maplibre-gl@5.16.0/dist/maplibre-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="matcher.js"></script>
+</body>
+</html>

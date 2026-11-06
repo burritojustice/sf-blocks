@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# sf-blocks 2026.10.22: master copy.
+# sf-blocks 2026.11.05.1: master copy.
 """
 Find the street blocks (segment CNNs) and intersections (node CNNs) inside polygons.
 
@@ -236,6 +236,38 @@ def line_wkt(pts):
     return "LINESTRING (" + ", ".join(f"{x / KX:.6f} {y / KY:.6f}" for x, y in pts) + ")"
 
 
+CSV_FIELDS = ["polygon_index", "polygon_name", "polygon_id", "shape", "width_m", "type", "cnn", "street",
+              "from_street", "to_street", "layer", "inside_pct", "near_m", "status", "note", "wkt"]
+
+
+class Options:
+    """The matching thresholds, with the command line's defaults."""
+    def __init__(self, thin_m=35, max_strip_m=60, near_m=40, min_partial=0.1):
+        self.thin_m, self.max_strip_m, self.near_m, self.min_partial = thin_m, max_strip_m, near_m, min_partial
+
+
+def match_features(features, segs, nodes, a=None, name_field="name"):
+    """Stream polygons through the matcher: yields (feature index, csv rows, feature with CNN properties)
+    for each polygon, one at a time. Features that aren't polygons are skipped."""
+    a = a or Options()
+    for i, f in enumerate(features):
+        g, p = f.get("geometry"), f.get("properties") or {}
+        if not g or g["type"] not in ("Polygon", "MultiPolygon") or p.get("felt:type") == "Text":
+            continue
+        poly = Poly(g)
+        shape, rows = match(poly, segs, nodes, a)
+        name, pid = p.get(name_field, ""), p.get("felt:id") or p.get("id") or ""
+        csv_rows = [dict(polygon_index=i, polygon_name=name, polygon_id=pid, shape=shape,
+                         width_m=round(poly.width), **r) for r in rows]
+        blocks = [r for r in rows if r["type"] == "block"]
+        props = dict(p, cnn_shape=shape, cnn_width_m=round(poly.width),
+                     block_cnns=[r["cnn"] for r in blocks if r["status"] == "full"],
+                     partial_cnns=[r["cnn"] for r in blocks if r["status"] == "partial"],
+                     nearest_cnn=next((r["cnn"] for r in blocks if r["status"] == "nearest"), None),
+                     intersection_cnns=[r["cnn"] for r in rows if r["type"] == "intersection"])
+        yield i, csv_rows, dict(type="Feature", geometry=g, properties=props)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("geojson")
@@ -256,32 +288,18 @@ def main():
     csv_path = os.path.join(out_dir, base + "_cnns.csv")
     gj_path = os.path.join(out_dir, base + "_cnns.geojson")
 
-    cols = ["polygon_index", "polygon_name", "polygon_id", "shape", "width_m", "type", "cnn", "street",
-            "from_street", "to_street", "layer", "inside_pct", "near_m", "status", "note", "wkt"]
     out_feats, n_rows, summary = [], 0, []
     with open(csv_path, "w", newline="", encoding="utf-8") as fh:
-        w = csv.DictWriter(fh, fieldnames=cols)
+        w = csv.DictWriter(fh, fieldnames=CSV_FIELDS)
         w.writeheader()
-        for i, f in enumerate(data["features"]):
-            g, p = f.get("geometry"), f.get("properties") or {}
-            if not g or g["type"] not in ("Polygon", "MultiPolygon") or p.get("felt:type") == "Text":
-                continue
-            poly = Poly(g)
-            shape, rows = match(poly, segs, nodes, a)
-            name, pid = p.get(a.name_field, ""), p.get("felt:id") or p.get("id") or ""
+        for i, rows, feat in match_features(data["features"], segs, nodes, a, a.name_field):
             for r in rows:
-                w.writerow(dict(polygon_index=i, polygon_name=name, polygon_id=pid, shape=shape,
-                                width_m=round(poly.width), **r))
+                w.writerow(r)
             n_rows += len(rows)
-            blocks = [r for r in rows if r["type"] == "block"]
-            props = dict(p, cnn_shape=shape, cnn_width_m=round(poly.width),
-                         block_cnns=[r["cnn"] for r in blocks if r["status"] == "full"],
-                         partial_cnns=[r["cnn"] for r in blocks if r["status"] == "partial"],
-                         nearest_cnn=next((r["cnn"] for r in blocks if r["status"] == "nearest"), None),
-                         intersection_cnns=[r["cnn"] for r in rows if r["type"] == "intersection"])
-            out_feats.append(dict(type="Feature", geometry=g, properties=props))
-            summary.append((name, shape, round(poly.width), len(props["block_cnns"]), len(props["partial_cnns"]),
-                            len(props["intersection_cnns"]), props["nearest_cnn"]))
+            out_feats.append(feat)
+            props = feat["properties"]
+            summary.append((props.get(a.name_field, ""), props["cnn_shape"], props["cnn_width_m"], len(props["block_cnns"]),
+                            len(props["partial_cnns"]), len(props["intersection_cnns"]), props["nearest_cnn"]))
     json.dump(dict(type="FeatureCollection", features=out_feats), open(gj_path, "w", encoding="utf-8"))
     for s in summary:
         print(f"{s[0][:44]:44}  {s[1]:5} {s[2]:4} m  blocks {s[3]:3}  partial {s[4]:3}  intersections {s[5]:3}"
