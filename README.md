@@ -51,6 +51,7 @@ To add a new set or refresh one, see **[ADDING-DATA.md](ADDING-DATA.md)**: a Git
 ```
 python3 scripts/get_layers.py                       # every set
 python3 scripts/get_layers.py census_tracts         # one set
+python3 scripts/get_layers.py assessor_blocks       # lots joined into assessor blocks (downloads 228k lots)
 python3 scripts/get_layers.py --file cultural_districts=data/uploads/Cultural_Districts_20261025.geojson
 python3 scripts/get_layers.py --check               # validate what's there
 ```

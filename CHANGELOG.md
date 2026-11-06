@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026.11.06.4
+- **Assessor blocks** (`assessor_blocks`, 5,413): the city's assessor blocks, made by joining the active lots in DataSF's Parcels – Active and Retired (`acdm-wktn`, 227,969 lots) by `block_num`. Each block has `block_num` ("0587", "2494A") and `parts` (how many lots). They're tighter than census blocks and match how lots are numbered (`mapblklot` starts with the block). 67 blocks whose lots leave gaps too wide to close stay as their separate lots; blocks split by an alley are two shapes. About 3.4 MB.
+- **`get_layers.py` can narrow and page a download, and dissolve a set by its own field.** In `sources.json`, `select` and `where` (SoQL) narrow the download, which then comes in pages of 50,000. `dissolveBy` joins the downloaded features by one of their fields. Lots join with their own dissolve: coordinates snapped to about 10 cm, edges split where a neighbor's corner touches them, condos stacked on one footprint counted once, small gaps closed, holes under 2,000 m² dropped, and outlines simplified to 0.4 m. `--file` takes several files joined with commas. The precinct dissolve is unchanged.
+
 ## 2026.11.06.3
 - **Matcher's icon is now four big puzzle pieces:** three teal and one magenta, filling the whole icon, with see-through gaps so it works on light and dark tab bars. The roads are gone. The phone home-screen icon puts it on white.
 - **Browsers pick up icon changes.** The icon links carry a version (`favicon.svg?v=7`), so browsers fetch the new icon instead of showing the one they saved. Bump it whenever the icon changes.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# sf-blocks 2026.11.02: master copy, ported from civic-joy-fund/joiner's scripts/get_layers.mjs (v42).
+# sf-blocks 2026.11.06.4: master copy, ported from civic-joy-fund/joiner's scripts/get_layers.mjs (v42).
 """Build the boundary sets in data/boundaries/ from DataSF (or local files) for Joiner, Block Party and
 anything else that joins to San Francisco's areas.
 
@@ -14,6 +14,11 @@ Each layer in sources.json comes from one of:
   localFiles   GeoJSON files already in this repo (Who's on First, in data/uploads/wof/)
   dissolve     another layer's features merged by a shared property ({from, by}: precincts into districts)
 
+With a dataset, "select" and "where" (SoQL) narrow the download, which then comes in pages of 50,000
+(active parcels: 228k), and "dissolveBy" merges the downloaded features by one of their own fields before
+cleaning (parcels into assessor blocks). --file can stand in for the download (one file, or several
+joined with commas).
+
 Cleaning: keeps only the configured properties, sets feature.id to the join key, rounds coordinates
 (6 decimals, about 10 cm), merges duplicate keys into one MultiPolygon when the layer allows it, and
 sorts features by key so reruns produce small diffs. Dates like 2022-01-01T00:00:00.000 become
@@ -27,7 +32,7 @@ Writes data/boundaries/<id>.geojson (one feature per line) and the manifest data
 which the apps read. Output is byte-for-byte what get_layers.mjs wrote for the same input, apart from
 the "retrieved" date and the manifest's _doc line. Standard library only.
 """
-import json, math, re, sys, unicodedata, urllib.request
+import json, math, re, sys, unicodedata, urllib.parse, urllib.request
 from datetime import date
 from functools import cmp_to_key
 from pathlib import Path
@@ -330,9 +335,12 @@ def dissolve(fc, prop):
 # ── one layer ───────────────────────────────────────────────────────────────────────────────────────
 def load(layer, cfg, files):
     if layer['id'] in files:
-        path = files[layer['id']]
-        print(f'  reading {path}')
-        return json.loads(path.read_text(encoding='utf-8')), 'file:' + path.name
+        paths = files[layer['id']]
+        gj = {'type': 'FeatureCollection', 'features': []}
+        for path in paths:
+            print(f'  reading {path}')
+            gj['features'] += json.loads(path.read_text(encoding='utf-8'))['features']
+        return self_dissolve(layer, gj), 'file:' + ', '.join(p.name for p in paths)
     if layer.get('dissolve'):
         src_id, by = layer['dissolve']['from'], layer['dissolve']['by']
         src = OUT / f'{src_id}.geojson'
@@ -346,11 +354,212 @@ def load(layer, cfg, files):
             print(f'  reading {f}')
             features += json.loads((ROOT / f).read_text(encoding='utf-8'))['features']
         return {'type': 'FeatureCollection', 'features': features}, ' + '.join(layer['localFiles'])
+    if layer.get('select') or layer.get('where'):
+        # a narrowed download, page by page
+        q = {k: layer[k2] for k, k2 in (('$select', 'select'), ('$where', 'where')) if layer.get(k2)}
+        gj, offset, first = {'type': 'FeatureCollection', 'features': []}, 0, None
+        while True:
+            url = f"{cfg['portal']}/resource/{layer['dataset']}.geojson?" + urllib.parse.urlencode(
+                {**q, '$order': ':id', '$limit': SODA_LIMIT, '$offset': offset})
+            first = first or url
+            print(f'  fetching {url}')
+            req = urllib.request.Request(url, headers={'Accept': 'application/geo+json, application/json'})
+            with urllib.request.urlopen(req, timeout=600) as r:
+                page = json.loads(r.read().decode('utf-8'))['features']
+            gj['features'] += page
+            if len(page) < SODA_LIMIT:
+                break
+            offset += SODA_LIMIT
+        return self_dissolve(layer, gj, paged=True), first
     url = f"{cfg['portal']}/resource/{layer['dataset']}.geojson?$limit={SODA_LIMIT}"
     print(f'  fetching {url}')
     req = urllib.request.Request(url, headers={'Accept': 'application/geo+json, application/json'})
     with urllib.request.urlopen(req, timeout=300) as r:
         return json.loads(r.read().decode('utf-8')), url
+
+
+# ── parcels into blocks: like dissolve, but for lots that don't share every vertex ─────────────────
+# Coordinates are snapped to SNAP degrees (about 10 cm); an edge that a neighbor's corner touches part way
+# along is split there, so shared edges cancel; slivers and small gaps between lots (holes under
+# HOLE_M2) go; rings are simplified to SIMPLIFY_M.
+SNAP, HOLE_M2, SLIVER_M2, SIMPLIFY_M = 1e-6, 2000, 20, 0.4
+GAP = 25   # in SNAP units: about 2.5 m
+M_PER_DEG_Y, M_PER_DEG_X = 110540, 111320 * math.cos(math.radians(37.76))
+
+
+def area_m2(ring):
+    return abs(signed_area(ring)) * M_PER_DEG_X * M_PER_DEG_Y
+
+
+def simplify_ring(ring, tol):
+    """Douglas-Peucker in meters, keeping the ring closed"""
+    pts = ring[:-1]
+    if len(pts) < 4:
+        return ring
+    sx, sy = M_PER_DEG_X, M_PER_DEG_Y
+    keep = [False] * len(pts)
+    keep[0] = True
+    far = max(range(len(pts)), key=lambda i: (pts[i][0] - pts[0][0]) ** 2 * sx * sx + (pts[i][1] - pts[0][1]) ** 2 * sy * sy)
+    keep[far] = True
+    stack = [(0, far), (far, len(pts))]
+    while stack:
+        a, b = stack.pop()
+        if b - a < 2:
+            continue
+        A, B = pts[a], pts[b % len(pts)]
+        dx, dy = (B[0] - A[0]) * sx, (B[1] - A[1]) * sy
+        L = math.hypot(dx, dy) or 1e-9
+        best, bi = -1, -1
+        for i in range(a + 1, b):
+            px, py = (pts[i][0] - A[0]) * sx, (pts[i][1] - A[1]) * sy
+            d = abs(px * dy - py * dx) / L
+            if d > best:
+                best, bi = d, i
+        if best > tol:
+            keep[bi] = True
+            stack += [(a, bi), (bi, b)]
+    out = [p for p, k in zip(pts, keep) if k]
+    return out + [out[0]] if len(out) >= 3 else ring
+
+
+def dissolve_lots(geoms, gap=None):
+    GAP_ = gap or GAP
+    snap = lambda p: (round(p[0] / SNAP), round(p[1] / SNAP))
+    segs, verts = [], set()
+    for poly in (p for g in geoms for p in polys_of(g)):
+        for r, ring in enumerate(poly):
+            rr = ring if (signed_area(ring) > 0) == (r == 0) else ring[::-1]
+            pts = [snap(p) for p in rr]
+            for i in range(len(pts) - 1):
+                if pts[i] != pts[i + 1]:
+                    segs.append((pts[i], pts[i + 1]))
+            verts.update(pts)
+    # vertices by grid cell, to find the ones lying along an edge
+    C = 200
+    cells = {}
+    for v in verts:
+        cells.setdefault((v[0] // C, v[1] // C), []).append(v)
+    edges = {}
+    for a, b in segs:
+        x0, x1, y0, y1 = min(a[0], b[0]), max(a[0], b[0]), min(a[1], b[1]), max(a[1], b[1])
+        dx, dy = b[0] - a[0], b[1] - a[1]
+        L2 = dx * dx + dy * dy
+        on = []
+        for cx in range(x0 // C, x1 // C + 1):
+            for cy in range(y0 // C, y1 // C + 1):
+                for v in cells.get((cx, cy), ()):
+                    if v == a or v == b or not (x0 - 1 <= v[0] <= x1 + 1 and y0 - 1 <= v[1] <= y1 + 1):
+                        continue
+                    t = ((v[0] - a[0]) * dx + (v[1] - a[1]) * dy) / L2
+                    if 0 < t < 1 and abs((v[0] - a[0]) * dy - (v[1] - a[1]) * dx) / math.sqrt(L2) <= 1.5:
+                        on.append((t, v))
+        chain = [a] + [v for _, v in sorted(on)] + [b]
+        for p, q in zip(chain, chain[1:]):
+            if p != q:
+                edges[(p, q)] = 1
+    # an edge between two lots runs both ways and cancels; the same edge twice the same way (condos stacked
+    # on one footprint) counts once
+    left = [e for e in edges if (e[1], e[0]) not in edges]
+    starts, scells = {}, {}
+    for e in left:
+        starts.setdefault(e[0], []).append(e)
+    for v in set(starts) | {e[1] for e in left}:
+        scells.setdefault((v[0] // C, v[1] // C), []).append(v)
+    # walk the edges; whenever the walk comes back to a vertex already on it, that loop is a ring (outlines
+    # that touch themselves at a corner make several)
+    used, rings = set(), []
+    for e0 in left:
+        if e0 in used:
+            continue
+        path, at, e = [e0[0]], {e0[0]: 0}, e0
+        while e is not None:
+            used.add(e)
+            v = e[1]
+            if v in at:
+                i = at[v]
+                loop = path[i:] + [v]
+                if len(loop) >= 4:
+                    rings.append([[x * SNAP, y * SNAP] for x, y in loop])
+                for w in path[i + 1:]:
+                    del at[w]
+                path = path[:i + 1]
+            else:
+                at[v] = len(path)
+                path.append(v)
+            e = next((x for x in starts.get(v, []) if x not in used), None)
+            if e is None:
+                # a small gap between lots: carry on from the nearest open edge, or close back onto the path
+                best, bd = None, GAP_ * GAP_
+                reach = GAP_ // C + 1
+                for cx in range(v[0] // C - reach, v[0] // C + reach + 1):
+                    for cy in range(v[1] // C - reach, v[1] // C + reach + 1):
+                        for w in scells.get((cx, cy), ()):
+                            d = (w[0] - v[0]) ** 2 + (w[1] - v[1]) ** 2
+                            if w != v and d < bd and (w in at or any(x not in used for x in starts.get(w, ()))):
+                                best, bd = w, d
+                if best is None:
+                    break
+                if best in at:
+                    i = at[best]
+                    loop = path[i:] + [best]
+                    if len(loop) >= 4:
+                        rings.append([[x * SNAP, y * SNAP] for x, y in loop])
+                    for w in path[i + 1:]:
+                        del at[w]
+                    path = path[:i + 1]
+                else:
+                    at[best] = len(path)
+                    path.append(best)
+                e = next((x for x in starts.get(best, []) if x not in used), None)
+    outers = [[r] for r in rings if signed_area(r) > 0 and area_m2(r) >= SLIVER_M2]
+    if not outers:
+        return None
+    # a ring inside another (a lot drawn over its neighbor) adds nothing
+    outers.sort(key=lambda o: -abs(signed_area(o[0])))
+    outers = [o for i, o in enumerate(outers) if not any(ring_contains(b[0], o[0][0][0], o[0][0][1]) for b in outers[:i])]
+    for h in (r for r in rings if signed_area(r) <= 0 and area_m2(r) >= HOLE_M2):
+        homes = sorted((o for o in outers if ring_contains(o[0], h[0][0], h[0][1])), key=lambda o: abs(signed_area(o[0])))
+        if homes:
+            homes[0].append(h)
+    outers = [[simplify_ring(r, SIMPLIFY_M) for r in poly] for poly in outers]
+    outers.sort(key=lambda o: -abs(signed_area(o[0])))
+    return {'type': 'Polygon', 'coordinates': outers[0]} if len(outers) == 1 else {'type': 'MultiPolygon', 'coordinates': outers}
+
+
+def self_dissolve(layer, gj, paged=False):
+    """merge the features by one of their own fields ("dissolveBy"), e.g. parcels into assessor blocks"""
+    if paged:
+        gj['_paged'] = True
+    by = layer.get('dissolveBy')
+    if not by:
+        return gj
+    print(f"  dissolving {len(gj['features'])} features by {by}")
+    groups = {}
+    for f in gj['features']:
+        v = (f.get('properties') or {}).get(by)
+        if v not in (None, ''):
+            groups.setdefault(js_str(v), []).append(f)
+    out, fallback = {'type': 'FeatureCollection', 'features': []}, []
+    for k in sorted(groups, key=locale_key):
+        fs = groups[k]
+        gs = [f['geometry'] for f in fs]
+        # wider gaps on a second try; the lots themselves (each footprint once) if that fails too
+        geom = dissolve_lots(gs) or dissolve_lots(gs, gap=GAP * 4)
+        if not geom:
+            seen, polys = set(), []
+            for p in (p for g in gs for p in polys_of(g)):
+                fp = json.dumps(p[0])
+                if fp not in seen:
+                    seen.add(fp)
+                    polys.append(p)
+            geom = {'type': 'MultiPolygon', 'coordinates': polys} if polys else None
+            fallback.append(k)
+        if geom:
+            out['features'].append({'type': 'Feature', 'id': k, 'properties': {by: k, 'name': k, 'parts': len(fs)}, 'geometry': geom})
+    out['_paged'] = True
+    if fallback:
+        print(f"  ! {len(fallback)} kept as their lots (gaps too wide to join): {' '.join(fallback[:12])}{' …' if len(fallback) > 12 else ''}")
+    return out
 
 
 DATE_T = re.compile(r'^(\d{4}-\d\d-\d\d)T00:00:00(\.000)?$')
@@ -359,7 +568,7 @@ DATE_T = re.compile(r'^(\d{4}-\d\d-\d\d)T00:00:00(\.000)?$')
 def clean(layer, gj, cfg):
     if not isinstance(gj, dict) or gj.get('type') != 'FeatureCollection' or not isinstance(gj.get('features'), list):
         raise ValueError('not a GeoJSON FeatureCollection')
-    if len(gj['features']) >= SODA_LIMIT:
+    if len(gj['features']) >= SODA_LIMIT and not gj.get('_paged'):
         print(f"  ! {len(gj['features'])} features — hit the download limit, data may be cut off")
     p = cfg.get('precision', 6)
     by_key, warnings = {}, []
@@ -470,6 +679,7 @@ def manifest_entry(layer, fc, nbytes, source):
     if layer.get('match'): e['match'] = layer['match']
     if layer.get('regional'): e['regional'] = True
     if layer.get('dissolve'): e['dissolve'] = layer['dissolve']
+    if layer.get('dissolveBy'): e['dissolveBy'] = layer['dissolveBy']
     if layer.get('choropleth'): e['choropleth'] = layer['choropleth']
     e.update(count=len(fc['features']), bbox=fc['bbox'], extent=fc['extent'], bytes=nbytes)
     if layer.get('dataset'): e['dataset'] = layer['dataset']
@@ -521,7 +731,7 @@ def main(argv):
             ident, _, p = (next(it, '') or '').partition('=')
             if not ident or not p:
                 die('--file needs <layer-id>=<path>')
-            files[ident] = Path(p).expanduser()
+            files[ident] = [Path(x).expanduser() for x in p.split(',')]
         elif a in ('-h', '--help'):
             print(__doc__)
             return 0
