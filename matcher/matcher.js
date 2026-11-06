@@ -2,7 +2,7 @@
 // own Python scripts (run in a worker with Pyodide); show and fix results on a map and in a table; save
 // the enhanced file. Nothing leaves the browser except requests for the map and the libraries.
 'use strict';
-const MATCHER_VERSION = '6';
+const MATCHER_VERSION = '7';
 const BASE = new URL('../', location.href).href;          // the sf-blocks site root
 const STYLE = key => `https://api.protomaps.com/styles/v5/white/en.json?key=${key}`;
 const DEFAULT_KEY = '071e272e8d5e13b7';                   // burritojustice.github.io (localhost accepts any key)

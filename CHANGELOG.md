@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026.11.06.3
+- **Matcher's icon is now four big puzzle pieces:** three teal and one magenta, filling the whole icon, with see-through gaps so it works on light and dark tab bars. The roads are gone. The phone home-screen icon puts it on white.
+- **Browsers pick up icon changes.** The icon links carry a version (`favicon.svg?v=7`), so browsers fetch the new icon instead of showing the one they saved. Bump it whenever the icon changes.
+
 ## 2026.11.06.2
 - **Matcher has an icon.** Four puzzle pieces fitted together over two crossing streets, with the fourth piece in yellow: blocks fitting into the street grid. `matcher/favicon.svg` for browser tabs, 16 and 32 px PNGs for browsers without SVG icons, and a 180 px `apple-touch-icon.png` for phone home screens.
 
