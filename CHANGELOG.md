@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.11.06.2
+- **Matcher has an icon.** Four puzzle pieces fitted together over two crossing streets, with the fourth piece in yellow: blocks fitting into the street grid. `matcher/favicon.svg` for browser tabs, 16 and 32 px PNGs for browsers without SVG icons, and a 180 px `apple-touch-icon.png` for phone home screens.
+
 ## 2026.11.06
 - **Matcher: Open from Google Drive.** Google's own file picker: pick a Google Sheet (every tab comes in, and the Sheet menu picks the one with the most rows) or a CSV, Excel or GeoJSON file stored in Drive. It asks only for permission to open the files you pick. It needs a one-time Google Cloud setup; the values go in `matcher/google.json`, and the steps are in `matcher/README.md`. `matcher/google-drive.js` is self-contained so Joiner and Block Party can copy it.
 - **Matcher: Satellite.** A Map / Satellite switch on the map (Esri World Imagery under the street labels). It remembers your choice.
