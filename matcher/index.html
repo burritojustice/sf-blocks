@@ -59,7 +59,12 @@
       </div>
       <div id="poly-opts" hidden>
         <label class="field">Name polygons by <select id="col-name"></select></label>
-        <p class="hint">Each polygon lists the blocks and intersections inside it. Thin strips drawn along a street keep only the blocks running along them.</p>
+        <fieldset class="choice">
+          <legend>List for each polygon</legend>
+          <label class="radio"><input type="radio" name="ix" value="yes" checked> Blocks and intersections</label>
+          <label class="radio"><input type="radio" name="ix" value="no"> Blocks only</label>
+        </fieldset>
+        <p class="hint" id="prep-hint">The table lists the polygons: select any you don't need and delete them, or keep them as plain polygons that aren't matched. Thin strips drawn along a street keep only the blocks running along them.</p>
       </div>
       <button type="button" class="btn primary" id="go">Match</button>
     </section>
@@ -68,6 +73,7 @@
       <h2><span class="step">3</span> Results</h2>
       <div class="tally" id="tally"></div>
       <p class="hint" id="results-hint"></p>
+      <button type="button" class="btn small" id="poly-back" hidden>Change the polygon list</button>
       <div class="saves">
         <button type="button" class="btn" id="save-csv">Save CSV</button>
         <button type="button" class="btn" id="save-geojson">Save GeoJSON</button>
