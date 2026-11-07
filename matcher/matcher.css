@@ -195,3 +195,10 @@ td.mono { white-space: nowrap; }
 .learn { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 8px; background: #f3effc; }
 .learn p { margin: 0; font-size: 13px; }
 .learn .hint { font-size: 12px; }
+.pick-mode { display: inline-flex; align-self: flex-start; margin: 0 0 6px; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.pick-mode button { font: 600 12px/1 var(--body); padding: 5px 10px; border: 0; background: var(--paper); color: var(--muted); cursor: pointer; }
+.pick-mode button[aria-pressed=true] { background: #7a4bd1; color: #fff; }
+.pick-text strong { display: block; }
+.maplibregl-ctrl-group.parcels-switch button { width: auto; height: auto; display: block; font: 600 12px/1 var(--body); padding: 8px 10px; border: 0; background: var(--paper); color: var(--muted); cursor: pointer; }
+.maplibregl-ctrl-group.parcels-switch button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+.check { display: flex; gap: 6px; align-items: flex-start; font-size: 13px; }

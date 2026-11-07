@@ -5,6 +5,7 @@ The **main copy** of San Francisco's map data: boundaries, aliases, city layers,
 ## Working rules
 
 - **Ship as a PR:** make a branch, commit, push it, and open the PR (`gh api repos/burritojustice/sf-blocks/pulls -f head=<branch> -f base=main ...`; GraphQL is blocked here).
+- **PRs always target `main`:** when a change builds on an unmerged PR, branch from that PR's branch, open the new PR against `main`, and say "Includes #NN". Never target another PR's branch: GitHub can merge a stacked PR into its parent branch after that branch has gone to `main`, stranding it (this happened in Block Party).
 - **Check a PR is still open before pushing to its branch** (`gh api repos/burritojustice/sf-blocks/pulls/<n> --jq .merged_at`). A commit pushed after the merge never reaches `main`, and editing the closed PR hides it. If it was merged, branch from `main`, cherry-pick, and open a new PR.
 - **Version every change:** bump `VERSION` (date style, `2026.10.23`), the version in each changed script's first line, and add an entry at the top of `CHANGELOG.md`. Docs-only changes don't need it.
 - **Change here first:** then copy the files into Block Party (and other users) with their "Copied from burritojustice/sf-blocks <version>" header, and open a PR there too.
@@ -39,6 +40,7 @@ The **main copy** of San Francisco's map data: boundaries, aliases, city layers,
 - **`matcher/`** is the web page for both matchers. `worker.js` (a module worker; Pyodide 314 refuses classic workers) loads Pyodide from jsDelivr, fetches the two scripts and `data/streets.json` from the site, and calls `match_rows`, `match_features`, `manual` and `suggest_columns`. Keep those functions' signatures, and keep the scripts standard library only so they run there unchanged. `matcher.js` mirrors `OUT_FIELDS`, `CSV_FIELDS` and `from_columns()`; change them together.
   - Pyodide versions are `PYODIDE_VERSIONS` in `matcher.js`: 314 first, then 0.27 (Python 3.12) for Safari 18, where 314 crashes while starting. Each try gets a fresh worker. Keep the scripts working on Python 3.12.
   - Google Drive: `google-drive.js` (sign-in with Google Identity Services, the Picker, Sheets and Drive reads) and `google.json` (clientId, apiKey, appId per site origin; public values). Google is unreachable from the sandbox: test with stand-ins for `accounts.google.com/gsi/client` and `apis.google.com/js/api.js` and routed `sheets.googleapis.com` / `www.googleapis.com` answers.
+  - Parcels: `data/Land_Use_with_Active_Parcel_Information.pmtiles` through PMTiles (needs a test server that answers range requests).
   - Testing: Playwright doesn't intercept a worker's requests, so serve Pyodide locally and open `matcher/?pyodide=<local url>/` (a comma-separated list tries each in turn, to test the fallback). Compare Matcher's saved CSV with the command line's output; they should be identical.
 
 ## Data

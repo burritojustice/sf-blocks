@@ -2,7 +2,7 @@
 // own Python scripts (run in a worker with Pyodide); show and fix results on a map and in a table; save
 // the enhanced file. Nothing leaves the browser except requests for the map and the libraries.
 'use strict';
-const MATCHER_VERSION = '10';
+const MATCHER_VERSION = '11';
 const BASE = new URL('../', location.href).href;          // the sf-blocks site root
 const STYLE = key => `https://api.protomaps.com/styles/v5/white/en.json?key=${key}`;
 const DEFAULT_KEY = '071e272e8d5e13b7';                   // burritojustice.github.io (localhost accepts any key)
@@ -132,6 +132,13 @@ async function startMap() {
         el.onclick = e => { const b = e.target.closest('[data-b]'); if (b) setBasemap(b.dataset.b === 'sat'); };
         return el;
     }, onRemove() {} }, 'top-right');
+    map.addControl({ onAdd() {
+        const el = document.createElement('div');
+        el.className = 'maplibregl-ctrl maplibregl-ctrl-group parcels-switch';
+        el.innerHTML = '<button type="button" id="parcels-toggle" aria-pressed="false" title="Show lot lines (from zoom 15)">Parcels</button>';
+        el.onclick = () => showParcels(!S.parcelsOn);
+        return el;
+    }, onRemove() {} }, 'top-right');
     popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 8 });
     map.on('load', () => {
         fixCreeks();
@@ -166,6 +173,7 @@ async function startMap() {
             layout: { 'line-cap': 'round' }, paint: { 'line-color': '#7a4bd1', 'line-width': ['interpolate', ['linear'], ['zoom'], 13, 5, 17, 12], 'line-opacity': 0.8 } }, before);
         map.addLayer({ id: 'picked-pt', type: 'circle', source: 'picked', filter: ['==', ['geometry-type'], 'Point'],
             paint: { 'circle-color': '#7a4bd1', 'circle-radius': 9, 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 } });
+        addParcelLayers(before);
         hookMap();
         let sat = false;
         try { sat = localStorage.getItem('matcher.basemap') === 'satellite'; } catch { }
@@ -829,6 +837,7 @@ async function matchPolygons() {
             showResults(false);
         }
         S.results.sort((a, b) => a.index - b.index);
+        if ($('want-parcels').checked) await listParcels(S.results.filter(r => !r.only));
         showResults(true);
         reveal($('card-results'));
         const kept = live.length - n;
@@ -945,7 +954,9 @@ function drawTable() {
         head = `<tr><th></th><th>Row</th><th>Description</th><th>Matched as</th><th>Type</th><th>CNN</th><th>Notes</th><th></th>${extraHead()}</tr>`;
         body = shown.map(r => {
             const o = r.out;
-            const as = o.type === 'intersection' ? `${o.street} & ${o.from_street}` : o.street ? `${o.street}${o.from_street ? `, ${o.from_street} to ${o.to_street}` : ''}` : '';
+            const lots = String(o.parcels || '').split(';').filter(Boolean);
+            const as = [o.type === 'intersection' ? `${o.street} & ${o.from_street}` : o.street ? `${o.street}${o.from_street ? `, ${o.from_street} to ${o.to_street}` : ''}` : '',
+                lots.length ? `${lots.length === 1 ? `parcel ${lots[0]}` : `${lots.length} parcels`}` : ''].filter(Boolean).join(' + ');
             return `<tr data-k="${r.key}"${S.selected === r.key ? ' class="sel"' : ''}>
                 <td><span class="conf ${confOf(r)}">${esc(label(r))}</span></td><td class="num">${o.source_row}${o.parts > 1 ? `.${o.part}` : ''}</td>
                 <td class="desc">${esc(describe(S.rows[r.src]))}</td><td>${esc(as)}</td><td>${esc(o.type)}</td>
@@ -1057,6 +1068,7 @@ function select(key, { fly = false, scroll = false } = {}) {
     S.selected = S.selected === key && !fly ? null : key;
     drawTable(); drawMap(false);
     const r = S.results.find(x => x.key === key);
+    showSelectedParcels(S.selected ? r : null);
     if (fly && r) {
         const b = extend(new maplibregl.LngLatBounds(), geomOf(r));
         if (!b.isEmpty()) map.fitBounds(b, { padding: 80, maxZoom: 17, duration: 500 });
@@ -1072,7 +1084,7 @@ function startPick(key) {
     if (S.kind === 'polygons') {
         const blocks = r.rows.filter(x => x.type === 'block').map(x => Number(x.cnn));
         const nodes = r.rows.filter(x => x.type === 'intersection').map(x => Number(x.cnn));
-        S.pick = { key, cnns: new Set(blocks), nodes: new Set(nodes) };
+        S.pick = { key, cnns: new Set(blocks), nodes: new Set(nodes), lots: new Set(r.rows.filter(x => x.type === 'parcel').map(x => x.blklot)), mode: 'streets' };
         $('pick-title').textContent = `Fixing ${r.name || `polygon ${r.index + 1}`}`;
         $('pick-help').textContent = 'Click blocks, or zoom in and click intersections, to add them to this polygon or take them out.';
         $('pick-change').textContent = '';
@@ -1081,7 +1093,8 @@ function startPick(key) {
         $('pick-none').hidden = false;
     } else {
         const o = r.out, cnns = o.cnn ? o.cnn.split(';').map(Number) : [];
-        S.pick = { key, cnns: new Set(o.type === 'block' ? cnns : []), nodes: new Set(o.type === 'intersection' ? cnns : []) };
+        S.pick = { key, cnns: new Set(o.type === 'block' ? cnns : []), nodes: new Set(o.type === 'intersection' ? cnns : []),
+            lots: new Set(String(o.parcels || '').split(';').filter(Boolean)), mode: 'streets' };
         $('pick-title').textContent = `Row ${o.source_row}: ${describe(S.rows[r.src]) || '(empty)'}`;
         $('pick-help').textContent = 'Click the right block (shift-click for more than one) or zoom in and click an intersection.';
         $('pick-change').textContent = '';
@@ -1090,6 +1103,7 @@ function startPick(key) {
         $('pick-none').hidden = false;
     }
     $('pickbar').hidden = false;
+    setPickMode('streets');
     map.setLayoutProperty('streets-pick', 'visibility', 'visible');
     map.setLayoutProperty('nodes-pick', 'visibility', 'visible');
     map.setPaintProperty('results-line', 'line-opacity', ['case', ['get', 'sel'], 0.35, 0.25]);
@@ -1110,6 +1124,8 @@ function endPick() {
         map.setPaintProperty('results-pt', 'circle-opacity', 1);
         map.getSource('picked').setData(empty());
         setHover(null);
+        if (map.getLayer('parcels-picked')) ['parcels-picked', 'parcels-picked-line'].forEach(id => map.setFilter(id, ['in', ['get', 'mapblklot'], ['literal', []]]));
+        syncParcelLayers();
     }
 }
 
@@ -1123,6 +1139,7 @@ const pickAt = point => {
     return map.queryRenderedFeatures(box, { layers: ['nodes-pick'] })[0] || map.queryRenderedFeatures(box, { layers: ['streets-pick'] })[0];
 };
 function pickHover(e) {
+    if (S.pick?.mode === 'parcels') return parcelHover(e);
     const f = pickAt(e.point);
     setHover(f);
     map.getCanvas().style.cursor = f ? 'pointer' : '';
@@ -1133,6 +1150,7 @@ function pickHover(e) {
         : `<div class="pop-title">${esc(p.street)}</div><div class="pop-sub">${esc(p.f)} to ${esc(p.t)} · block ${p.cnn}</div>`).addTo(map);
 }
 function pickClick(e) {
+    if (S.pick?.mode === 'parcels') return parcelClick(e);
     const f = pickAt(e.point);
     if (!f) return;
     const P = S.pick, cnn = Number(f.properties.cnn), multi = e.originalEvent.shiftKey || S.kind === 'polygons';
@@ -1157,7 +1175,8 @@ function drawPicked() {
     for (const c of P.cnns) { const s = S.streets.segs.get(c); if (s) feats.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: s.coords }, properties: {} }); }
     for (const c of P.nodes) { const n = S.streets.nodes.get(c); if (n) feats.push({ type: 'Feature', geometry: { type: 'Point', coordinates: n.xy }, properties: {} }); }
     map.getSource('picked').setData({ type: 'FeatureCollection', features: feats });
-    const n = P.cnns.size + P.nodes.size;
+    if (map.getLayer('parcels-picked')) ['parcels-picked', 'parcels-picked-line'].forEach(id => map.setFilter(id, ['in', ['get', 'mapblklot'], ['literal', [...P.lots]]]));
+    const n = P.cnns.size + P.nodes.size + P.lots.size;
     $('pick-use').disabled = S.kind !== 'polygons' && !n;
     if (S.kind !== 'polygons') $('pick-change').textContent = n ? `Change to ${pickedText(P)}` : '';
 }
@@ -1167,7 +1186,9 @@ function pickedText(P) {
     const parts = [];
     for (const c of P.nodes) { const x = S.streets.nodes.get(c); parts.push(`CNN ${c}, ${x ? x.streets.map(nice).join(' and ') : 'intersection'}`); }
     for (const c of P.cnns) { const x = S.streets.segs.get(c); parts.push(`CNN ${c}, ${x ? `${nice(x.street)} from ${nice(x.f)} to ${nice(x.t)}` : 'block'}`); }
-    return parts.length > 3 ? `${parts.length} blocks: ${parts.slice(0, 3).join('; ')}; …` : parts.join('; ');
+    const where = parts.length > 3 ? `${parts.length} blocks: ${parts.slice(0, 3).join('; ')}; …` : parts.join('; ');
+    const lots = [...P.lots], lotText = !lots.length ? '' : lots.length > 3 ? `${lots.length} parcels` : lots.map(l => `parcel ${l}${S.lotInfo.get(l)?.address ? ` (${S.lotInfo.get(l).address})` : ''}`).join(', ');
+    return [where, lotText].filter(Boolean).join(' + ');
 }
 $('pick-cancel').addEventListener('click', () => { endPick(); drawMap(false); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.pick) { endPick(); drawMap(false); } });
@@ -1179,7 +1200,8 @@ $('pick-use').addEventListener('click', async () => {
         try {
             const fields = await ask('manual', { cnns: [...P.cnns], nodes: [...P.nodes], text: describe(S.rows[r.src]) });
             r.before ??= { cnn: r.out.cnn, confidence: r.out.confidence };
-            r.out = { ...r.out, ...fields, matched_text: r.out.matched_text || fields.matched_text };
+            r.out = { ...r.out, ...fields, matched_text: r.out.matched_text || fields.matched_text, ...lotFields(P.lots) };
+            if (!fields.type && P.lots.size) Object.assign(r.out, { type: 'parcel', confidence: 'high', method: 'manual', notes: 'picked on the map' });
             r.fixed = true;
         } catch (e) { return done(`Couldn't use that: ${e.message}`, 6000); }
     }
@@ -1197,7 +1219,7 @@ $('pick-none').addEventListener('click', () => {
         return done(`${r.name || `Polygon ${r.index + 1}`} kept as a plain polygon.`);
     }
     r.before ??= { cnn: r.out.cnn, confidence: r.out.confidence };
-    Object.assign(r.out, { type: '', cnn: '', nearby_cnns: '', street: '', from_street: '', to_street: '', address_low: '', address_high: '',
+    Object.assign(r.out, { parcels: '', parcel_addresses: '', type: '', cnn: '', nearby_cnns: '', street: '', from_street: '', to_street: '', address_low: '', address_high: '',
         address_ranges: '', supervisor_district: '', nhood: '', wkt: '', confidence: 'none', method: 'manual', notes: 'marked as no match' });
     r.fixed = true;
     endPick(); showResults(false);
@@ -1206,6 +1228,7 @@ $('pick-none').addEventListener('click', () => {
 
 // Polygons: blocks picked by hand are added with status "manual"; blocks taken out are dropped.
 function applyPolygonFix(r, P) {
+    const hadLots = r.only ? new Set() : new Set(r.rows.filter(x => x.type === 'parcel').map(x => x.blklot));
     if (r.only) {          // matching a polygon that was kept as is
         r.only = false; r.rows = [];
         Object.assign(r.feature.properties, { cnn_shape: 'manual', cnn_width_m: null });
@@ -1215,7 +1238,7 @@ function applyPolygonFix(r, P) {
     const beforeB = had('block'), beforeN = had('intersection');
     const base = { polygon_index: r.index, polygon_name: r.name, polygon_id: r.rows[0]?.polygon_id ?? (r.feature.properties.id || ''),
         shape: r.feature.properties.cnn_shape, width_m: r.feature.properties.cnn_width_m };
-    r.rows = r.rows.filter(x => (x.type === 'block' ? P.cnns : P.nodes).has(Number(x.cnn)));
+    r.rows = r.rows.filter(x => x.type === 'parcel' ? P.lots.has(x.blklot) : (x.type === 'block' ? P.cnns : P.nodes).has(Number(x.cnn)));
     for (const c of P.cnns) {
         if (beforeB.has(c)) continue;
         const s = S.streets.segs.get(c);
@@ -1228,28 +1251,35 @@ function applyPolygonFix(r, P) {
         r.rows.push({ ...base, type: 'intersection', cnn: c, street: n.streets[0] || '', from_street: n.streets.slice(1).join(' & '), to_street: '', layer: '',
             inside_pct: '', near_m: '', status: 'manual', note: 'picked on the map', wkt: `POINT (${n.xy[0].toFixed(6)} ${n.xy[1].toFixed(6)})` });
     }
+    for (const lot of P.lots) if (!hadLots.has(lot)) r.rows.push(parcelRow(r, lot, 'manual'));
     syncPolygon(r);
 }
 
 // After blocks or intersections change by hand: keep the rows in the script's order and the feature's lists in step.
 function syncPolygon(r) {
-    r.rows.sort((a, b) => (a.type !== 'block') - (b.type !== 'block') || String(a.street).localeCompare(b.street) || a.cnn - b.cnn);
+    const rank = { block: 0, intersection: 1, parcel: 2 };
+    r.rows.sort((a, b) => (rank[a.type] ?? 1) - (rank[b.type] ?? 1) || String(a.street).localeCompare(b.street) || a.cnn - b.cnn || String(a.blklot || '').localeCompare(b.blklot || ''));
     const p = r.feature.properties, blocks = r.rows.filter(x => x.type === 'block');
     p.block_cnns = blocks.filter(x => x.status === 'full' || x.status === 'manual').map(x => Number(x.cnn));
     p.partial_cnns = blocks.filter(x => x.status === 'partial').map(x => Number(x.cnn));
     p.nearest_cnn = blocks.find(x => x.status === 'nearest')?.cnn ?? null;
     p.intersection_cnns = r.rows.filter(x => x.type === 'intersection').map(x => Number(x.cnn));
+    if (r.rows.some(x => x.type === 'parcel') || p.parcels) p.parcels = r.rows.filter(x => x.type === 'parcel').map(x => x.blklot);
     r.fixed = true;
 }
 
 // The selected polygon's blocks and intersections, listed under its row, each with Remove.
 function partsRows(r) {
     const nb = r.rows.filter(x => x.type === 'block').length, ni = r.rows.filter(x => x.type === 'intersection').length;
-    const list = r.rows.map((x, i) => !x.type ? '' : `<tr data-part="${i}"${S.hiPart === i ? ' class="hi"' : ''}>
+    const np = r.rows.filter(x => x.type === 'parcel').length;
+    const list = r.rows.map((x, i) => !x.type ? '' : x.type === 'parcel' ? `<tr data-part="${i}"${S.hiPart === i ? ' class="hi"' : ''}>
+        <td>parcel</td><td>${esc(x.street)}</td><td>${esc(landuseName(x.landuse))}${x.homes ? `, ${x.homes} ${x.homes === 1 ? 'home' : 'homes'}` : ''}</td>
+        <td class="mono">${esc(x.blklot)}</td><td>${esc(x.status)}</td>
+        <td class="x"><button type="button" class="btn small" data-del="${i}">Remove</button></td></tr>` : `<tr data-part="${i}"${S.hiPart === i ? ' class="hi"' : ''}>
         <td>${x.type}</td><td>${esc(x.street)}</td><td>${esc(x.type === 'block' ? `${x.from_street} to ${x.to_street}` : x.from_street)}</td>
         <td class="mono">${x.cnn}</td><td>${esc(x.status)}${x.inside_pct !== '' && x.inside_pct != null && x.type === 'block' ? `, ${x.inside_pct}% inside` : ''}</td>
         <td class="x"><button type="button" class="btn small" data-del="${i}">Remove</button></td></tr>`).join('');
-    return `<tr class="detail"><td colspan="9"><div class="parts-head">${fmt(nb)} ${nb === 1 ? 'block' : 'blocks'}, ${fmt(ni)} ${ni === 1 ? 'intersection' : 'intersections'}
+    return `<tr class="detail"><td colspan="9"><div class="parts-head">${fmt(nb)} ${nb === 1 ? 'block' : 'blocks'}, ${fmt(ni)} ${ni === 1 ? 'intersection' : 'intersections'}${np ? `, ${fmt(np)} ${np === 1 ? 'parcel' : 'parcels'}` : ''}
         ${ni ? `<button type="button" class="btn small" data-del="ix">Remove all intersections</button>` : ''}</div>
         ${r.rows.some(x => x.type) ? `<table class="parts"><tbody>${list}</tbody></table>` : ''}</td></tr>`;
 }
@@ -1264,8 +1294,12 @@ function download(name, blob) {
 // The same rows match_blocks.py / match_polygons.py would write, in the input's order, with fixes applied
 // (and spelling fixed in the person's own columns, if they asked for that).
 function outputRows() {
-    if (S.kind === 'polygons') return { fields: POLY_FIELDS, rows: S.results.flatMap(r => r.rows) };
-    const fields = [...S.headers, ...OUT_FIELDS.filter(f => !S.headers.includes(f))];
+    if (S.kind === 'polygons') {
+        const rows = S.results.flatMap(r => r.rows);
+        return { fields: rows.some(x => x.type === 'parcel') ? [...POLY_FIELDS, ...PARCEL_FIELDS] : POLY_FIELDS, rows };
+    }
+    const extra = S.results.some(r => r.out.parcels) ? ['parcels', 'parcel_addresses'] : [];
+    const fields = [...S.headers, ...[...OUT_FIELDS, ...extra].filter(f => !S.headers.includes(f))];
     const rows = S.results.slice().sort((a, b) => a.src - b.src || a.out.part - b.out.part).map(r => ({ ...spelled(r.src), ...r.out }));
     return { fields, rows };
 }
@@ -1332,6 +1366,240 @@ function resultsGeoJSON() {
 $('save-geojson').addEventListener('click', () => {
     download(`${S.name}${suffix()}.geojson`, new Blob([JSON.stringify(resultsGeoJSON())], { type: 'application/geo+json' }));
 });
+
+// ------------------------------------------------------------------ parcels
+// SF Planning's parcels (2023 land use and zoning), the same pmtiles file Block Party uses, read two ways:
+// drawn on the map from zoom 15 (Parcels button; picking parcels while fixing a row or polygon), and
+// decoded tile by tile to list the lots inside polygons. A lot counts as inside when its middle is.
+const PARCELS_URL = BASE + 'data/Land_Use_with_Active_Parcel_Information.pmtiles';
+const PARCEL_FIELDS = ['blklot', 'landuse', 'homes'];
+const LANDUSE_NAMES = { RESIDENT: 'Residential', MIXRES: 'Mixed, with homes', MIXED: 'Mixed use', RETAIL: 'Retail and entertainment',
+    'RETAIL/ENT': 'Retail and entertainment', MIPS: 'Offices', CIE: 'Cultural, institutional, education', PDR: 'Industrial (PDR)',
+    MED: 'Medical', VISITOR: 'Hotels', OPENSPACE: 'Open space', VACANT: 'Vacant', ROW: 'Right of way', MISSING: 'Unknown' };
+const landuseName = k => LANDUSE_NAMES[String(k || '').toUpperCase()] || (k ? nice(k) : '');
+S.lotInfo = new Map();          // mapblklot -> {address, landuse, homes}
+function lotOf(p) {
+    const st = nice([p.street, p.st_type].filter(Boolean).join(' ')), a = +p.from_st || 0, b = +p.to_st || 0;
+    const address = !p.street ? '' : !a ? st : b && b !== a ? `${a}–${b} ${st}` : `${a} ${st}`;
+    const info = { address, landuse: p.landuse || '', homes: +p.resunits || 0 };
+    if (p.mapblklot) S.lotInfo.set(String(p.mapblklot), info);
+    return info;
+}
+const lotFields = lots => !lots.size ? { parcels: '', parcel_addresses: '' } : {
+    parcels: [...lots].join(';'), parcel_addresses: [...lots].map(l => S.lotInfo.get(l)?.address || '').join('; ') };
+function parcelRow(r, lot, status) {
+    const first = r.rows[0] || {}, info = S.lotInfo.get(lot) || {};
+    return { polygon_index: r.index, polygon_name: first.polygon_name ?? r.name ?? '', polygon_id: first.polygon_id ?? '', shape: first.shape ?? r.feature.properties.cnn_shape ?? '',
+        width_m: first.width_m ?? '', type: 'parcel', cnn: '', street: info.address || '', from_street: '', to_street: '', layer: '', inside_pct: '', near_m: '',
+        status, note: status === 'manual' ? 'picked on the map' : '', wkt: '', blklot: lot, landuse: info.landuse || '', homes: info.homes || '' };
+}
+
+function addParcelLayers(before) {
+    if (!window.pmtiles) return;
+    maplibregl.addProtocol('pmtiles', new pmtiles.Protocol().tile);
+    map.addSource('parcels', { type: 'vector', url: 'pmtiles://' + PARCELS_URL,
+        attribution: 'Parcels and land use 2023: <a href="https://data.sf.gov/d/h5vv-2u24">SF Planning / DataSF</a>' });
+    const L = { source: 'parcels', 'source-layer': 'parcels', minzoom: 15, layout: { visibility: 'none' } };
+    map.addLayer({ ...L, id: 'parcels-fill', type: 'fill', paint: { 'fill-color': '#7a4bd1', 'fill-opacity': 0.01 } }, before);     // for clicking
+    map.addLayer({ ...L, id: 'parcels-hover', type: 'fill', layout: {}, filter: ['==', ['get', 'mapblklot'], ''], paint: { 'fill-color': '#7a4bd1', 'fill-opacity': 0.18 } }, before);
+    map.addLayer({ ...L, id: 'parcels-line', type: 'line', paint: { 'line-color': '#8A8478', 'line-opacity': 0.6, 'line-width': ['interpolate', ['linear'], ['zoom'], 15, 0.4, 18, 1.2] } }, before);
+    const none = ['in', ['get', 'mapblklot'], ['literal', []]];
+    map.addLayer({ ...L, id: 'parcels-sel', type: 'fill', layout: {}, filter: none, paint: { 'fill-color': '#2f5fd0', 'fill-opacity': 0.25 } }, before);
+    map.addLayer({ ...L, id: 'parcels-picked', type: 'fill', layout: {}, filter: none, paint: { 'fill-color': '#7a4bd1', 'fill-opacity': 0.35 } }, before);
+    map.addLayer({ ...L, id: 'parcels-picked-line', type: 'line', layout: {}, filter: none, paint: { 'line-color': '#7a4bd1', 'line-width': 2 } }, before);
+    let on = false;
+    try { on = localStorage.getItem('matcher.parcels') === 'on'; } catch { }
+    showParcels(on);
+}
+function showParcels(on) {
+    S.parcelsOn = on;
+    $('parcels-toggle')?.setAttribute('aria-pressed', String(on));
+    try { localStorage.setItem('matcher.parcels', on ? 'on' : 'off'); } catch { }
+    syncParcelLayers();
+    if (on && map.getZoom() < 15) toast('Parcels show from zoom 15. Zoom in to see the lot lines.', null, 4000);
+}
+function syncParcelLayers() {
+    if (!map?.getLayer('parcels-line')) return;
+    const vis = S.parcelsOn || S.pick?.mode === 'parcels' ? 'visible' : 'none';
+    map.setLayoutProperty('parcels-line', 'visibility', vis);
+    map.setLayoutProperty('parcels-fill', 'visibility', S.pick?.mode === 'parcels' ? 'visible' : 'none');
+    if (S.pick?.mode !== 'parcels') map.setFilter('parcels-hover', ['==', ['get', 'mapblklot'], '']);
+}
+// the selected result's parcels, tinted
+function showSelectedParcels(r) {
+    if (!map?.getLayer('parcels-sel')) return;
+    const lots = !r ? [] : S.kind === 'polygons' ? r.rows.filter(x => x.type === 'parcel').map(x => x.blklot) : String(r.out.parcels || '').split(';').filter(Boolean);
+    map.setFilter('parcels-sel', ['in', ['get', 'mapblklot'], ['literal', lots]]);
+}
+
+function setPickMode(m) {
+    if (!S.pick) return;
+    if (m === 'parcels' && !map.getLayer('parcels-fill')) return done("Parcels couldn't load here.", 4000);
+    S.pick.mode = m;
+    document.querySelectorAll('#pick-mode button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.pm === m)));
+    const streets = m === 'streets' ? 'visible' : 'none';
+    map.setLayoutProperty('streets-pick', 'visibility', streets);
+    map.setLayoutProperty('nodes-pick', 'visibility', streets);
+    syncParcelLayers();
+    setHover(null); popup.remove();
+    if (m === 'parcels' && map.getZoom() < 15.5) map.easeTo({ zoom: 16.5, duration: 500 });
+    $('pick-help').textContent = m === 'parcels' ? 'Click parcels to add them, or click one again to take it out.'
+        : S.kind === 'polygons' ? 'Click blocks, or zoom in and click intersections, to add them to this polygon or take them out.'
+        : 'Click the right block (shift-click for more than one) or zoom in and click an intersection.';
+}
+$('pick-mode').addEventListener('click', e => { const b = e.target.closest('[data-pm]'); if (b) setPickMode(b.dataset.pm); });
+function parcelAt(point) {
+    return map.queryRenderedFeatures([[point.x - 2, point.y - 2], [point.x + 2, point.y + 2]], { layers: ['parcels-fill'] })[0];
+}
+function parcelHover(e) {
+    const f = parcelAt(e.point);
+    map.setFilter('parcels-hover', ['==', ['get', 'mapblklot'], f?.properties.mapblklot ?? '']);
+    map.getCanvas().style.cursor = f ? 'pointer' : '';
+    if (!f) return popup.remove();
+    const info = lotOf(f.properties);
+    popup.setLngLat(e.lngLat).setHTML(`<div class="pop-title">${esc(info.address || `Lot ${f.properties.mapblklot}`)}</div>
+        <div class="pop-sub">parcel ${esc(f.properties.mapblklot)}${info.landuse ? ` · ${esc(landuseName(info.landuse))}` : ''}${info.homes ? ` · ${info.homes} ${info.homes === 1 ? 'home' : 'homes'}` : ''}</div>`).addTo(map);
+}
+function parcelClick(e) {
+    const f = parcelAt(e.point);
+    if (!f?.properties.mapblklot) return;
+    lotOf(f.properties);
+    const lot = String(f.properties.mapblklot), P = S.pick;
+    P.lots.has(lot) ? P.lots.delete(lot) : P.lots.add(lot);
+    drawPicked();
+}
+
+// Reading the tiles directly, to list the lots inside polygons
+const ParcelTiles = (() => {
+    const Z = 15;
+    let pm = null;
+    const cache = new Map();
+    const tx = lon => (lon + 180) / 360 * 2 ** Z;
+    const ty = lat => (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * 2 ** Z;
+    const lon = x => x / 2 ** Z * 360 - 180;
+    const lat = y => Math.atan(Math.sinh(Math.PI * (1 - 2 * y / 2 ** Z))) * 180 / Math.PI;
+    function tile(x, y) {
+        const k = `${x}/${y}`;
+        if (!cache.has(k)) cache.set(k, pm.getZxy(Z, x, y).then(r => !r ? [] : decodeMVT(new Uint8Array(r.data), 'parcels').map(f => ({
+            p: f.props, ring: (f.rings[0] || []).map(([px, py]) => [lon(x + px / f.extent), lat(y + py / f.extent)]) })))
+            .catch(err => { cache.delete(k); throw err; }));
+        return cache.get(k);
+    }
+    const range = b => ({ x0: Math.floor(tx(b[0])), x1: Math.floor(tx(b[2])), y0: Math.floor(ty(b[3])), y1: Math.floor(ty(b[1])) });
+    return {
+        tilesFor(b) { const r = range(b); return (r.x1 - r.x0 + 1) * (r.y1 - r.y0 + 1); },
+        async inBox(b) {
+            pm ||= new pmtiles.PMTiles(PARCELS_URL);
+            const r = range(b), jobs = [];
+            for (let x = r.x0; x <= r.x1; x++) for (let y = r.y0; y <= r.y1; y++) jobs.push(tile(x, y));
+            return (await Promise.all(jobs)).flat();
+        },
+    };
+})();
+function bboxOf(g) {
+    const b = [Infinity, Infinity, -Infinity, -Infinity];
+    const walk = c => typeof c[0] === 'number' ? (b[0] = Math.min(b[0], c[0]), b[1] = Math.min(b[1], c[1]), b[2] = Math.max(b[2], c[0]), b[3] = Math.max(b[3], c[1])) : c.forEach(walk);
+    walk(g.coordinates);
+    return b;
+}
+function inRing(x, y, ring) {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const [xi, yi] = ring[i], [xj, yj] = ring[j];
+        if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+}
+const inPolygon = (x, y, g) => (g.type === 'Polygon' ? [g.coordinates] : g.type === 'MultiPolygon' ? g.coordinates : [])
+    .some(poly => inRing(x, y, poly[0]) && !poly.slice(1).some(h => inRing(x, y, h)));
+const middleOf = ring => { const pts = ring.length > 1 ? ring.slice(0, -1) : ring; return [pts.reduce((a, p) => a + p[0], 0) / pts.length, pts.reduce((a, p) => a + p[1], 0) / pts.length]; };
+async function listParcels(results) {
+    if (!window.pmtiles) return done("Parcels couldn't load here, so they weren't listed.", 6000);
+    const work = results.filter(r => /Polygon$/.test(r.feature.geometry?.type || ''));
+    const tiles = work.reduce((n, r) => n + ParcelTiles.tilesFor(bboxOf(r.feature.geometry)), 0);
+    let i = 0;
+    for (const r of work) {
+        toast(`Finding parcels: polygon ${fmt(++i)} of ${fmt(work.length)}${tiles > 20 ? ` (${fmt(tiles)} map tiles to read)` : ''}…`, i / work.length);
+        const g = r.feature.geometry, seen = new Set();
+        r.rows = r.rows.filter(x => x.type !== 'parcel');
+        for (const f of await ParcelTiles.inBox(bboxOf(g))) {
+            const lot = f.p.mapblklot;
+            if (!lot || seen.has(lot) || !f.ring.length) continue;
+            const [x, y] = middleOf(f.ring);
+            if (!inPolygon(x, y, g)) continue;
+            seen.add(lot); lotOf(f.p);
+            r.rows.push(parcelRow(r, String(lot), 'inside'));
+        }
+        r.feature.properties.parcels = [...seen].map(String);
+    }
+}
+
+// A small Mapbox Vector Tile reader (the same one as Block Party's): one layer's features, their
+// properties and rings in tile units.
+function decodeMVT(buf, wantLayer) {
+    let pos = 0;
+    const varint = () => { let r = 0, s = 0, b; do { b = buf[pos++]; r += (b & 0x7f) * 2 ** s; s += 7; } while (b & 0x80); return r; };
+    const str = n => { const v = new TextDecoder().decode(buf.subarray(pos, pos + n)); pos += n; return v; };
+    const out = [];
+    while (pos < buf.length) {
+        const tag = varint(), field = tag >> 3, wt = tag & 7;
+        if (field !== 3 || wt !== 2) { skip(wt); continue; }
+        const len = varint(), end = pos + len;
+        let name = '', extent = 4096; const keys = [], vals = [], feats = [];
+        while (pos < end) {
+            const t2 = varint(), f2 = t2 >> 3, w2 = t2 & 7;
+            if (f2 === 1 && w2 === 2) name = str(varint());
+            else if (f2 === 3 && w2 === 2) keys.push(str(varint()));
+            else if (f2 === 5 && w2 === 0) extent = varint();
+            else if ((f2 === 2 || f2 === 4) && w2 === 2) {
+                const l = varint(), e = pos + l;
+                if (f2 === 4) {
+                    let v = null;
+                    while (pos < e) {
+                        const t3 = varint(), f3 = t3 >> 3;
+                        if (f3 === 1) v = str(varint());
+                        else if (f3 === 2) { v = new DataView(buf.buffer, buf.byteOffset + pos, 4).getFloat32(0, true); pos += 4; }
+                        else if (f3 === 3) { v = new DataView(buf.buffer, buf.byteOffset + pos, 8).getFloat64(0, true); pos += 8; }
+                        else if (f3 === 7) v = !!varint();
+                        else if (f3 === 6) { const n = varint(); v = n % 2 ? -(n + 1) / 2 : n / 2; }
+                        else v = varint();
+                    }
+                    vals.push(v);
+                } else feats.push(buf.subarray(pos, e));
+                pos = e;
+            } else skip(w2);
+        }
+        pos = end;
+        if (name !== wantLayer) continue;
+        for (const fb of feats) out.push(feature(fb, keys, vals, extent));
+    }
+    return out;
+    function skip(wt) { if (wt === 0) varint(); else if (wt === 1) pos += 8; else if (wt === 2) pos += varint(); else if (wt === 5) pos += 4; }
+    function feature(fb, keys, vals, extent) {
+        const save = [buf, pos]; buf = fb; pos = 0;
+        const props = {}, rings = []; let geom = null;
+        const packed = () => { const l = varint(), e = pos + l, a = []; while (pos < e) a.push(varint()); return a; };
+        while (pos < buf.length) {
+            const t = varint(), f = t >> 3, w = t & 7;
+            if (f === 2 && w === 2) { const tags = packed(); for (let i = 0; i < tags.length; i += 2) props[keys[tags[i]]] = vals[tags[i + 1]]; }
+            else if (f === 4 && w === 2) geom = packed();
+            else skip(w);
+        }
+        let x = 0, y = 0, ring = null;
+        for (let i = 0; geom && i < geom.length;) {
+            const cmd = geom[i] & 7, n = geom[i++] >> 3;
+            if (cmd === 7) { if (ring) { ring.push(ring[0]); rings.push(ring); } ring = null; continue; }
+            for (let k = 0; k < n; k++) {
+                const dx = geom[i++], dy = geom[i++];
+                x += dx & 1 ? -(dx + 1) / 2 : dx / 2; y += dy & 1 ? -(dy + 1) / 2 : dy / 2;
+                if (cmd === 1) { if (ring) rings.push(ring); ring = [[x, y]]; } else ring.push([x, y]);
+            }
+        }
+        if (ring && ring.length > 1) rings.push(ring);
+        [buf, pos] = save;
+        return { props, rings, extent };
+    }
+}
 
 // ------------------------------------------------------------------ learning from fixes
 // The rows fixed on the map, as test cases for the matcher: what it read, and what the person picked.

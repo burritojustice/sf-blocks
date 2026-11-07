@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026.11.07.5
+- **Matcher: parcels.** SF Planning's parcels (the same pmtiles file Block Party uses, 2023 land use and zoning):
+  - **Parcels** button on the map: lot lines from zoom 15.
+  - **Pick parcels when fixing:** the fix bar has Streets | Parcels. Click lots to add them to a row (new `parcels` and `parcel_addresses` columns, kept alongside the block or intersection) or to a polygon, or click again to take them out. Hovering shows the address, land use and homes.
+  - **List the parcels in each polygon:** a checkbox under "List for each polygon". Each lot whose middle is inside becomes a row with `type` parcel, its `blklot`, address, `landuse` and `homes`, and the polygon's GeoJSON gets a `parcels` list. In the polygon's details, parcels can be removed like blocks.
+  - The selected row's or polygon's parcels are tinted on the map.
+
 ## 2026.11.07.4
 - **Matcher learns from fixes.** After you fix rows on the map, the Results card offers **Share with sf-blocks**, which opens GitHub with your fixes as a new file in `tests/corrections/` to propose, or **Save fixes**. Only the location text and the CNNs go in.
 - **`scripts/test_matcher.py`** runs every fix through `match_blocks.py`: how many it gets right, `--failing` for the ones it still gets wrong (the to-do list for the matcher), `--update` to record a new baseline. The pull-request check now runs it too, so a change that breaks a fix it used to get right fails the check.
