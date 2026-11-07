@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026.11.07.2
+- **match_blocks.py reads "Mt", "Ft" and "Pt" as Mount, Fort and Point** at the start of a street name, like "St" for Saint. "Cayuga and Mt Vernon" was matching Vernon St (which doesn't meet Cayuga) instead of Mount Vernon Ave.
+- **"Embarcadero" is The Embarcadero** without a spelling note or lower confidence.
+- **A misspelled cross street is looked for among the streets that cross the other one,** so "Hayes & Octavai" finds Hayes and Octavia (medium confidence, with a note). In a 4,000-row test, 19 rows that had no match or only a street now match an intersection; nothing else changed.
+- **Matcher: Save to Google Sheet.** For a Sheet opened from Google Drive: a new tab with the results (asks before replacing one from an earlier save), or Matcher's columns added to the original tab after checking the tab still lines up with what was loaded.
+- **Matcher: fix misspellings in your own columns.** When the matcher read "Mision" as Mission, the Results card offers to fix the spelling in your column too, in every save.
+- **Matcher: fixing a row on the map shows street names,** because the lines are now drawn under the basemap's labels and the results fade while you pick. The fix bar says what the row will change to ("Change to CNN 22091000, Cayuga Ave and Mount Vernon Ave").
+- **Matcher: the table shows the rest of your columns** after Matcher's own ("Your columns" turns them off).
+- Matcher: the column menu opens wider so more sample values show; the avatar is in the top left; Open in Block Party passes intersections too; new description.
+
 ## 2026.11.07
 - **Matcher: column menus show what's in each column.** Each entry has the column's name and number, what the matcher thinks is in it ("street names 100%"), and a few sample values in smaller type.
 - **Matcher: the real header row is found** when a sheet has a title or note above it, instead of naming the columns "column 1, column 2…".

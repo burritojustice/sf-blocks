@@ -2,7 +2,7 @@
 // own Python scripts (run in a worker with Pyodide); show and fix results on a map and in a table; save
 // the enhanced file. Nothing leaves the browser except requests for the map and the libraries.
 'use strict';
-const MATCHER_VERSION = '8';
+const MATCHER_VERSION = '9';
 const BASE = new URL('../', location.href).href;          // the sf-blocks site root
 const STYLE = key => `https://api.protomaps.com/styles/v5/white/en.json?key=${key}`;
 const DEFAULT_KEY = '071e272e8d5e13b7';                   // burritojustice.github.io (localhost accepts any key)
@@ -27,6 +27,7 @@ const S = {
     name: '', ext: '',   // file name without extension, and its type
     headers: [], rows: [], features: [], workbook: null,
     drive: null,         // the Google Drive file this came from: {id, name, kind, tabs?}
+    showCols: true,      // show the person's other columns in the table
     results: [],         // rows: {key, src, out, fixed}; polygons: {key, index, name, feature, rows, fixed, only}
     polys: [],           // polygons loaded, before matching: {index (in the file), feature, removed, only}
     prepSel: new Set(),  // polygons selected in that list (file indexes)
@@ -147,13 +148,14 @@ async function startMap() {
         map.addLayer({ id: 'satellite', type: 'raster', source: 'satellite', layout: { visibility: 'none' } }, before);
         map.addLayer({ id: 'polys-fill', type: 'fill', source: 'polys', paint: { 'fill-color': ['case', ['get', 'only'], '#5b6475', '#2f5fd0'], 'fill-opacity': ['case', ['get', 'sel'], 0.22, 0.06] } }, before);
         map.addLayer({ id: 'polys-line', type: 'line', source: 'polys', paint: { 'line-color': ['case', ['get', 'only'], '#5b6475', '#2f5fd0'], 'line-width': ['case', ['get', 'sel'], 3, 1.2], 'line-opacity': 0.85 } }, before);
+        // Lines go under the basemap's labels so street names stay readable, above all while fixing a row.
         map.addLayer({ id: 'streets-pick', type: 'line', source: 'streets', layout: { visibility: 'none', 'line-cap': 'round' },
             paint: { 'line-color': ['case', ['boolean', ['feature-state', 'hover'], false], '#7a4bd1', '#9aa3b5'],
-                     'line-width': ['interpolate', ['linear'], ['zoom'], 13, 2, 17, 7], 'line-opacity': 0.55 } });
+                     'line-width': ['interpolate', ['linear'], ['zoom'], 13, 2, 17, 7], 'line-opacity': 0.55 } }, before);
         map.addLayer({ id: 'results-line', type: 'line', source: 'results', filter: ['==', ['geometry-type'], 'LineString'],
             layout: { 'line-cap': 'round', 'line-join': 'round' },
             paint: { 'line-color': ['get', 'color'], 'line-width': ['interpolate', ['linear'], ['zoom'], 11, ['case', ['get', 'sel'], 5, 3], 17, ['case', ['get', 'sel'], 12, 8]],
-                     'line-opacity': ['case', ['get', 'sel'], 1, 0.85] } });
+                     'line-opacity': ['case', ['get', 'sel'], 1, 0.85] } }, before);
         map.addLayer({ id: 'results-pt', type: 'circle', source: 'results', filter: ['==', ['geometry-type'], 'Point'],
             paint: { 'circle-color': ['get', 'color'], 'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, ['*', ['get', 'r'], ['case', ['get', 'sel'], 7, 5]], 17, ['*', ['get', 'r'], ['case', ['get', 'sel'], 13, 9]]],
                      'circle-stroke-color': '#fff', 'circle-stroke-width': ['*', ['get', 'r'], 1.5] } });
@@ -161,7 +163,7 @@ async function startMap() {
             paint: { 'circle-color': ['case', ['boolean', ['feature-state', 'hover'], false], '#7a4bd1', '#ffffff'],
                      'circle-stroke-color': '#7a4bd1', 'circle-stroke-width': 1.5, 'circle-radius': ['interpolate', ['linear'], ['zoom'], 15, 4, 18, 8] } });
         map.addLayer({ id: 'picked-line', type: 'line', source: 'picked', filter: ['==', ['geometry-type'], 'LineString'],
-            layout: { 'line-cap': 'round' }, paint: { 'line-color': '#7a4bd1', 'line-width': ['interpolate', ['linear'], ['zoom'], 13, 5, 17, 12] } });
+            layout: { 'line-cap': 'round' }, paint: { 'line-color': '#7a4bd1', 'line-width': ['interpolate', ['linear'], ['zoom'], 13, 5, 17, 12], 'line-opacity': 0.8 } }, before);
         map.addLayer({ id: 'picked-pt', type: 'circle', source: 'picked', filter: ['==', ['geometry-type'], 'Point'],
             paint: { 'circle-color': '#7a4bd1', 'circle-radius': 9, 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 } });
         hookMap();
@@ -333,14 +335,15 @@ $('drive').addEventListener('click', async () => {
         const drive = { id: got.id, name: got.name, kind: got.kind };
         if (got.kind === 'file') return loadFile(got.file, drive);
         // a Google Sheet: each tab becomes a sheet, so the Sheet menu and column guessing work as for Excel
-        const wb = XLSX.utils.book_new(), used = new Set();
+        const wb = XLSX.utils.book_new(), used = new Set(), tabOf = {};
         for (const t of got.tabs) {
             let n = t.title.replace(/[\\/?*[\]:]/g, ' ').slice(0, 31) || 'Sheet', k = 2;
             while (used.has(n.toLowerCase())) n = `${n.slice(0, 28)} ${k++}`;
             used.add(n.toLowerCase());
+            tabOf[n] = { title: t.title, sheetId: t.sheetId };
             XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(t.values.length ? t.values : [['']]), n);
         }
-        S.drive = { ...drive, tabs: got.tabs.map(t => ({ title: t.title, sheetId: t.sheetId })) };
+        S.drive = { ...drive, tabs: got.tabs.map(t => ({ title: t.title, sheetId: t.sheetId })), tabOf };
         useWorkbook(wb, got.name, 'gsheet');
     } catch (e) {
         done(`Google Drive: ${e.message}.`, 8000);
@@ -413,14 +416,16 @@ function useWorkbook(wb, name, ext) {
 
 function useSheet(sheet, name, ext) {
     const ws = S.workbook.Sheets[sheet];
-    const grid = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false, blankrows: false });
+    // blank rows are kept here so row numbers match the sheet's (Save to Google Sheet needs them)
+    const grid = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false, blankrows: true });
     const top = headerRow(grid);
     if (top < 0) throw new Error(`sheet "${sheet}" is empty`);
     const headers = dedupe(grid[top].map((h, i) => String(h).trim() || `column ${i + 1}`));
-    const rows = grid.slice(top + 1).map(r => Object.fromEntries(headers.map((h, i) => [h, r[i] == null ? '' : String(r[i])])));
+    const rows = grid.slice(top + 1).filter(r => r.some(c => String(c).trim())).map(r => Object.fromEntries(headers.map((h, i) => [h, r[i] == null ? '' : String(r[i])])));
     const keep = S.workbook;
     useRows(headers, rows, name, ext);
     S.workbook = keep;
+    S.sheet = { name: sheet, headerRow: top + (ws['!ref'] ? XLSX.utils.decode_range(ws['!ref']).s.r : 0) };
     $('sheet-field').hidden = keep.SheetNames.length < 2;
 }
 // The header is the first row about as wide as the table, so a title or note in the top rows
@@ -657,8 +662,8 @@ function columnInfo(headers, rows) {
         const seen = new Set();
         for (const r of rows) {
             const v = String(r[h] ?? '').trim();
-            if (v && !seen.has(v)) seen.add(v.length > 28 ? v.slice(0, 27) + '…' : v);
-            if (seen.size >= 3) break;
+            if (v && !seen.has(v)) seen.add(v.length > 40 ? v.slice(0, 39) + '…' : v);
+            if (seen.size >= 4) break;
         }
         info[h] = { n: i + 1, samples: [...seen], note: '' };
     });
@@ -703,7 +708,9 @@ function showList(sel, btn) {
     });
     document.body.appendChild(ul);
     const r = btn.getBoundingClientRect(), below = innerHeight - r.bottom - 8;
-    ul.style.left = `${r.left}px`; ul.style.width = `${Math.max(r.width, 240)}px`;
+    // wider than the button, so the sample values fit
+    const w = Math.min(Math.max(r.width, 440), innerWidth - 16);
+    ul.style.left = `${Math.max(8, Math.min(r.left, innerWidth - w - 8))}px`; ul.style.width = `${w}px`;
     if (below >= 200 || below >= r.top) { ul.style.top = `${r.bottom + 2}px`; ul.style.maxHeight = `${Math.min(320, below)}px`; }
     else { ul.style.bottom = `${innerHeight - r.top + 2}px`; ul.style.maxHeight = `${Math.min(320, r.top - 8)}px`; }
     openPicker = { sel, btn, ul, active: Math.max(0, sel.selectedIndex) };
@@ -871,6 +878,8 @@ function showResults(final) {
     drawChips(c);
     drawTable();
     drawMap(final);
+    findSpelling();
+    $('save-gsheet').hidden = S.drive?.kind !== 'sheet' || S.kind !== 'rows';
 }
 
 function drawChips(c) {
@@ -879,6 +888,9 @@ function drawChips(c) {
     $('chips').querySelectorAll('.chip').forEach(el => el.onclick = () => setFilter(el.dataset.f));
 }
 function setFilter(f) { S.filter = f; drawChips(counts()); drawTable(); }
+try { S.showCols = localStorage.getItem('matcher.cols') !== 'off'; } catch { }
+$('show-cols').checked = S.showCols;
+$('show-cols').addEventListener('change', e => { S.showCols = e.target.checked; try { localStorage.setItem('matcher.cols', S.showCols ? 'on' : 'off'); } catch { } drawTable(); });
 $('search').addEventListener('input', e => { S.query = e.target.value.trim().toLowerCase(); S.kind === 'polygons' && !S.results.length ? showPrep() : drawTable(); });
 $('drawer-toggle').addEventListener('click', () => {
     const c = $('drawer').classList.toggle('collapsed');
@@ -902,22 +914,34 @@ function visible() {
     return list;
 }
 
+// The person's other columns, after Matcher's own, so there's more to go on when a match is unsure.
+// The columns already shown as the description are left out. "Your columns" in the table bar hides them.
+function extraCols() {
+    if (!S.showCols) return [];
+    if (S.kind === 'polygons') return S.headers.filter(h => h !== $('col-name').value);
+    const used = mode() === 'column' ? [$('col-text').value] : [$('col-street').value, $('col-cross').value, $('col-cross2').value];
+    return S.headers.filter(h => !used.includes(h));
+}
+const extraHead = () => extraCols().map(h => `<th class="theirs">${esc(h)}</th>`).join('');
+const extraCells = row => extraCols().map(h => { const v = row?.[h] ?? ''; const t = typeof v === 'object' ? JSON.stringify(v) : String(v);
+    return `<td class="theirs" title="${esc(t)}">${esc(t.length > 80 ? t.slice(0, 79) + '…' : t)}</td>`; }).join('');
+
 function drawTable() {
     const list = visible(), shown = list.slice(0, SHOW);
     let head, body;
     if (S.kind === 'polygons') {
-        head = '<tr><th></th><th>#</th><th>Polygon</th><th>Shape</th><th>Blocks</th><th>Partly inside</th><th>Intersections</th><th>Nearest</th><th></th></tr>';
+        head = `<tr><th></th><th>#</th><th>Polygon</th><th>Shape</th><th>Blocks</th><th>Partly inside</th><th>Intersections</th><th>Nearest</th><th></th>${extraHead()}</tr>`;
         body = shown.map(r => {
             const p = r.feature.properties;
             return `<tr data-k="${r.key}"${S.selected === r.key ? ' class="sel"' : ''}>
                 <td><span class="conf ${confOf(r)}">${esc(label(r))}</span></td><td class="num">${r.index + 1}</td>
                 <td class="desc">${esc(r.name || `Polygon ${r.index + 1}`)}</td><td>${r.only ? 'not matched' : `${esc(p.cnn_shape)}, ${p.cnn_width_m} m`}</td>
                 <td class="num">${p.block_cnns.length}</td><td class="num">${p.partial_cnns.length}</td><td class="num">${p.intersection_cnns.length}</td>
-                <td class="mono">${esc(p.nearest_cnn ?? '')}</td><td><button type="button" class="btn small" data-fix="${r.key}">Fix</button></td></tr>
+                <td class="mono">${esc(p.nearest_cnn ?? '')}</td><td><button type="button" class="btn small" data-fix="${r.key}">Fix</button></td>${extraCells(S.features[r.index]?.properties)}</tr>
                 ${S.selected === r.key && !r.only && !S.pick ? partsRows(r) : ''}`;
         }).join('');
     } else {
-        head = '<tr><th></th><th>Row</th><th>Description</th><th>Matched as</th><th>Type</th><th>CNN</th><th>Notes</th><th></th></tr>';
+        head = `<tr><th></th><th>Row</th><th>Description</th><th>Matched as</th><th>Type</th><th>CNN</th><th>Notes</th><th></th>${extraHead()}</tr>`;
         body = shown.map(r => {
             const o = r.out;
             const as = o.type === 'intersection' ? `${o.street} & ${o.from_street}` : o.street ? `${o.street}${o.from_street ? `, ${o.from_street} to ${o.to_street}` : ''}` : '';
@@ -925,11 +949,12 @@ function drawTable() {
                 <td><span class="conf ${confOf(r)}">${esc(label(r))}</span></td><td class="num">${o.source_row}${o.parts > 1 ? `.${o.part}` : ''}</td>
                 <td class="desc">${esc(describe(S.rows[r.src]))}</td><td>${esc(as)}</td><td>${esc(o.type)}</td>
                 <td class="mono">${esc(o.cnn.split(';').join(', '))}</td><td class="notes">${esc(o.notes)}</td>
-                <td><button type="button" class="btn small" data-fix="${r.key}">Fix</button></td></tr>`;
+                <td><button type="button" class="btn small" data-fix="${r.key}">Fix</button></td>${extraCells(S.rows[r.src])}</tr>`;
         }).join('');
     }
-    const more = list.length > SHOW ? `<tr class="more"><td colspan="9">Showing ${fmt(SHOW)} of ${fmt(list.length)}. Search or pick a filter to see the others.</td></tr>` : '';
-    const none = !list.length ? `<tr class="more"><td colspan="9">${S.results.length ? 'No rows match this filter.' : 'Matching…'}</td></tr>` : '';
+    const span = 9 + extraCols().length;
+    const more = list.length > SHOW ? `<tr class="more"><td colspan="${span}">Showing ${fmt(SHOW)} of ${fmt(list.length)}. Search or pick a filter to see the others.</td></tr>` : '';
+    const none = !list.length ? `<tr class="more"><td colspan="${span}">${S.results.length ? 'No rows match this filter.' : 'Matching…'}</td></tr>` : '';
     $('table').innerHTML = `<thead>${head}</thead><tbody>${body}${more}${none}</tbody>`;
 }
 
@@ -1049,6 +1074,7 @@ function startPick(key) {
         S.pick = { key, cnns: new Set(blocks), nodes: new Set(nodes) };
         $('pick-title').textContent = `Fixing ${r.name || `polygon ${r.index + 1}`}`;
         $('pick-help').textContent = 'Click blocks, or zoom in and click intersections, to add them to this polygon or take them out.';
+        $('pick-change').textContent = '';
         $('pick-use').textContent = 'Done';
         $('pick-none').textContent = r.only ? 'Keep as a polygon' : 'Just a polygon';
         $('pick-none').hidden = false;
@@ -1057,6 +1083,7 @@ function startPick(key) {
         S.pick = { key, cnns: new Set(o.type === 'block' ? cnns : []), nodes: new Set(o.type === 'intersection' ? cnns : []) };
         $('pick-title').textContent = `Row ${o.source_row}: ${describe(S.rows[r.src]) || '(empty)'}`;
         $('pick-help').textContent = 'Click the right block (shift-click for more than one) or zoom in and click an intersection.';
+        $('pick-change').textContent = '';
         $('pick-use').textContent = 'Use selection';
         $('pick-none').textContent = 'No match';
         $('pick-none').hidden = false;
@@ -1064,6 +1091,8 @@ function startPick(key) {
     $('pickbar').hidden = false;
     map.setLayoutProperty('streets-pick', 'visibility', 'visible');
     map.setLayoutProperty('nodes-pick', 'visibility', 'visible');
+    map.setPaintProperty('results-line', 'line-opacity', ['case', ['get', 'sel'], 0.35, 0.25]);
+    map.setPaintProperty('results-pt', 'circle-opacity', 0.35);
     drawPicked(); drawTable(); drawMap(false);
     const b = extend(new maplibregl.LngLatBounds(), geomOf(r));
     if (!b.isEmpty()) map.fitBounds(b, { padding: 120, maxZoom: 17, duration: 500 });
@@ -1076,6 +1105,8 @@ function endPick() {
     if (map?.getLayer('streets-pick')) {
         map.setLayoutProperty('streets-pick', 'visibility', 'none');
         map.setLayoutProperty('nodes-pick', 'visibility', 'none');
+        map.setPaintProperty('results-line', 'line-opacity', ['case', ['get', 'sel'], 1, 0.85]);
+        map.setPaintProperty('results-pt', 'circle-opacity', 1);
         map.getSource('picked').setData(empty());
         setHover(null);
     }
@@ -1127,6 +1158,15 @@ function drawPicked() {
     map.getSource('picked').setData({ type: 'FeatureCollection', features: feats });
     const n = P.cnns.size + P.nodes.size;
     $('pick-use').disabled = S.kind !== 'polygons' && !n;
+    if (S.kind !== 'polygons') $('pick-change').textContent = n ? `Change to ${pickedText(P)}` : '';
+}
+// "CNN 22091000, Cayuga Ave and Mount Vernon Ave" / "CNN 9087000, Mission St from 1st St to Fremont St"
+const nice = name => String(name || '').toLowerCase().replace(/\b0+(\d)/g, '$1').replace(/\b([a-z])/g, c => c.toUpperCase()).replace(/\b(\d+)(St|Nd|Rd|Th)\b/g, (m, d, x) => d + x.toLowerCase());
+function pickedText(P) {
+    const parts = [];
+    for (const c of P.nodes) { const x = S.streets.nodes.get(c); parts.push(`CNN ${c}, ${x ? x.streets.map(nice).join(' and ') : 'intersection'}`); }
+    for (const c of P.cnns) { const x = S.streets.segs.get(c); parts.push(`CNN ${c}, ${x ? `${nice(x.street)} from ${nice(x.f)} to ${nice(x.t)}` : 'block'}`); }
+    return parts.length > 3 ? `${parts.length} blocks: ${parts.slice(0, 3).join('; ')}; …` : parts.join('; ');
 }
 $('pick-cancel').addEventListener('click', () => { endPick(); drawMap(false); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.pick) { endPick(); drawMap(false); } });
@@ -1218,13 +1258,63 @@ function download(name, blob) {
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
-// The same rows match_blocks.py / match_polygons.py would write, in the input's order, with fixes applied.
+// The same rows match_blocks.py / match_polygons.py would write, in the input's order, with fixes applied
+// (and spelling fixed in the person's own columns, if they asked for that).
 function outputRows() {
     if (S.kind === 'polygons') return { fields: POLY_FIELDS, rows: S.results.flatMap(r => r.rows) };
     const fields = [...S.headers, ...OUT_FIELDS.filter(f => !S.headers.includes(f))];
-    const rows = S.results.slice().sort((a, b) => a.src - b.src || a.out.part - b.out.part).map(r => ({ ...S.rows[r.src], ...r.out }));
+    const rows = S.results.slice().sort((a, b) => a.src - b.src || a.out.part - b.out.part).map(r => ({ ...spelled(r.src), ...r.out }));
     return { fields, rows };
 }
+
+// ------------------------------------------------------------------ spelling
+// When the matcher read a misspelled street ('read "mision" as "mission"'), offer to fix the spelling in
+// the person's own column too: "Mision between 1st and Fremont" becomes "Mission between 1st and Fremont".
+const SUFFIX_WORDS = new Set(['ST', 'AVE', 'BLVD', 'TER', 'CT', 'WAY', 'PL', 'DR', 'ALY', 'LN', 'RD', 'CIR', 'PLZ', 'HWY', 'ROW', 'WALK', 'LOOP']);
+const SUFFIX_TYPED = /^(st|str|street|ave?|avenue|blvd|boulevard|ter|terrace|ct|court|way|wy|pl|place|dr|drive|aly|alley|ln|lane|rd|road|cir|circle|plz|plaza|hwy|highway|row|walk|loop)\.?$/i;
+const baseOf = name => { const w = String(name).split(' '); return w.length > 1 && SUFFIX_WORDS.has(w[w.length - 1]) ? w.slice(0, -1).join(' ') : name; };
+const flat = k => String(k).toLowerCase().replace(/\b0+(\d)/g, '$1').replace(/[^a-z0-9]/g, '');
+const spellRe = wrong => new RegExp(`(?<![A-Za-z0-9])${wrong.match(/[a-z0-9]+/gi).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join("[\\s.'’-]*")}(?![A-Za-z0-9])`, 'i');
+function findSpelling() {
+    S.spell = [];
+    if (S.kind !== 'rows') return;
+    const cols = mode() === 'column' ? [$('col-text').value] : [$('col-street').value, $('col-cross').value, $('col-cross2').value].filter(Boolean);
+    const seen = new Set();
+    for (const r of S.results) {
+        if (r.fixed) continue;
+        const o = r.out;
+        for (const m of String(o.notes || '').matchAll(/read (?:cross street )?"([^"]+)" as "([^"]+)"/g)) {
+            const [, wrong, key] = m;
+            if (!/[a-z]/i.test(wrong)) continue;
+            const name = [o.street, o.from_street, o.to_street].find(n => n && (flat(baseOf(n)) === flat(key) || flat(n) === flat(key)));
+            if (!name) continue;
+            const to = nice(SUFFIX_TYPED.test(wrong.trim().split(/\s+/).pop()) ? name : baseOf(name));
+            const re = spellRe(wrong);
+            for (const c of cols) {
+                const cell = String(S.rows[r.src][c] ?? ''), hit = cell.match(re);
+                if (!hit || hit[0].toLowerCase() === to.toLowerCase() || seen.has(`${r.src}|${c}|${hit[0]}`)) continue;
+                seen.add(`${r.src}|${c}|${hit[0]}`);
+                S.spell.push({ src: r.src, col: c, from: hit[0], to, re });
+            }
+        }
+    }
+    const n = new Set(S.spell.map(x => x.src)).size;
+    $('spell').hidden = !n;
+    if (!n) return;
+    $('spell-text').textContent = `Also fix the spelling in your ${S.spell.length > 1 && new Set(S.spell.map(x => x.col)).size > 1 ? 'columns' : `“${S.spell[0].col}” column`} (${fmt(n)} row${n === 1 ? '' : 's'}) when saving`;
+    const pairs = {};
+    for (const x of S.spell) { const k = `${x.from} → ${x.to}`; pairs[k] = (pairs[k] || 0) + 1; }
+    $('spell-list').innerHTML = Object.entries(pairs).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<li>${esc(k)}${v > 1 ? ` <span>× ${v}</span>` : ''}</li>`).join('');
+}
+// A row with its spelling fixed, if the person asked for it.
+function spelled(src) {
+    const row = S.rows[src];
+    if (!$('spell-on').checked || !S.spell?.length) return row;
+    let out = row;
+    for (const x of S.spell) if (x.src === src) { if (out === row) out = { ...row }; out[x.col] = String(out[x.col]).replace(x.re, x.to); }
+    return out;
+}
+const spellChanges = () => $('spell-on').checked ? S.spell : [];
 const suffix = () => S.kind === 'polygons' ? '_cnns' : '_matched';
 
 $('save-csv').addEventListener('click', () => {
@@ -1239,6 +1329,133 @@ function resultsGeoJSON() {
 $('save-geojson').addEventListener('click', () => {
     download(`${S.name}${suffix()}.geojson`, new Blob([JSON.stringify(resultsGeoJSON())], { type: 'application/geo+json' }));
 });
+
+// ------------------------------------------------------------------ save to Google Sheet
+// The default writes a new tab: the person's columns and Matcher's, one row per location, the same rows
+// as Save CSV. The other choice adds Matcher's columns to the right of the original tab, one row per row
+// (several locations joined with ";"). Before that, Matcher reads the tab again and stops if its rows
+// don't line up with what was loaded, so results can't land on the wrong rows.
+const gsTab = () => S.drive?.tabOf?.[S.sheet?.name] || null;
+const quoteTab = t => `'${t.replace(/'/g, "''")}'`;
+const colLetter = n => { let s = ''; for (n++; n > 0; n = Math.floor((n - 1) / 26)) s = String.fromCharCode(65 + (n - 1) % 26) + s; return s; };
+const GS_COLS = [['cnn', 'Matcher: CNN'], ['type', 'Matcher: type'], ['street', 'Matcher: street'], ['from_street', 'Matcher: from'],
+    ['to_street', 'Matcher: to'], ['confidence', 'Matcher: confidence'], ['notes', 'Matcher: notes']];
+$('save-gsheet').addEventListener('click', () => {
+    const t = gsTab();
+    if (!t) return done("Couldn't tell which tab of the Sheet this came from. Load it again with Open from Google Drive.", 7000);
+    $('gs-tabname').textContent = `“${(t.title + ' matched').slice(0, 100)}”`;
+    $('gs-src').textContent = t.title;
+    $('gs-msg').textContent = ''; $('gs-go').textContent = 'Save'; delete $('gs-go').dataset.replace;
+    $('gsheet-panel').hidden = false;
+    showGsWarn();
+    reveal($('gsheet-panel'));
+});
+const showGsWarn = () => { $('gs-warn').hidden = document.querySelector('input[name=gs]:checked').value !== 'cols'; };
+document.querySelectorAll('input[name=gs]').forEach(i => i.addEventListener('change', () => { showGsWarn(); $('gs-go').textContent = 'Save'; delete $('gs-go').dataset.replace; $('gs-msg').textContent = ''; }));
+$('gs-cancel').addEventListener('click', () => { $('gsheet-panel').hidden = true; });
+$('gs-go').addEventListener('click', async () => {
+    const how = document.querySelector('input[name=gs]:checked').value, t = gsTab(), id = S.drive.id;
+    const btn = $('gs-go');
+    btn.disabled = true;
+    try {
+        await GoogleDrive.signIn();                    // first, while the click still counts, in case Google asks again
+        if (how === 'tab') await saveNewTab(id, t, btn);
+        else await saveColumns(id, t);
+    } catch (e) {
+        $('gs-msg').textContent = `Couldn't save: ${e.message}.`;
+        done(`Couldn't save to the Google Sheet: ${e.message}.`, 9000);
+    } finally { btn.disabled = false; }
+});
+async function writeRows(id, tab, values, startRow = 1, startCol = 0) {
+    const CH = 2000;
+    for (let i = 0; i < values.length; i += CH) {
+        toast(`Saving to Google Sheets…`, Math.min(1, i / values.length));
+        await GoogleDrive.putValues(id, `${quoteTab(tab)}!${colLetter(startCol)}${startRow + i}`, values.slice(i, i + CH));
+    }
+}
+async function saveNewTab(id, t, btn) {
+    const { fields, rows } = outputRows();
+    const values = [fields, ...rows.map(r => fields.map(f => String(r[f] ?? '')))];
+    let title = (t.title + ' matched').slice(0, 100);
+    const tabs = await GoogleDrive.sheetTabs(id);
+    const have = tabs.find(x => x.title === title);
+    if (have && btn.dataset.replace !== title) {
+        btn.dataset.replace = title; btn.textContent = `Replace “${title}”`;
+        $('gs-msg').innerHTML = `This Sheet already has a tab called “${esc(title)}”. Replace it, or <button type="button" class="linkish" id="gs-new">save as a new tab</button>.`;
+        $('gs-new').onclick = () => { btn.dataset.replace = 'new'; btn.click(); };
+        return;
+    }
+    let sheetId;
+    if (have && btn.dataset.replace === title) {
+        sheetId = have.sheetId;
+        await GoogleDrive.clearValues(id, quoteTab(title));
+        await GoogleDrive.resizeTab(id, sheetId, Math.max(values.length, have.rows || 0), Math.max(fields.length, have.cols || 0));
+    } else {
+        if (have) { let k = 2; while (tabs.some(x => x.title === `${title} ${k}`)) k++; title = `${title} ${k}`.slice(0, 100); }
+        sheetId = await GoogleDrive.addTab(id, title, values.length + 10, fields.length);
+    }
+    await writeRows(id, title, values);
+    finishSave(id, sheetId, have && btn.dataset.replace === title ? `Replaced the tab “${title}” with ${fmt(rows.length)} rows.` : `Saved ${fmt(rows.length)} rows to the new tab “${title}”.`);
+}
+async function saveColumns(id, t) {
+    // read the tab again and check its rows still line up with the rows Matcher loaded
+    toast('Checking the Sheet before changing it…');
+    const now = await GoogleDrive.getValues(id, quoteTab(t.title));
+    const top = S.sheet.headerRow, head = (now[top] || []).map(h => String(h).trim());
+    const used = mode() === 'column' ? [$('col-text').value] : [$('col-street').value, $('col-cross').value, $('col-cross2').value].filter(Boolean);
+    const at = used.map(c => S.headers.indexOf(c));
+    const body = now.slice(top + 1).filter(r => r.some(c => String(c).trim()));
+    const problem = at.some(i => i < 0 || (head[i] || `column ${i + 1}`) !== S.headers[i]) ? 'its header row has changed'
+        : body.length !== S.rows.length ? `it has ${fmt(body.length)} rows now and Matcher loaded ${fmt(S.rows.length)}`
+        : (() => { const i = S.rows.findIndex((r, k) => at.some(j => String(body[k][j] ?? '') !== String(r[S.headers[j]] ?? ''))); return i >= 0 ? `row ${i + 1} is different from what Matcher loaded` : ''; })();
+    if (problem) {
+        $('gs-msg').textContent = `Nothing was changed: ${problem}. Load the Sheet again and match it, or save to a new tab.`;
+        return done(`Didn't change the Sheet: ${problem}.`, 9000);
+    }
+    // one row per row: several locations from one row are joined with ";"
+    const per = new Map();
+    for (const r of S.results) { const a = per.get(r.src) || []; a.push(r.out); per.set(r.src, a); }
+    const join = (outs, f) => [...new Set(outs.map(o => String(o[f] ?? '')).filter(Boolean))].join('; ');
+    // reuse Matcher's columns from an earlier save; otherwise start after the last column used
+    let start = head.indexOf(GS_COLS[0][1]);
+    if (start < 0) start = Math.max(head.length, ...now.map(r => r.length));
+    const spell = spellChanges(), fixCols = [...new Set(spell.map(x => x.col))];
+    // the data rows as they sit in the tab (blank rows in between are kept as they are)
+    const lines = [];
+    let k = 0;
+    for (let i = top + 1; i < now.length && k < S.rows.length; i++) {
+        if (!now[i].some(c => String(c).trim())) continue;
+        lines.push({ line: i + 1, src: k++ });
+    }
+    const values = [];
+    const firstLine = top + 2, lastLine = lines.length ? lines[lines.length - 1].line : firstLine - 1;
+    for (let line = firstLine; line <= lastLine; line++) values.push(GS_COLS.map(() => ''));
+    for (const { line, src } of lines) { const outs = per.get(src) || []; values[line - firstLine] = GS_COLS.map(([f]) => join(outs, f)); }
+    await GoogleDrive.resizeTab(id, t.sheetId, Math.max(lastLine, now.length, 1000), Math.max(start + GS_COLS.length, head.length));
+    await writeRows(id, t.title, [GS_COLS.map(c => c[1])], top + 1, start);
+    await writeRows(id, t.title, values, firstLine, start);
+    // spelling, cell by cell, in the person's own columns
+    for (const c of fixCols) {
+        const j = S.headers.indexOf(c);
+        const colVals = lines.map(({ src }) => [String(spelled(src)[c] ?? '')]);
+        if (lines.length) {
+            // write the whole column back only from its first to last data line, keeping blank lines blank
+            const vals = [];
+            for (let line = firstLine; line <= lastLine; line++) vals.push([String(now[line - 1]?.[j] ?? '')]);
+            lines.forEach(({ line }, n) => { vals[line - firstLine] = colVals[n]; });
+            await writeRows(id, t.title, vals, firstLine, j);
+        }
+    }
+    // the Sheet now has the fixed spellings, so the rows Matcher holds do too (and a later save still lines up)
+    if (spell.length) { for (const x of spell) S.rows[x.src] = spelled(x.src); findSpelling(); drawTable(); }
+    finishSave(id, t.sheetId, `Added Matcher's columns to “${t.title}”${spell.length ? `, and fixed ${fmt(spell.length)} spelling${spell.length === 1 ? '' : 's'}` : ''}.`);
+}
+function finishSave(id, sheetId, msg) {
+    const url = `https://docs.google.com/spreadsheets/d/${encodeURIComponent(id)}/edit#gid=${sheetId}`;
+    $('gs-msg').innerHTML = `${esc(msg)} <a href="${url}" target="_blank" rel="noopener">Open it in Google Sheets</a>`;
+    $('gs-go').textContent = 'Save'; delete $('gs-go').dataset.replace;
+    done(msg, 6000);
+}
 
 // ------------------------------------------------------------------ open in Joiner / Block Party
 // Both apps live on the same site as Matcher, so Matcher can hand Joiner the results directly: it opens
@@ -1274,19 +1491,18 @@ $('open-joiner').addEventListener('click', () => {
         done(`Opened ${fmt(resultsGeoJSON().features.length)} features in Joiner.`, 4000);
     }, 250);
 });
-// The matched blocks, without intersections (Block Party lists blocks).
-function matchedBlocks() {
+// Every matched block and intersection; Block Party takes both kinds of CNN.
+function matchedCnns() {
     const cnns = new Set();
     for (const r of outputRows().rows)
-        if (r.type === 'block') for (const c of String(r.cnn ?? '').split(/[;,\s]+/)) if (/^\d+$/.test(c)) cnns.add(c);
+        if (r.type === 'block' || r.type === 'intersection') for (const c of String(r.cnn ?? '').split(/[;,\s]+/)) if (/^\d+$/.test(c)) cnns.add(c);
     return [...cnns];
 }
 $('open-blockparty').addEventListener('click', () => {
-    const cnns = matchedBlocks();
-    if (!cnns.length) return done('No matched blocks to show. Block Party shows blocks, not intersections.', 6000);
+    const cnns = matchedCnns();
+    if (!cnns.length) return done('Nothing matched yet to show in Block Party.', 5000);
     window.open(`${APPS.blockParty}#cnn=${cnns.join(',')}`, '_blank');
-    const ix = outputRows().rows.some(r => r.type === 'intersection');
-    done(`Opened ${fmt(cnns.length)} block${cnns.length === 1 ? '' : 's'} in Block Party${ix ? '; intersections aren\'t shown there' : ''}.`, 5000);
+    done(`Opened ${fmt(cnns.length)} location${cnns.length === 1 ? '' : 's'} in Block Party.`, 5000);
 });
 $('save-xlsx').addEventListener('click', () => {
     const { fields, rows } = outputRows();

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Matcher · sf-blocks</title>
-<meta name="description" content="Match street names, intersections and polygons to San Francisco street blocks (CNNs), in your browser.">
+<meta name="description" content="Match free-text street descriptions (Mission between 1st and Fremont), intersections (Geary and 27th) as well as polygons to San Francisco blocks (CNNs) in the browser.">
 <link rel="icon" href="favicon.svg?v=7" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png?v=7" type="image/png" sizes="32x32">
 <link rel="icon" href="favicon-16.png?v=7" type="image/png" sizes="16x16">
@@ -17,7 +17,10 @@
 </head>
 <body>
 <header class="top">
-  <h1 class="logo" id="logo">Matcher</h1>
+  <a class="brand" href="./" title="Matcher">
+    <img src="img/burritojustice.jpg" alt="" width="32" height="32">
+    <h1 class="logo" id="logo">Matcher</h1>
+  </a>
   <p class="tagline">Match street names and polygons to San Francisco blocks</p>
   <span class="pill" id="engine" title="Matching runs sf-blocks' own Python scripts in your browser">Starting Python…</span>
 </header>
@@ -92,6 +95,21 @@
         <button type="button" class="btn" id="save-csv">Save CSV</button>
         <button type="button" class="btn" id="save-geojson">Save GeoJSON</button>
         <button type="button" class="btn" id="save-xlsx">Save Excel</button>
+        <button type="button" class="btn" id="save-gsheet" hidden>Save to Google Sheet</button>
+      </div>
+      <div class="gsheet" id="gsheet-panel" hidden>
+        <fieldset class="choice">
+          <legend>Save to Google Sheet</legend>
+          <label class="radio"><input type="radio" name="gs" value="tab" checked> <span>A new tab, <span id="gs-tabname"></span> (recommended)</span></label>
+          <label class="radio"><input type="radio" name="gs" value="cols"> <span>Add Matcher's columns to “<span id="gs-src"></span>”</span></label>
+        </fieldset>
+        <p class="warn" id="gs-warn" hidden><strong>This changes your original tab.</strong> Matcher adds its columns to the right of yours, one row per row, with several matches in a row joined by “;”. First it reads the tab again, and changes nothing if rows were added, removed, sorted or edited since you loaded it. To undo, use File › Version history in Google Sheets.</p>
+        <p class="hint" id="gs-msg" aria-live="polite"></p>
+        <div class="saves"><button type="button" class="btn primary" id="gs-go">Save</button><button type="button" class="btn ghost" id="gs-cancel">Cancel</button></div>
+      </div>
+      <div class="spell" id="spell" hidden>
+        <label class="check"><input type="checkbox" id="spell-on"> <span id="spell-text"></span></label>
+        <details><summary>See the spellings</summary><ul id="spell-list"></ul></details>
       </div>
       <div class="saves open-in">
         <button type="button" class="btn" id="open-joiner" title="Map the matched rows by district, neighborhood and more">Open in Joiner</button>
@@ -104,7 +122,7 @@
   <section class="stage">
     <div id="map"></div>
     <div class="pickbar" id="pickbar" hidden>
-      <div class="pick-text"><strong id="pick-title"></strong><span id="pick-help"></span></div>
+      <div class="pick-text"><strong id="pick-title"></strong><span id="pick-help"></span><span class="pick-change" id="pick-change" aria-live="polite"></span></div>
       <div class="pick-buttons">
         <button type="button" class="btn primary" id="pick-use">Use selection</button>
         <button type="button" class="btn" id="pick-none">No match</button>
@@ -115,6 +133,7 @@
       <div class="drawer-bar">
         <div class="chips" id="chips"></div>
         <input type="search" id="search" placeholder="Search rows" aria-label="Search rows">
+        <label class="cols-toggle"><input type="checkbox" id="show-cols" checked> Your columns</label>
         <button type="button" class="btn ghost" id="drawer-toggle" aria-expanded="true">Hide table</button>
       </div>
       <div class="table-wrap" id="table-wrap"><table id="table"></table></div>

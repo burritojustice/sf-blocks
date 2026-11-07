@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# sf-blocks 2026.11.05.3: master copy. Projects that use it (civic-joy-fund/block-party, burritojustice/sf-striping)
+# sf-blocks 2026.11.07.2: master copy. Projects that use it (civic-joy-fund/block-party, burritojustice/sf-striping)
 # keep their own copies; change it here, bump VERSION, then copy it into them.
 """
 Match free-text block descriptions ("Sanchez between 27th St and Duncan", "100 block of Winfield",
@@ -117,14 +117,18 @@ def split_name(name_words):
     return tuple(name_words), None
 
 
+PREFIXES = {"st": "saint", "mt": "mount", "ft": "fort", "pt": "point"}
+
+
 def base_key(words):
-    """numbers become ordinals so "18" matches "18th"; "st" at the start means Saint"""
+    """numbers become ordinals so "18" matches "18th"; "St", "Mt", "Ft" and "Pt" at the start mean Saint,
+    Mount, Fort and Point"""
     out = []
     for i, w in enumerate(words):
         if re.fullmatch(r"\d+", w):
             w = ordinal(int(w))
-        if i == 0 and w == "st" and len(words) > 1:
-            w = "saint"
+        if i == 0 and len(words) > 1:
+            w = PREFIXES.get(w, w)
         out.append(w)
     return " ".join(out)
 
@@ -145,6 +149,8 @@ class Streets:
             key = base_key(base)
             self.by_base[key].add(name)
             self.by_base[key.replace(" ", "")].add(name)    # "ofarrell", "mission bay"
+            if base[:1] == ("the",) and len(base) > 1:     # "Embarcadero" is The Embarcadero
+                self.by_base[base_key(base[1:])].add(name)
             self.suffix_of[name] = suf
         self.bases = list(self.by_base)
         self._snap_nodes()
@@ -577,6 +583,24 @@ def parse(st, raw):
                     r = result("intersection", segs, conf, a, raw, b, "", notes)
                     r["nodes"] = sorted(nodes)
                     return [r]
+
+    # 4b. one street found and one not ("Hayes & Octavai"): look for the other among the streets that
+    # actually cross it, which allows a looser spelling than a search of the whole city
+    if len(named) == 1 and len(parts) == 2 and "between" not in low:
+        streets, na, p0 = named[0]
+        other = parts[1] if parts[0] == p0 else parts[0]
+        junk = re.search(r"\b(?:start|end|block|county|line|ramp)\b|:", other)
+        for a in ([] if junk else sorted(streets)):
+            b, nb = st.match_cross(a, other)
+            nodes = st.intersection(a, b) if b else None
+            if nodes:
+                segs = [s for s in st.by_street[a] + st.by_street[b] if s["fn"] in nodes or s["tn"] in nodes]
+                notes = [na, nb]
+                if len(nodes) > 1:
+                    notes.append(f"these streets meet at {len(nodes)} intersections; all listed")
+                r = result("intersection", segs, "medium", a, raw, b, "", notes)
+                r["nodes"] = sorted(nodes)
+                return [r]
 
     # 5. just a street name: "Coventry Court", "Rossi Avenue!", "LARCH", or a street at the start of a longer note
     place = re.search(r"\b(?:park|plaza|playground|center|centre|wharf|warf|commons|rec)\b", low)
