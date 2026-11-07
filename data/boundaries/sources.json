@@ -286,6 +286,23 @@
       , "breaks": [5000, 10000, 20000, 40000, 80000, 160000]}
     },
     {
+      "id": "assessor_blocks",
+      "label": "Assessor Blocks",
+      "short": "Assessor Blocks",
+      "tab": "Other",
+      "dataset": "acdm-wktn",
+      "page": "https://data.sf.gov/Geographic-Locations-and-Boundaries/Parcels-Active-and-Retired/acdm-wktn",
+      "select": "block_num, shape",
+      "where": "active = true",
+      "dissolveBy": "block_num",
+      "key": "block_num",
+      "name": "block_num",
+      "keep": ["block_num", "parts"],
+      "numbers": ["parts"],
+      "nameTemplate": "Block {block_num}",
+      "labelTemplate": "{block_num}"
+    },
+    {
       "id": "cultural_districts",
       "label": "Cultural Districts (10)",
       "short": "Cultural Districts",

@@ -351,6 +351,36 @@
       "retrieved": "2026-11-02"
     },
     {
+      "id": "assessor_blocks",
+      "label": "Assessor Blocks",
+      "short": "Assessor Blocks",
+      "tab": "Other",
+      "file": "assessor_blocks.geojson",
+      "key": "block_num",
+      "name": "block_num",
+      "nameTemplate": "Block {block_num}",
+      "labelTemplate": "{block_num}",
+      "dissolveBy": "block_num",
+      "count": 5413,
+      "bbox": [
+        -122.51471,
+        37.70792,
+        -122.35564,
+        37.83607
+      ],
+      "extent": [
+        -122.51471,
+        37.70792,
+        -122.35564,
+        37.83607
+      ],
+      "bytes": 3499357,
+      "dataset": "acdm-wktn",
+      "page": "https://data.sf.gov/Geographic-Locations-and-Boundaries/Parcels-Active-and-Retired/acdm-wktn",
+      "source": "https://data.sf.gov/resource/acdm-wktn.geojson?%24select=block_num%2C+shape&%24where=active+%3D+true&%24order=%3Aid&%24limit=50000&%24offset=0",
+      "retrieved": "2026-11-06"
+    },
+    {
       "id": "cultural_districts",
       "label": "Cultural Districts (10)",
       "short": "Cultural Districts",
