@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026.11.06.4
+- **Matcher: Open from Google Drive is turned on** for burritojustice.github.io (`matcher/google.json` has the Google Cloud values).
+- **Matcher README: the Google setup steps match today's Google Cloud console.** Sign-in settings are now under Google Auth Platform (Branding, Audience, Data Access, Clients); the API key is under APIs & Services › Credentials. Adds the `https://docs.google.com/*` website the key needs for the picker, how to tell the project number from the project ID, and a table of common errors.
+
 ## 2026.11.06.3
 - **Matcher's icon is now four big puzzle pieces:** three teal and one magenta, filling the whole icon, with see-through gaps so it works on light and dark tab bars. The roads are gone. The phone home-screen icon puts it on white.
 - **Browsers pick up icon changes.** The icon links carry a version (`favicon.svg?v=7`), so browsers fetch the new icon instead of showing the one they saved. Bump it whenever the icon changes.
