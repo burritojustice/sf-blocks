@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.11.07.3
+- **Column guessing (`--suggest`, and Matcher's column notes) no longer takes a notes column for locations.** A lone street name no longer counts as a location ("near school" was finding School Alley), and short values count against a column, so "busy", "red zone" and "near BART" don't add up to "locations 100%". Real location columns score the same as before.
+
 ## 2026.11.07.2
 - **match_blocks.py reads "Mt", "Ft" and "Pt" as Mount, Fort and Point** at the start of a street name, like "St" for Saint. "Cayuga and Mt Vernon" was matching Vernon St (which doesn't meet Cayuga) instead of Mount Vernon Ave.
 - **"Embarcadero" is The Embarcadero** without a spelling note or lower confidence.
