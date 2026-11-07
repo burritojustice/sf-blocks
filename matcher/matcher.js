@@ -2,7 +2,7 @@
 // own Python scripts (run in a worker with Pyodide); show and fix results on a map and in a table; save
 // the enhanced file. Nothing leaves the browser except requests for the map and the libraries.
 'use strict';
-const MATCHER_VERSION = '7';
+const MATCHER_VERSION = '8';
 const BASE = new URL('../', location.href).href;          // the sf-blocks site root
 const STYLE = key => `https://api.protomaps.com/styles/v5/white/en.json?key=${key}`;
 const DEFAULT_KEY = '071e272e8d5e13b7';                   // burritojustice.github.io (localhost accepts any key)
@@ -43,7 +43,8 @@ const S = {
 // answers on 3.12.
 const PYODIDE_VERSIONS = ['https://cdn.jsdelivr.net/npm/pyodide@314.0.7/', 'https://cdn.jsdelivr.net/npm/pyodide@0.27.7/'];
 // ?pyodide=<url>[,<url>…] loads Python from other copies, in that order (for tests without the CDN).
-const PYODIDE_OVERRIDE = new URLSearchParams(location.search).get('pyodide');
+const params = new URLSearchParams(location.search);
+const PYODIDE_OVERRIDE = params.get('pyodide');
 const PYODIDE_URLS = PYODIDE_OVERRIDE ? PYODIDE_OVERRIDE.split(',').map(u => new URL(u, location.href).href) : PYODIDE_VERSIONS;
 let worker, nextId = 1;
 const waiting = new Map();
@@ -413,7 +414,7 @@ function useWorkbook(wb, name, ext) {
 function useSheet(sheet, name, ext) {
     const ws = S.workbook.Sheets[sheet];
     const grid = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false, blankrows: false });
-    const top = grid.findIndex(r => r.filter(c => String(c).trim()).length >= 1);
+    const top = headerRow(grid);
     if (top < 0) throw new Error(`sheet "${sheet}" is empty`);
     const headers = dedupe(grid[top].map((h, i) => String(h).trim() || `column ${i + 1}`));
     const rows = grid.slice(top + 1).map(r => Object.fromEntries(headers.map((h, i) => [h, r[i] == null ? '' : String(r[i])])));
@@ -421,6 +422,14 @@ function useSheet(sheet, name, ext) {
     useRows(headers, rows, name, ext);
     S.workbook = keep;
     $('sheet-field').hidden = keep.SheetNames.length < 2;
+}
+// The header is the first row about as wide as the table, so a title or note in the top rows
+// ("Traffic intersections, 2026") isn't taken for the header.
+function headerRow(grid) {
+    const filled = r => r.filter(c => String(c).trim()).length;
+    const widest = Math.max(0, ...grid.slice(0, 30).map(filled));
+    if (!widest) return -1;
+    return grid.findIndex(r => filled(r) >= Math.max(1, Math.ceil(widest * 0.6)));
 }
 const dedupe = hs => { const seen = {}; return hs.map(h => (seen[h] = (seen[h] || 0) + 1) > 1 ? `${h} ${seen[h]}` : h); };
 
@@ -480,6 +489,7 @@ function useRows(headers, rows, name, ext) {
     if (!['xlsx', 'xls', 'xlsm', 'ods', 'gsheet'].includes(ext)) S.workbook = null;
     $('text-opts').hidden = false; $('poly-opts').hidden = true;
     $('loaded').innerHTML = `${esc(name)} <span>· ${fmt(rows.length)} rows, ${headers.length} columns</span>`;
+    S.colInfo = columnInfo(headers, S.rows);
     const opts = ['', ...headers].map(h => `<option value="${esc(h)}">${esc(h || '(none)')}</option>`).join('');
     for (const id of ['col-text', 'col-street', 'col-cross', 'col-cross2']) $(id).innerHTML = opts;
     const g = guessColumns(headers, S.rows);
@@ -506,8 +516,10 @@ async function suggest(rows) {
         const pct = x => `${Math.round(x * 100)}%`;
         const note = h => { const r = g.report[h]; if (!r?.filled) return '';
             return r.street >= 0.3 ? ` · street names ${pct(r.street)}` : r.place >= 0.2 ? ` · locations ${pct(r.place)}` : r.pair >= 0.3 ? ` · two streets ${pct(r.pair)}` : ''; };
+        for (const h of S.headers) if (S.colInfo[h]) S.colInfo[h].note = note(h).replace(/^ · /, '');
         for (const id of ['col-text', 'col-street', 'col-cross', 'col-cross2'])
             for (const o of $(id).options) if (o.value) o.textContent = o.value + note(o.value);
+        refreshPickers();
         if (!S.picked) {
             if (g.mode === 'columns') {
                 $('col-street').value = g.street; $('col-cross').value = g.cross; $('col-cross2').value = g.cross2 || '';
@@ -535,8 +547,10 @@ function usePolygons(feats, name, ext) {
     const n = S.polys.length;
     $('text-opts').hidden = true; $('poly-opts').hidden = false;
     $('loaded').innerHTML = `${esc(name)} <span>· ${fmt(n)} polygons${feats.length > n ? `, ${fmt(feats.length - n)} other features skipped` : ''}</span>`;
+    S.colInfo = columnInfo(headers, feats.map(f => f.properties || {}));
     $('col-name').innerHTML = ['', ...headers].map(h => `<option value="${esc(h)}">${esc(h || '(numbered)')}</option>`).join('');
     $('col-name').value = headers.find(h => /^(name|title|label)$/i.test(h)) || headers.find(h => /name|title/i.test(h)) || '';
+    refreshPickers();
     $('card-match').hidden = false;
     loaded(`${name}${S.drive ? ' (Google Drive)' : ''}`);
     reveal($('card-match'));
@@ -626,11 +640,123 @@ document.querySelectorAll('input[name=mode]').forEach(r => r.addEventListener('c
 const mode = () => document.querySelector('input[name=mode]:checked').value;
 
 function showMode() {
+    refreshPickers();
     const m = mode();
     document.querySelectorAll('[data-mode]').forEach(el => { el.style.opacity = el.dataset.mode === m ? 1 : 0.45; });
     const ex = S.rows.slice(0, 3).map(describe).filter(Boolean);
     $('example').textContent = ex.length ? ex.map(e => `“${e}”`).join('  ') : '';
 }
+
+// ------------------------------------------------------------------ column menus
+// Each column menu is a button and a list in place of the <select>, so every column can show its
+// position, what the matcher thinks is in it, and a few sample values in smaller type. The hidden
+// <select> keeps the value, so the rest of the page reads and sets it as before.
+function columnInfo(headers, rows) {
+    const info = {};
+    headers.forEach((h, i) => {
+        const seen = new Set();
+        for (const r of rows) {
+            const v = String(r[h] ?? '').trim();
+            if (v && !seen.has(v)) seen.add(v.length > 28 ? v.slice(0, 27) + '…' : v);
+            if (seen.size >= 3) break;
+        }
+        info[h] = { n: i + 1, samples: [...seen], note: '' };
+    });
+    return info;
+}
+const PICKERS = ['col-text', 'col-street', 'col-cross', 'col-cross2', 'col-name'];
+let openPicker = null;
+function optionHtml(o) {
+    const c = S.colInfo?.[o.value];
+    if (!o.value || !c) return `<span class="cp-name">${esc(o.textContent)}</span>`;
+    return `<span class="cp-name"><span class="cp-num">${c.n}</span>${esc(o.value)}${c.note ? ` <span class="cp-note">${esc(c.note)}</span>` : ''}</span>`
+        + `<span class="cp-samples">${c.samples.length ? c.samples.map(esc).join(' · ') : 'empty'}</span>`;
+}
+function makePicker(sel) {
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'cpick'; btn.id = `${sel.id}-pick`;
+    btn.setAttribute('aria-haspopup', 'listbox'); btn.setAttribute('aria-expanded', 'false');
+    sel.before(btn); sel.hidden = true; sel.tabIndex = -1;
+    btn.addEventListener('click', () => openPicker?.sel === sel ? closePicker() : showList(sel, btn));
+    btn.addEventListener('keydown', e => { if (['ArrowDown', 'ArrowUp'].includes(e.key)) { e.preventDefault(); showList(sel, btn); } });
+}
+function refreshPickers() {
+    for (const id of PICKERS) {
+        const sel = $(id), btn = $(`${id}-pick`);
+        if (!btn) continue;
+        const o = sel.options[sel.selectedIndex];
+        btn.innerHTML = o ? optionHtml(o) : '';
+        btn.title = o?.value || '';
+    }
+}
+function showList(sel, btn) {
+    closePicker();
+    const ul = document.createElement('ul');
+    ul.className = 'cpick-list'; ul.setAttribute('role', 'listbox'); ul.tabIndex = -1;
+    ul.setAttribute('aria-label', btn.closest('label')?.firstChild?.textContent.trim() || 'Column');
+    [...sel.options].forEach((o, i) => {
+        const li = document.createElement('li');
+        li.setAttribute('role', 'option'); li.id = `${sel.id}-opt-${i}`; li.dataset.i = i;
+        li.setAttribute('aria-selected', String(i === sel.selectedIndex));
+        li.innerHTML = optionHtml(o);
+        ul.appendChild(li);
+    });
+    document.body.appendChild(ul);
+    const r = btn.getBoundingClientRect(), below = innerHeight - r.bottom - 8;
+    ul.style.left = `${r.left}px`; ul.style.width = `${Math.max(r.width, 240)}px`;
+    if (below >= 200 || below >= r.top) { ul.style.top = `${r.bottom + 2}px`; ul.style.maxHeight = `${Math.min(320, below)}px`; }
+    else { ul.style.bottom = `${innerHeight - r.top + 2}px`; ul.style.maxHeight = `${Math.min(320, r.top - 8)}px`; }
+    openPicker = { sel, btn, ul, active: Math.max(0, sel.selectedIndex) };
+    btn.setAttribute('aria-expanded', 'true');
+    setActive(openPicker.active);
+    ul.focus();
+    ul.addEventListener('click', e => { const li = e.target.closest('li'); if (li) choose(+li.dataset.i); });
+    ul.addEventListener('mousemove', e => { const li = e.target.closest('li'); if (li) setActive(+li.dataset.i, false); });
+    ul.addEventListener('keydown', e => {
+        const n = sel.options.length, a = openPicker.active;
+        if (e.key === 'ArrowDown') setActive(Math.min(n - 1, a + 1));
+        else if (e.key === 'ArrowUp') setActive(Math.max(0, a - 1));
+        else if (e.key === 'Home') setActive(0);
+        else if (e.key === 'End') setActive(n - 1);
+        else if (e.key === 'Enter' || e.key === ' ') choose(a);
+        else if (e.key === 'Escape' || e.key === 'Tab') { closePicker(); if (e.key === 'Escape') btn.focus(); return; }
+        else if (e.key.length === 1) {               // type to jump to a column
+            const k = e.key.toLowerCase(), opts = [...sel.options];
+            const j = opts.findIndex((o, i) => i > a && o.value.toLowerCase().startsWith(k));
+            const at = j >= 0 ? j : opts.findIndex(o => o.value.toLowerCase().startsWith(k));
+            if (at >= 0) setActive(at);
+            return;
+        } else return;
+        e.preventDefault();
+    });
+}
+function setActive(i, scroll = true) {
+    const { ul } = openPicker;
+    ul.querySelector('.active')?.classList.remove('active');
+    const li = ul.children[i];
+    if (!li) return;
+    li.classList.add('active'); ul.setAttribute('aria-activedescendant', li.id);
+    openPicker.active = i;
+    if (scroll) li.scrollIntoView({ block: 'nearest' });
+}
+function choose(i) {
+    const { sel, btn } = openPicker;
+    closePicker();
+    btn.focus();
+    if (sel.selectedIndex === i) return;
+    sel.selectedIndex = i;
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    refreshPickers();
+}
+function closePicker() {
+    if (!openPicker) return;
+    openPicker.ul.remove(); openPicker.btn.setAttribute('aria-expanded', 'false');
+    openPicker = null;
+}
+document.addEventListener('pointerdown', e => { if (openPicker && !openPicker.ul.contains(e.target) && !openPicker.btn.contains(e.target)) closePicker(); });
+document.querySelector('.side').addEventListener('scroll', closePicker);
+addEventListener('resize', closePicker);
+PICKERS.forEach(id => makePicker($(id)));
 
 // What the matcher reads for a row: the same rule as match_blocks.py's describer()/from_columns().
 function describe(row) {
@@ -1105,14 +1231,62 @@ $('save-csv').addEventListener('click', () => {
     const { fields, rows } = outputRows();
     download(`${S.name}${suffix()}.csv`, new Blob(['﻿' + Papa.unparse({ fields, data: rows.map(r => fields.map(f => r[f] ?? '')) })], { type: 'text/csv' }));
 });
+function resultsGeoJSON() {
+    if (S.kind === 'polygons') return { type: 'FeatureCollection', features: S.results.map(r => r.feature) };
+    const { rows } = outputRows();
+    return { type: 'FeatureCollection', features: rows.map(r => { const { wkt, ...props } = r; return { type: 'Feature', geometry: parseWkt(wkt), properties: props }; }) };
+}
 $('save-geojson').addEventListener('click', () => {
-    let fc;
-    if (S.kind === 'polygons') fc = { type: 'FeatureCollection', features: S.results.map(r => r.feature) };
-    else {
-        const { rows } = outputRows();
-        fc = { type: 'FeatureCollection', features: rows.map(r => { const { wkt, ...props } = r; return { type: 'Feature', geometry: parseWkt(wkt), properties: props }; }) };
+    download(`${S.name}${suffix()}.geojson`, new Blob([JSON.stringify(resultsGeoJSON())], { type: 'application/geo+json' }));
+});
+
+// ------------------------------------------------------------------ open in Joiner / Block Party
+// Both apps live on the same site as Matcher, so Matcher can hand Joiner the results directly: it opens
+// Joiner, waits for it to start, and gives it the GeoJSON as a file, as if it had been dropped there.
+// Block Party takes a list of blocks in its link (#cnn=…). ?joiner= and ?blockparty= point at other copies.
+const APPS = {
+    joiner: params.get('joiner') || 'https://burritojustice.github.io/joiner/',
+    blockParty: params.get('blockparty') || 'https://burritojustice.github.io/block-party/',
+};
+const sameSite = u => { try { return new URL(u, location.href).origin === location.origin; } catch { return false; } };
+$('open-joiner').addEventListener('click', () => {
+    const name = `${S.name}${suffix()}.geojson`, json = JSON.stringify(resultsGeoJSON());
+    const w = window.open(APPS.joiner, '_blank');
+    if (!w) return done('The browser blocked the new tab. Allow pop-ups for this page, then try again.', 8000);
+    if (!sameSite(APPS.joiner)) {
+        download(name, new Blob([json], { type: 'application/geo+json' }));
+        return done(`Saved ${name}. Drop it on Joiner to map it.`, 8000);
     }
-    download(`${S.name}${suffix()}.geojson`, new Blob([JSON.stringify(fc)], { type: 'application/geo+json' }));
+    toast('Opening Joiner…');
+    const start = Date.now();
+    const tick = setInterval(() => {
+        if (w.closed || Date.now() - start > 45000) {
+            clearInterval(tick);
+            if (!w.closed) { download(name, new Blob([json], { type: 'application/geo+json' })); done(`Joiner took too long to start. Saved ${name}; drop it on Joiner.`, 9000); }
+            else done('Joiner was closed.', 3000);
+            return;
+        }
+        let J;
+        try { J = w.Joiner; } catch { return; }
+        if (!J?.loadFile || !J.state?.layerId || !J.map?.isStyleLoaded?.()) return;
+        clearInterval(tick);
+        J.loadFile(new w.File([json], name, { type: 'application/geo+json' }));
+        done(`Opened ${fmt(resultsGeoJSON().features.length)} features in Joiner.`, 4000);
+    }, 250);
+});
+// The matched blocks, without intersections (Block Party lists blocks).
+function matchedBlocks() {
+    const cnns = new Set();
+    for (const r of outputRows().rows)
+        if (r.type === 'block') for (const c of String(r.cnn ?? '').split(/[;,\s]+/)) if (/^\d+$/.test(c)) cnns.add(c);
+    return [...cnns];
+}
+$('open-blockparty').addEventListener('click', () => {
+    const cnns = matchedBlocks();
+    if (!cnns.length) return done('No matched blocks to show. Block Party shows blocks, not intersections.', 6000);
+    window.open(`${APPS.blockParty}#cnn=${cnns.join(',')}`, '_blank');
+    const ix = outputRows().rows.some(r => r.type === 'intersection');
+    done(`Opened ${fmt(cnns.length)} block${cnns.length === 1 ? '' : 's'} in Block Party${ix ? '; intersections aren\'t shown there' : ''}.`, 5000);
 });
 $('save-xlsx').addEventListener('click', () => {
     const { fields, rows } = outputRows();
