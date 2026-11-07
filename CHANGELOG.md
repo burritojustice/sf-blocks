@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026.11.07.4
+- **Matcher learns from fixes.** After you fix rows on the map, the Results card offers **Share with sf-blocks**, which opens GitHub with your fixes as a new file in `tests/corrections/` to propose, or **Save fixes**. Only the location text and the CNNs go in.
+- **`scripts/test_matcher.py`** runs every fix through `match_blocks.py`: how many it gets right, `--failing` for the ones it still gets wrong (the to-do list for the matcher), `--update` to record a new baseline. The pull-request check now runs it too, so a change that breaks a fix it used to get right fails the check.
+- `tests/corrections/2026-11-07-examples.csv` starts it off with today's cases (Mt Vernon, Embarcadero, Octavai, Mision, and "near school", which it still gets wrong).
+
 ## 2026.11.07.3
 - **Column guessing (`--suggest`, and Matcher's column notes) no longer takes a notes column for locations.** A lone street name no longer counts as a location ("near school" was finding School Alley), and short values count against a column, so "busy", "red zone" and "near BART" don't add up to "locations 100%". Real location columns score the same as before.
 

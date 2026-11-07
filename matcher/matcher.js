@@ -2,7 +2,7 @@
 // own Python scripts (run in a worker with Pyodide); show and fix results on a map and in a table; save
 // the enhanced file. Nothing leaves the browser except requests for the map and the libraries.
 'use strict';
-const MATCHER_VERSION = '9';
+const MATCHER_VERSION = '10';
 const BASE = new URL('../', location.href).href;          // the sf-blocks site root
 const STYLE = key => `https://api.protomaps.com/styles/v5/white/en.json?key=${key}`;
 const DEFAULT_KEY = '071e272e8d5e13b7';                   // burritojustice.github.io (localhost accepts any key)
@@ -879,6 +879,7 @@ function showResults(final) {
     drawTable();
     drawMap(final);
     findSpelling();
+    showLearn();
     $('save-gsheet').hidden = S.drive?.kind !== 'sheet' || S.kind !== 'rows';
 }
 
@@ -1177,6 +1178,7 @@ $('pick-use').addEventListener('click', async () => {
     else {
         try {
             const fields = await ask('manual', { cnns: [...P.cnns], nodes: [...P.nodes], text: describe(S.rows[r.src]) });
+            r.before ??= { cnn: r.out.cnn, confidence: r.out.confidence };
             r.out = { ...r.out, ...fields, matched_text: r.out.matched_text || fields.matched_text };
             r.fixed = true;
         } catch (e) { return done(`Couldn't use that: ${e.message}`, 6000); }
@@ -1194,6 +1196,7 @@ $('pick-none').addEventListener('click', () => {
         endPick(); showResults(false);
         return done(`${r.name || `Polygon ${r.index + 1}`} kept as a plain polygon.`);
     }
+    r.before ??= { cnn: r.out.cnn, confidence: r.out.confidence };
     Object.assign(r.out, { type: '', cnn: '', nearby_cnns: '', street: '', from_street: '', to_street: '', address_low: '', address_high: '',
         address_ranges: '', supervisor_district: '', nhood: '', wkt: '', confidence: 'none', method: 'manual', notes: 'marked as no match' });
     r.fixed = true;
@@ -1328,6 +1331,37 @@ function resultsGeoJSON() {
 }
 $('save-geojson').addEventListener('click', () => {
     download(`${S.name}${suffix()}.geojson`, new Blob([JSON.stringify(resultsGeoJSON())], { type: 'application/geo+json' }));
+});
+
+// ------------------------------------------------------------------ learning from fixes
+// The rows fixed on the map, as test cases for the matcher: what it read, and what the person picked.
+// scripts/test_matcher.py runs every file in tests/corrections/ and says which the matcher gets right.
+// Only the description and CNNs go in, never the person's other columns, because the files are public.
+const SHARE_URL = 'https://github.com/burritojustice/sf-blocks/new/main/tests/corrections';
+const CORR_FIELDS = ['text', 'part', 'expected_type', 'expected_cnn', 'matcher_cnn', 'matcher_confidence', 'source', 'fixed_on', 'note'];
+const today = () => new Date().toISOString().slice(0, 10);
+function corrections() {
+    return S.kind !== 'rows' ? [] : S.results.filter(r => r.fixed && r.before).sort((a, b) => a.src - b.src || a.out.part - b.out.part).map(r => ({
+        text: describe(S.rows[r.src]), part: r.out.part || 1, expected_type: r.out.type, expected_cnn: r.out.cnn,
+        matcher_cnn: r.before.cnn, matcher_confidence: r.before.confidence, source: S.name, fixed_on: today(), note: '' }));
+}
+const corrCsv = () => Papa.unparse({ fields: CORR_FIELDS, data: corrections().map(c => CORR_FIELDS.map(f => c[f] ?? '')) });
+const corrName = () => `${today()}-${S.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'fixes'}.csv`;
+function showLearn() {
+    const n = corrections().length;
+    $('learn').hidden = !n;
+    if (n) $('learn-text').textContent = `You fixed ${fmt(n)} ${n === 1 ? 'row' : 'rows'}. Each fix can teach the matcher:`;
+}
+$('save-fixes').addEventListener('click', () => download(corrName(), new Blob([corrCsv()], { type: 'text/csv' })));
+$('share-fixes').addEventListener('click', () => {
+    const csvText = corrCsv(), url = `${SHARE_URL}?filename=${encodeURIComponent(corrName())}&value=${encodeURIComponent(csvText)}`;
+    if (url.length > 7500) {          // too long for a link: save the file to upload instead
+        download(corrName(), new Blob([csvText], { type: 'text/csv' }));
+        window.open(`https://github.com/burritojustice/sf-blocks/upload/main/tests/corrections`, '_blank');
+        return done(`Saved ${corrName()}; drop it on the GitHub page that opened.`, 9000);
+    }
+    window.open(url, '_blank');
+    done('GitHub opened with your fixes as a new file. Click "Commit changes…" to propose it.', 7000);
 });
 
 // ------------------------------------------------------------------ save to Google Sheet

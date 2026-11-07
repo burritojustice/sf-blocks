@@ -1,0 +1,7 @@
+text,part,expected_type,expected_cnn,matcher_cnn,matcher_confidence,source,fixed_on,note
+Cayuga and Mt Vernon,1,intersection,22091000,13229000;13230000;13231000;13232000;13233000,low,examples,2026-11-07,"""Mt"" is Mount, not Vernon St"
+Cayuga Ave and Mt Vernon Ave,1,intersection,22091000,,none,examples,2026-11-07,
+Embarcadero and Broadway,1,intersection,24570000,24570000,medium,examples,2026-11-07,no one writes The Embarcadero
+Hayes & Octavai,1,intersection,25925000,,none,examples,2026-11-07,misspelled cross street
+Mision between 1st and Fremont,1,block,9087000,9087000,medium,examples,2026-11-07,
+near school,1,,,11671000,medium,examples,2026-11-07,"a note, not a place; the matcher finds School Alley"
