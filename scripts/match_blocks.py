@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# sf-blocks 2026.11.07.2: master copy. Projects that use it (civic-joy-fund/block-party, burritojustice/sf-striping)
+# sf-blocks 2026.11.07.3: master copy. Projects that use it (civic-joy-fund/block-party, burritojustice/sf-striping)
 # keep their own copies; change it here, bump VERSION, then copy it into them.
 """
 Match free-text block descriptions ("Sanchez between 27th St and Duncan", "100 block of Winfield",
@@ -770,11 +770,16 @@ def column_report(st, rows, columns, sample=80):
         street = sum(is_street(st, v) for v in vals) / len(vals)
         pair = sum(len(ps) == 2 and all(is_street(st, x) for x in ps)
                    for ps in ([x for x in PAIR_SPLIT.split(v) if x.strip()] for v in vals)) / len(vals)
+        # a place is a block, intersection or address found with some confidence; a lone street name
+        # ("near school" finding School Alley) doesn't count. Short values count against it, so a notes
+        # column of "busy", "red zone", "near BART" isn't taken for locations.
         place = 0
-        long_vals = [v for v in vals if re.search(r"[a-z]", v, re.I) and len(v) > 4][:40]
+        texty = [v for v in vals if re.search(r"[a-z]", v, re.I) and len(v) > 4]
+        long_vals = texty[:40]
         if long_vals and street < 0.6:
-            place = sum(any((r["segs"] or r.get("nodes")) and r["confidence"] in ("high", "medium")
-                            for r in match_text(st, v)) for v in long_vals) / len(long_vals)
+            hits = sum(any((r["segs"] or r.get("nodes")) and r["confidence"] in ("high", "medium") and r.get("method") != "street_only"
+                           for r in match_text(st, v)) for v in long_vals)
+            place = hits / len(long_vals) * len(texty) / len(vals)
         report[c] = dict(filled=len(vals), street=round(street, 2), pair=round(pair, 2), place=round(place, 2))
     return report
 
