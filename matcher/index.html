@@ -111,6 +111,11 @@
         <label class="check"><input type="checkbox" id="spell-on"> <span id="spell-text"></span></label>
         <details><summary>See the spellings</summary><ul id="spell-list"></ul></details>
       </div>
+      <div class="learn" id="learn" hidden>
+        <p id="learn-text"></p>
+        <div class="saves"><button type="button" class="btn small" id="share-fixes">Share with sf-blocks</button><button type="button" class="btn small" id="save-fixes">Save fixes</button></div>
+        <p class="hint">Shared fixes become test cases the matcher is checked against, so the next version gets them right. Only the location text and the CNNs you picked are included, and they're public on GitHub.</p>
+      </div>
       <div class="saves open-in">
         <button type="button" class="btn" id="open-joiner" title="Map the matched rows by district, neighborhood and more">Open in Joiner</button>
         <button type="button" class="btn" id="open-blockparty" title="Show the matched blocks with their slope, districts and city data">Open in Block Party</button>

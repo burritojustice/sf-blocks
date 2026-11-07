@@ -1,11 +1,12 @@
 # On every pull request: the JSON files parse, and every boundary set passes get_layers.py --check
-# (no duplicate ids, every area has its key, expected counts).
+# (no duplicate ids, every area has its key, expected counts), and match_blocks.py still gets right the
+# fixes in tests/corrections/ it got right before.
 # Pull requests opened by the Add action don't trigger this (GitHub's rule for action-made PRs), so that
 # action runs the same checks itself; keep the two in step.
 name: Check data
 on:
   pull_request:
-    paths: ['data/**', 'region.json', 'scripts/**']
+    paths: ['data/**', 'region.json', 'scripts/**', 'tests/**']
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -18,3 +19,5 @@ jobs:
         run: python3 scripts/get_layers.py --check
       - name: Map layers
         run: python3 scripts/build_tiles.py --check
+      - name: Matcher still gets the fixes it got before
+        run: python3 scripts/test_matcher.py
