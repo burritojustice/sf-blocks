@@ -19,6 +19,8 @@ Libraries, pinned: MapLibre GL 5.16.0, PapaParse 5.4.1, SheetJS 0.20.3 (from She
 
 For testing without the CDN, `?pyodide=<url>/` loads Pyodide from another copy; a comma-separated list tries each in turn.
 
+**Open in Joiner** and **Open in Block Party** pass the results on. Joiner is on the same site, so Matcher opens it, waits for it to start, and hands it the results GeoJSON with `window.Joiner.loadFile`, as if the file had been dropped there; from another site (a local copy, say) it saves the GeoJSON for you to drop instead. Block Party gets the matched blocks in its link (`#cnn=…`); it lists blocks, so intersections aren't passed. `?joiner=<url>` and `?blockparty=<url>` point the buttons at other copies.
+
 ## Google Drive
 
 **Open from Google Drive** uses Google's file picker. It asks only for the `drive.file` permission, which lets the page open the files the person picks and nothing else in their Drive. Google treats that as a non-sensitive permission, so the app doesn't need Google's security review. The sign-in lasts up to an hour, stays in that browser tab, and never goes through a server of ours.
@@ -45,8 +47,15 @@ The console has two areas for this. Sign-in settings live in **Google Auth Platf
    - Google Sheets API
 
 3. **Google Auth Platform** (search "Google Auth Platform"; the first visit asks you to **Get started**):
-   - **Branding:** app name (for example "sf-blocks Matcher") and a support email. This is what people see on the Google sign-in window.
-   - **Audience:** **External**. While the status is **Testing**, only the people listed under **Test users** can sign in, so add yourself. When it works, click **Publish app** so anyone can sign in. With only `drive.file`, Google doesn't review it (adding a logo under Branding does start a brand check, so leave the logo off).
+   - **Branding:** what people see on the Google sign-in window. Keep it simple, because anything extra here can start Google's brand check, which this app doesn't need:
+     - **App name:** one name, such as "sf-blocks tools". Not a list ("Matcher, Joiner, Block Party" was rejected), and it should match the name on the home page.
+     - **Support email** and **developer contact email**.
+     - **Logo:** leave it off. A logo is what makes Google verify the brand.
+     - **App home page:** a page that actually loads and says what the app is, such as `https://burritojustice.github.io/sf-blocks/matcher/`. Not the bare `https://burritojustice.github.io`, which has no page and shows a 404.
+     - **Privacy policy / terms of service links:** optional without a logo. If you add a privacy policy, it has to be a different page from the home page, publicly readable, and say what the app does with Google data.
+     - **Authorized domains:** `burritojustice.github.io`.
+   - **Audience:** **External**. While the status is **Testing**, only the people listed under **Test users** can sign in, so add yourself. When it works, click **Publish app** so anyone can sign in. With only `drive.file`, Google doesn't review the app.
+   - **Verification Center:** don't submit anything. If Google lists branding "issues" (home page unresponsive, not registered to you, no privacy policy, name doesn't match), they're about the brand check; fix the name and home page as above, remove the logo, and sign-in works without it.
    - **Data Access › Add or remove scopes:** find `.../auth/drive.file` (Google Drive API: "See, edit, create, and delete only the specific Google Drive files you use with this app"), tick it, and **Update**, then **Save**.
    - **Clients › Create client:** type **Web application**, any name. Under **Authorized JavaScript origins** add `https://burritojustice.github.io` (just the site, no path or trailing slash), plus `http://localhost:8000` if you test locally. Leave **Authorized redirect URIs** empty. **Create**, then copy the **Client ID**.
 
@@ -73,6 +82,7 @@ The console has two areas for this. Sign-in settings live in **Google Auth Platf
 |---|---|
 | No **Open from Google Drive** button | `google.json` has no complete entry for this site (all three values, and the site exactly as it appears in the address bar) |
 | "Error 400: redirect_uri_mismatch" or "origin_mismatch" in the sign-in window | The site isn't in the client's **Authorized JavaScript origins** |
+| Verification Center lists home page, privacy policy or app name issues | A brand check started, usually from a logo. Remove the logo, use one app name and a home page that loads (step 3, Branding) |
 | "Access blocked: … has not completed the Google verification process" | The app is in **Testing** and you're not a test user; add yourself or **Publish app** |
 | The picker opens but says the API key is invalid | The key's website list is missing the site or `https://docs.google.com/*`, or the Picker API isn't enabled |
 | The picker shows files but opening one fails with 403 | The Drive or Sheets API isn't enabled, or `appId` is the project ID instead of the project number |

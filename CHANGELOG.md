@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026.11.07
+- **Matcher: column menus show what's in each column.** Each entry has the column's name and number, what the matcher thinks is in it ("street names 100%"), and a few sample values in smaller type.
+- **Matcher: the real header row is found** when a sheet has a title or note above it, instead of naming the columns "column 1, column 2…".
+- **Matcher: Open in Joiner and Open in Block Party.** Joiner gets the results as if the GeoJSON had been dropped on it; Block Party opens with the matched blocks selected.
+- "One column describes each location" is now "Location info is in one column", to match "Street and cross street are in separate columns".
+- Matcher README: the Google setup steps now include what got sign-in working: one app name, no logo, a home page that loads, and nothing submitted for verification.
+
 ## 2026.11.06.4
 - **Matcher: Open from Google Drive is turned on** for burritojustice.github.io (`matcher/google.json` has the Google Cloud values).
 - **Matcher README: the Google setup steps match today's Google Cloud console.** Sign-in settings are now under Google Auth Platform (Branding, Audience, Data Access, Clients); the API key is under APIs & Services › Credentials. Adds the `https://docs.google.com/*` website the key needs for the picker, how to tell the project number from the project ID, and a table of common errors.
