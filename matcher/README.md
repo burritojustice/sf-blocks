@@ -23,6 +23,10 @@ For testing without the CDN, `?pyodide=<url>/` loads Pyodide from another copy; 
 
 **Save to Google Sheet** appears when the file came from Google Drive as a Sheet. It writes a new tab named after the original ("Intersections matched"), with the same rows as Save CSV; if that tab exists, it asks before replacing it. The other choice adds Matcher's columns (`Matcher: CNN`, `Matcher: type`, street, from, to, confidence, notes) to the right of the original tab, one row per row. Before writing, it reads the tab again and changes nothing if the header, the number of rows or the matched columns differ from what was loaded. Saving again reuses those columns.
 
+**Parcels** come from `data/Land_Use_with_Active_Parcel_Information.pmtiles` (PMTiles 4.5.0 reads it): drawn from zoom 15 with the Parcels button and while picking parcels in the fix bar, and decoded at zoom 15 (`ParcelTiles`, `decodeMVT`, the same reader as Block Party's) to list the lots inside polygons. A lot is inside when the middle of its outline is. Rows get `parcels` / `parcel_addresses`; polygon rows of `type` parcel add `blklot`, `landuse` and `homes`. Testing needs a server that answers range requests.
+
+**Learning:** rows fixed on the map can be shared as test cases (`tests/corrections/`, see its README).
+
 **Open in Joiner** and **Open in Block Party** pass the results on. Joiner is on the same site, so Matcher opens it, waits for it to start, and hands it the results GeoJSON with `window.Joiner.loadFile`, as if the file had been dropped there; from another site (a local copy, say) it saves the GeoJSON for you to drop instead. Block Party gets the matched blocks and intersections in its link (`#cnn=…`). `?joiner=<url>` and `?blockparty=<url>` point the buttons at other copies.
 
 ## Google Drive

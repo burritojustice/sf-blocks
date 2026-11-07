@@ -81,6 +81,7 @@
           <label class="radio"><input type="radio" name="ix" value="yes" checked> Blocks and intersections</label>
           <label class="radio"><input type="radio" name="ix" value="no"> Blocks only</label>
         </fieldset>
+        <label class="check"><input type="checkbox" id="want-parcels"> Also list the parcels (lots) in each polygon</label>
         <p class="hint" id="prep-hint">The table lists the polygons: select any you don't need and delete them, or keep them as plain polygons that aren't matched. Thin strips drawn along a street keep only the blocks running along them.</p>
       </div>
       <button type="button" class="btn primary" id="go">Match</button>
@@ -127,7 +128,7 @@
   <section class="stage">
     <div id="map"></div>
     <div class="pickbar" id="pickbar" hidden>
-      <div class="pick-text"><strong id="pick-title"></strong><span id="pick-help"></span><span class="pick-change" id="pick-change" aria-live="polite"></span></div>
+      <div class="pick-text"><div class="pick-mode" id="pick-mode" role="group" aria-label="Pick"><button type="button" data-pm="streets" aria-pressed="true">Streets</button><button type="button" data-pm="parcels" aria-pressed="false">Parcels</button></div><strong id="pick-title"></strong><span id="pick-help"></span><span class="pick-change" id="pick-change" aria-live="polite"></span></div>
       <div class="pick-buttons">
         <button type="button" class="btn primary" id="pick-use">Use selection</button>
         <button type="button" class="btn" id="pick-none">No match</button>
@@ -151,6 +152,7 @@
 <script src="https://unpkg.com/maplibre-gl@5.16.0/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/pmtiles@4.5.0/dist/pmtiles.js"></script>
 <script src="google-drive.js"></script>
 <script src="matcher.js"></script>
 </body>
