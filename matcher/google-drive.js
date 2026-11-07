@@ -10,6 +10,15 @@
 //   const got = await GoogleDrive.read(doc)
 //     a Google Sheet -> {kind: 'sheet', id, name, tabs: [{title, sheetId, values: [[...], ...]}]}
 //     any other file -> {kind: 'file', id, name, file: File}
+//
+// Writing to a Google Sheet the person picked (drive.file covers it; the call that signs in again, if the
+// hour is up, should come straight from a click so the browser lets Google's window open):
+//   await GoogleDrive.signIn()
+//   await GoogleDrive.sheetTabs(id)                  -> [{title, sheetId, rows, cols}]
+//   await GoogleDrive.getValues(id, "'Tab'!A1:Z")    -> [[...], ...]
+//   await GoogleDrive.addTab(id, title)              -> sheetId
+//   await GoogleDrive.clearValues(id, "'Tab'")
+//   await GoogleDrive.putValues(id, "'Tab'!A1", rows) // rows written as typed (RAW), so CNNs stay text
 'use strict';
 window.GoogleDrive = (() => {
     const GIS = 'https://accounts.google.com/gsi/client';
@@ -70,11 +79,42 @@ window.GoogleDrive = (() => {
         });
     }
 
-    async function api(url) {
-        const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    async function api(url, init = {}) {
+        const r = await fetch(url, { ...init, headers: { Authorization: `Bearer ${token}`, ...(init.body ? { 'Content-Type': 'application/json' } : {}) } });
         if (r.status === 401) { token = null; throw new Error('the Google sign-in expired; try again'); }
-        if (!r.ok) throw new Error(`Google answered ${r.status}`);
+        if (r.status === 403) throw new Error("Google didn't allow that (403). Open the Sheet with Open from Google Drive first, so Matcher may write to it");
+        if (!r.ok) {
+            let why = '';
+            try { why = (await r.json()).error?.message || ''; } catch { }
+            throw new Error(`Google answered ${r.status}${why ? `: ${why}` : ''}`);
+        }
         return r;
+    }
+    const SHEETS = id => `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(id)}`;
+    const json = (method, body) => ({ method, body: JSON.stringify(body) });
+    async function sheetTabs(id) {
+        const m = await (await api(`${SHEETS(id)}?fields=sheets.properties(title,sheetId,gridProperties)`)).json();
+        return m.sheets.map(s => ({ title: s.properties.title, sheetId: s.properties.sheetId,
+            rows: s.properties.gridProperties?.rowCount, cols: s.properties.gridProperties?.columnCount }));
+    }
+    async function getValues(id, range) {
+        const r = await (await api(`${SHEETS(id)}/values/${encodeURIComponent(range)}?valueRenderOption=FORMATTED_VALUE`)).json();
+        return r.values || [];
+    }
+    async function addTab(id, title, rows = 1000, cols = 26) {
+        const r = await (await api(`${SHEETS(id)}:batchUpdate`, json('POST', { requests: [{ addSheet: { properties: { title,
+            gridProperties: { rowCount: Math.max(rows, 100), columnCount: Math.max(cols, 26) } } } }] }))).json();
+        return r.replies[0].addSheet.properties.sheetId;
+    }
+    async function resizeTab(id, sheetId, rows, cols) {
+        await api(`${SHEETS(id)}:batchUpdate`, json('POST', { requests: [{ updateSheetProperties: {
+            properties: { sheetId, gridProperties: { rowCount: rows, columnCount: cols } }, fields: 'gridProperties(rowCount,columnCount)' } }] }));
+    }
+    async function clearValues(id, range) {
+        await api(`${SHEETS(id)}/values/${encodeURIComponent(range)}:clear`, json('POST', {}));
+    }
+    async function putValues(id, range, values) {
+        await api(`${SHEETS(id)}/values/${encodeURIComponent(range)}?valueInputOption=RAW`, json('PUT', { range, majorDimension: 'ROWS', values }));
     }
 
     async function read(doc) {
@@ -91,5 +131,5 @@ window.GoogleDrive = (() => {
         return { kind: 'file', id: doc.id, name: doc.name, file: new File([await r.blob()], doc.name, { type: doc.mimeType || '' }) };
     }
 
-    return { config, pick, read, signIn, get ready() { return !!cfg; } };
+    return { config, pick, read, signIn, sheetTabs, getValues, addTab, resizeTab, clearValues, putValues, get ready() { return !!cfg; } };
 })();

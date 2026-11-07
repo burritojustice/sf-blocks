@@ -2,7 +2,7 @@
 
 https://burritojustice.github.io/sf-blocks/matcher/
 
-Match street names, intersections and polygons to San Francisco blocks (CNNs) in the browser. Drop in a CSV, Excel workbook or GeoJSON, paste a link or rows, check the results on a map, fix the ones that need it, and save a CSV, GeoJSON or Excel file.
+Match free-text street descriptions (Mission between 1st and Fremont), intersections (Geary and 27th) as well as polygons to San Francisco blocks (CNNs) in the browser. Drop in a CSV, Excel workbook or GeoJSON, paste a link or rows, check the results on a map, fix the ones that need it, and save a CSV, GeoJSON or Excel file.
 
 It runs sf-blocks' own `scripts/match_blocks.py` and `scripts/match_polygons.py` with [Pyodide](https://pyodide.org), so its answers are the command line's answers. Files stay in the browser.
 
@@ -19,7 +19,11 @@ Libraries, pinned: MapLibre GL 5.16.0, PapaParse 5.4.1, SheetJS 0.20.3 (from She
 
 For testing without the CDN, `?pyodide=<url>/` loads Pyodide from another copy; a comma-separated list tries each in turn.
 
-**Open in Joiner** and **Open in Block Party** pass the results on. Joiner is on the same site, so Matcher opens it, waits for it to start, and hands it the results GeoJSON with `window.Joiner.loadFile`, as if the file had been dropped there; from another site (a local copy, say) it saves the GeoJSON for you to drop instead. Block Party gets the matched blocks in its link (`#cnn=…`); it lists blocks, so intersections aren't passed. `?joiner=<url>` and `?blockparty=<url>` point the buttons at other copies.
+**Spelling:** when the matcher reads a misspelled street ("Mision" as Mission), the Results card offers to fix the spelling in the person's own column too, in everything Matcher saves.
+
+**Save to Google Sheet** appears when the file came from Google Drive as a Sheet. It writes a new tab named after the original ("Intersections matched"), with the same rows as Save CSV; if that tab exists, it asks before replacing it. The other choice adds Matcher's columns (`Matcher: CNN`, `Matcher: type`, street, from, to, confidence, notes) to the right of the original tab, one row per row. Before writing, it reads the tab again and changes nothing if the header, the number of rows or the matched columns differ from what was loaded. Saving again reuses those columns.
+
+**Open in Joiner** and **Open in Block Party** pass the results on. Joiner is on the same site, so Matcher opens it, waits for it to start, and hands it the results GeoJSON with `window.Joiner.loadFile`, as if the file had been dropped there; from another site (a local copy, say) it saves the GeoJSON for you to drop instead. Block Party gets the matched blocks and intersections in its link (`#cnn=…`). `?joiner=<url>` and `?blockparty=<url>` point the buttons at other copies.
 
 ## Google Drive
 

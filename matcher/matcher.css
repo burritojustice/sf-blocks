@@ -172,3 +172,23 @@ tr.detail:hover td { background: #fafbfd; }
 .cp-note { font-size: 11.5px; color: var(--accent); }
 .cp-samples { font-size: 11.5px; color: var(--muted); padding-left: calc(1.4em * 11 / 14 + 6px); }
 .cpick-list .cp-samples { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.brand { display: flex; align-items: center; gap: 8px; text-decoration: none; color: var(--ink); flex: none; align-self: center; }
+.brand img { border-radius: 50%; }
+.top { align-items: center; }
+.pick-change { display: block; margin-top: 2px; font-weight: 600; color: #7a4bd1; font-size: 13px; }
+.pick-change:empty { display: none; }
+.cols-toggle { display: flex; align-items: center; gap: 4px; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+th.theirs { color: var(--ink); font-weight: 500; background: #eef0f4; }
+td.theirs { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+
+.gsheet { display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--wash); }
+.gsheet .choice { margin: 0; }
+.warn { margin: 0; font-size: 12.5px; color: #7a3d00; background: #fff4e0; border: 1px solid #f1d3a0; border-radius: 6px; padding: 6px 8px; }
+.linkish { font: inherit; color: var(--accent); background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
+.spell { font-size: 13px; }
+.spell .check { display: flex; gap: 6px; align-items: flex-start; }
+.spell details { margin: 4px 0 0 22px; color: var(--muted); font-size: 12.5px; }
+.spell ul { margin: 4px 0 0; padding-left: 16px; }
+.spell li span { color: var(--muted); }
+td.mono { white-space: nowrap; }
