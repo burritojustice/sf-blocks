@@ -81,11 +81,12 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/tippecanoe
-          key: tippecanoe-2.82.0
+          key: tippecanoe-4f26211
       - name: Build tippecanoe
         if: inputs.kind == 'Map layer' && steps.tc.outputs.cache-hit != 'true'
         run: |
-          git clone -q --depth 1 --branch 2.82.0 https://github.com/felt/tippecanoe.git ~/tippecanoe-src
+          # 2.82.0 isn't tagged (tags stop at 2.79.0), so pin the commit
+          git init -q ~/tippecanoe-src && git -C ~/tippecanoe-src fetch -q --depth 1 https://github.com/felt/tippecanoe.git 4f2621186acfec33b63ddf636f665623c0fef2dd && git -C ~/tippecanoe-src checkout -q FETCH_HEAD
           make -C ~/tippecanoe-src -j4 > /dev/null
           mkdir -p ~/tippecanoe && cp ~/tippecanoe-src/tippecanoe ~/tippecanoe-src/tile-join ~/tippecanoe-src/tippecanoe-decode ~/tippecanoe/
       - name: Build the layer
