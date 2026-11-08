@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# sf-blocks 2026.11.04.1
+# sf-blocks 2026.11.08.1
 """Build map layers (points, lines, polygons too big for a plain GeoJSON file) into data/tiles/.
 
     python3 scripts/build_tiles.py                     every layer in data/tiles/sources.json
@@ -25,9 +25,10 @@ bizcat (food / licensed, from license descriptions), bizcategory:lic,naics (food
 code's sector), and "a+b+c" to join fields (a street address with its city and ZIP).
 Layer options: drop {field: regex} empties matching values; same_as {field: other} empties a field equal
 to another; kinds {file, by} labels rows from a reviewed list (business_kinds.json); group {by, list, keep}
-makes one feature per value of `by` with a count `n`, `shown` (rows without a kind), `name` / `name_all` (the first row's name, for labels) and the rows as JSON in `items`; tiles {minzoom,
+makes one feature per value of `by` with a count `n`, `shown` (rows without a kind), `name` / `name_all` (the first row's name, for labels) and the rows as JSON in `items`;
+`counts: <field>` adds `n_<value>` and `shown_<value>` for each value of that field (so a map can size a dot by the categories it shows); tiles {minzoom,
 maxzoom, overview: {minzoom, maxzoom, fields}}: the detail zooms carry every field, the overview (thinned
-where dense) only its fields.
+where dense) only its fields (a name ending in * takes every field it starts).
 
 Needs tippecanoe and tile-join on PATH (or --tippecanoe DIR) for tiled layers. Standard library only.
 """
@@ -246,6 +247,10 @@ def group(layer, records):
         # the address's color: its most storefront-like business that isn't hidden (food, retail, services, other)
         cats = {p.get('cat') for p, _ in rows if not p.get('kind')} or {p.get('cat') for p, _ in rows}
         props['cat'] = next((c for c in ('food', 'retail', 'services', 'other') if c in cats), 'other')
+        if g.get('counts'):
+            c = g['counts']
+            for v, k in Counter(p.get(c) or 'other' for p, _ in rows).items(): props[f'n_{v}'] = k
+            for v, k in Counter(p.get(c) or 'other' for p, _ in rows if not p.get('kind')).items(): props[f'shown_{v}'] = k
         for f in g.get('keep', []):
             v = Counter(p.get(f) for p, _ in rows if p.get(f)).most_common(1)
             if v: props[f] = v[0][0]
@@ -275,6 +280,8 @@ def stack(g, feats):
              'name': next((p['name'] for p in ps if p['name']), None), 'name_all': next((p['name_all'] for p in ps if p['name_all']), None),
              'food': any(p['food'] for p in ps), 'cat': next(k for k in ('food', 'retail', 'services', 'other') if k in cats),
              'items': json.dumps(items, separators=(',', ':'), ensure_ascii=False)}
+        # per-value counts add up
+        for k in {k for p in ps for k in p if k.startswith(('n_', 'shown_'))}: q[k] = sum(p.get(k, 0) for p in ps)
         out.append((q, {'type': 'Point', 'coordinates': list(c)}))
     return out
 
@@ -349,7 +356,7 @@ def tile(layer, feats, tdir):
     if ov:
         over = tmp / 'over.pmtiles'
         subprocess.run([tc, '-q', '-f', '-l', layer['id'], '-o', str(over), '-Z', str(ov['minzoom']), '-z', str(ov['maxzoom']),
-                        *sum((['-y', f] for f in ov['fields']), []), '--drop-densest-as-needed', str(src)], check=True)
+                        *sum((['-y', f] for f in overview_fields(ov['fields'], feats)), []), '--drop-densest-as-needed', str(src)], check=True)
         parts.insert(0, over)
     out = OUT / f"{layer['id']}.pmtiles"
     if len(parts) > 1:
@@ -357,6 +364,16 @@ def tile(layer, feats, tdir):
                        stderr=subprocess.DEVNULL)
     else: detail.replace(out)
     return out, (ov['minzoom'] if ov else lo), hi
+
+
+def overview_fields(names, feats):
+    have = sorted({k for p, _ in feats for k in p})
+    return [f for n in names for f in ([k for k in have if k.startswith(n[:-1])] if n.endswith('*') else [n])]
+
+
+def counted(g, feats):
+    # the n_<value> / shown_<value> fields `counts` added, for the manifest
+    return {k: 'count' for k in sorted({k for p, _ in feats for k in p if re.match(r'(n|shown)_', k)})} if g.get('counts') else {}
 
 
 def build(layer, src_rows, bbox, tdir):
@@ -390,7 +407,7 @@ def build(layer, src_rows, bbox, tdir):
         g = layer['group']
         fields_out = {g['by']: 'text', **{f: rowf.get(f, 'text') for f in g.get('keep', [])},
                       **({plural(g['by']): 'count'} if g.get('stack') else {}),
-                      'n': 'count', 'shown': 'count', 'name': 'text', 'name_all': 'text', 'cat': 'text', 'food': 'bool', 'items': 'json'}
+                      'n': 'count', 'shown': 'count', **counted(g, feats), 'name': 'text', 'name_all': 'text', 'cat': 'text', 'food': 'bool', 'items': 'json'}
     else: fields_out = rowf
     entry = {'id': layer['id'], 'label': layer['label'], 'year': layer.get('year'), 'file': out.name,
              'format': 'pmtiles' if tiled else 'geojson', 'layer': layer['id'], 'bytes': out.stat().st_size,
