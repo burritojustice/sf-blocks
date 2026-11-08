@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.11.08.1
+- **Businesses: counts by category on each dot.** `scripts/build_tiles.py` has a new group option, `counts`. With `"counts": "cat"` (now on for businesses), each address carries `n_food`, `n_retail`, `n_services`, `n_other` (all registrations) and `shown_food` … `shown_other` (storefronts), added up when addresses are stacked on one point. The overview zooms keep them too (an overview field ending in `*` takes every field it starts). Block Party uses them to size and show a dot by the categories you've picked, so two restaurants among 50 offices shrink to a small food dot. **The businesses tiles need a rebuild to get the new fields:** run "Add or refresh data" (Kind: Map layer, id `businesses`), or wait for the next refresh.
+
 ## 2026.11.07.5
 - **Matcher: parcels.** SF Planning's parcels (the same pmtiles file Block Party uses, 2023 land use and zoning):
   - **Parcels** button on the map: lot lines from zoom 15.

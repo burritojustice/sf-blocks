@@ -114,6 +114,7 @@
       "group": {
         "by": "address",
         "stack": true,
+        "counts": "cat",
         "list": [
           "dba",
           "owner",
@@ -146,7 +147,10 @@
           "maxzoom": 14,
           "fields": [
             "n",
-            "cat"
+            "shown",
+            "cat",
+            "n_*",
+            "shown_*"
           ]
         }
       },
