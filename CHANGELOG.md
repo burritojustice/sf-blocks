@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026.11.08.2
+- **Businesses tiles rebuilt** with the per-category counts from 2026.11.08.1: 42,862 addresses from 101,038 registrations in the region (DataSF `g8m3-pdis`, 2026-11-08).
+- **"Add or refresh data" fixed for map layers:** it asked for tippecanoe tag 2.82.0, which doesn't exist (the project's tags stop at 2.79.0 though its code says 2.82.0). It now fetches that exact commit (`4f26211`), the same build used here.
+
 ## 2026.11.08.1
 - **Businesses: counts by category on each dot.** `scripts/build_tiles.py` has a new group option, `counts`. With `"counts": "cat"` (now on for businesses), each address carries `n_food`, `n_retail`, `n_services`, `n_other` (all registrations) and `shown_food` … `shown_other` (storefronts), added up when addresses are stacked on one point. The overview zooms keep them too (an overview field ending in `*` takes every field it starts). Block Party uses them to size and show a dot by the categories you've picked, so two restaurants among 50 offices shrink to a small food dot. **The businesses tiles need a rebuild to get the new fields:** run "Add or refresh data" (Kind: Map layer, id `businesses`), or wait for the next refresh.
 
