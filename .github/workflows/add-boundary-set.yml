@@ -3,6 +3,8 @@
 #   Map layer: points, lines or polygons for the maps (scripts/build_tiles.py), tiled with tippecanoe when
 #     big. A new layer's first run only proposes its fields (a report and an entry in data/tiles/sources.json
 #     to edit on the branch); run it again on that branch to build. A layer already listed is rebuilt.
+#   Search index: the businesses, addresses and landmarks apps search by name (scripts/build_search.py).
+#     Put anything in Set id (search).
 # It opens a pull request with a report (or adds a commit to the branch it's run on).
 # Run it on main to get a new branch and PR; run it on another branch (say, one where you uploaded a file)
 # to add a commit to that branch.
@@ -15,7 +17,7 @@ on:
       kind:
         description: 'What it is'
         type: choice
-        options: [Boundary set, Map layer]
+        options: [Boundary set, Map layer, Search index]
         default: Boundary set
       id:
         description: 'Set id: lowercase words joined by _, e.g. historic_districts'
@@ -61,7 +63,7 @@ jobs:
           else b="$GITHUB_REF_NAME"; echo "new=0" >> "$GITHUB_OUTPUT"; fi
           echo "name=$b" >> "$GITHUB_OUTPUT"
       - name: Build the set
-        if: inputs.kind != 'Map layer'
+        if: inputs.kind == 'Boundary set'
         env:
           IN_ID: ${{ inputs.id }}
           IN_SOURCE: ${{ inputs.source }}
@@ -131,10 +133,27 @@ jobs:
           c.write_text(s.replace('# Changelog\n\n', f'# Changelog\n\n## {v}\n' + '\n'.join(lines) + '\n\n', 1))
           PY
           cat "$RUNNER_TEMP/summary.md" >> "$GITHUB_STEP_SUMMARY"
+      - name: Build the search index
+        if: inputs.kind == 'Search index'
+        run: |
+          python3 scripts/build_search.py 2> "$RUNNER_TEMP/log.txt"
+          v=$(date +%Y.%m.%d); [ "$(cat VERSION)" \> "$v" ] || [ "$(cat VERSION)" = "$v" ] && v="$(cat VERSION).$GITHUB_RUN_NUMBER"
+          echo "$v" > VERSION
+          python3 - "$v" "$RUNNER_TEMP/summary.md" <<'PY'
+          import sys, json, pathlib
+          v, out = sys.argv[1], pathlib.Path(sys.argv[2])
+          i = json.loads(pathlib.Path('data/search/index.json').read_text())
+          line = (f"- **Search index rebuilt:** {i['businesses']['n']:,} businesses (DataSF `{i['businesses']['dataset']}`, {i['businesses']['as_of']}), "
+                  f"{i['addresses']['n']:,} addresses on {len(i['streets']):,} streets and {i['landmarks']['n']:,} landmarks (`{i['addresses']['dataset']}`, {i['addresses']['as_of']}).")
+          out.write_text('**Rebuilt the search index**\n\n' + line + '\n')
+          c = pathlib.Path('CHANGELOG.md'); s = c.read_text()
+          c.write_text(s.replace('# Changelog\n\n', f'# Changelog\n\n## {v}\n{line}\n\n', 1))
+          PY
+          cat "$RUNNER_TEMP/summary.md" >> "$GITHUB_STEP_SUMMARY"
       # the same checks as check.yml: GitHub doesn't run workflows on pull requests an action opens
       - name: Check data
         run: |
-          for f in region.json data/aliases.json data/boundaries/*.json; do python3 -m json.tool "$f" > /dev/null || { echo "Bad JSON: $f"; exit 1; }; done
+          for f in region.json data/aliases.json data/boundaries/*.json data/search/*.json data/search/addresses/*.json; do python3 -m json.tool "$f" > /dev/null || { echo "Bad JSON: $f"; exit 1; }; done
           python3 scripts/get_layers.py --check
           python3 scripts/build_tiles.py --check
           printf '\n**Checks passed:** the JSON files parse and every boundary set passes `get_layers.py --check`.\n' >> "$RUNNER_TEMP/summary.md"

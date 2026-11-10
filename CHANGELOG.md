@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026.11.10
+- **Search index** (`data/search/`, new) for the apps' Address / Places search, built by the new `scripts/build_search.py` (standard library):
+  - `businesses.json`: 100,485 open business locations in the city (DataSF `g8m3-pdis`, 2026-11-10): name, owner when it differs, address, self-reported NAICS code, kind (from `business_kinds.json`, so non-storefronts can rank last) and the point.
+  - `addresses/<first character>.json`: 224,348 addresses on 2,066 streets from the Enterprise Addressing System (`3mea-di5p`, 2026-11-09), each with its point, lot and CNN. Split by the street name's first character so an app loads only the street it needs (`index.json` maps each street to its file).
+  - `landmarks.json`: 186 named places from the same list (City Hall, …).
+  - `naics.json`: the 2022 NAICS titles (2,129 codes, 2 to 6 digits), so "restaurants" can find NAICS 7225. The workbook is kept as `data/uploads/naics_2022_codes.xlsx`.
+- `region.json` has `search` pointing at `data/search/index.json`.
+- **"Add or refresh data" can rebuild it:** Kind **Search index**.
+
 ## 2026.11.08.2
 - **Businesses tiles rebuilt** with the per-category counts from 2026.11.08.1: 42,862 addresses from 101,038 registrations in the region (DataSF `g8m3-pdis`, 2026-11-08).
 - **"Add or refresh data" fixed for map layers:** it asked for tippecanoe tag 2.82.0, which doesn't exist (the project's tags stop at 2.79.0 though its code says 2.82.0). It now fetches that exact commit (`4f26211`), the same build used here.

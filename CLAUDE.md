@@ -22,6 +22,7 @@ The **main copy** of San Francisco's map data: boundaries, aliases, city layers,
 - `data/uploads/`: raw downloads and exports, dated names, never edited by hand.
 - `reference/`: public contact lists only (published by the city or the organization). Never private contacts.
 - `data/tiles/`: map layers built by `scripts/build_tiles.py` from `sources.json` (`.pmtiles` when big, else `.geojson`), each with `<id>.stats.json` (numbers, dates, category counts) and the manifest `index.json`. `business_kinds.json` is the reviewed list of non-storefront owners.
+- `data/search/`: the Address / Places search index from `scripts/build_search.py` (businesses with NAICS, addresses by street in shards by first character, landmarks, NAICS titles). Points are integers off `x0`/`y0` in `index.json` (÷ `scale`). Rebuild with the Action (Kind: Search index).
 - **Contact data:** city-published registries (Active Business Locations, SF Planning's group list) are public and are kept, owner names and mailing addresses included, because they're how organizers reach neighbors. They show on cards and in exports, never as map labels, and reports in PRs name companies only, not people.
 - Live URLs: `https://burritojustice.github.io/sf-blocks/<path>`. Moving or renaming a file breaks live links, so add the new path and keep the old one until the apps are updated.
 
