@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.11.11.6
+- **OSM ways** (2026-11-10): 135,428 pieces from 65,763 ways; 94,219 run along no city street (`data/osm/ways.pmtiles`, `data/osm/gaps/`). © OpenStreetMap contributors, ODbL.
+
 ## 2026.11.11
 - **OSM ways** (new, `scripts/build_osm.py`, standard library): OpenStreetMap's streets, alleys, paths, bike paths, stairs, sidewalks and crosswalks in San Francisco, split where they meet, each piece with a lasting id (`w<way>:n<first node>-n<last node>`) and the CNNs of the city street it runs along, if any. For picking paths the city's street file doesn't have (Golden Gate Park, SF State, the Presidio) and separated bike paths (O'Shaughnessy).
   - Writes `data/osm/ways.pmtiles` (every piece, each its own feature with its id; sidewalks from zoom 15), `data/osm/gaps/<way id % 16>.json` (the pieces that run along no city street, by id, so an app can draw a picked one) and `data/osm/index.json`.

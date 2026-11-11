@@ -1,0 +1,48 @@
+{
+ "_doc": "OpenStreetMap ways in San Francisco as pieces, split where they meet. Built by scripts/build_osm.py. ways.pmtiles (layer \"ways\") has every piece; gaps/<way id % 16>.json has the pieces that run along no city street. Data \u00a9 OpenStreetMap contributors, ODbL.",
+ "as_of": "2026-11-10",
+ "source": "Geofabrik north-america/us/california/norcal-latest.osm.pbf, clipped to San Francisco",
+ "attribution": "\u00a9 OpenStreetMap contributors",
+ "license": "ODbL-1.0",
+ "pieces": 135428,
+ "ways": 65763,
+ "kinds": {
+  "road": 39814,
+  "crossing": 28841,
+  "sidewalk": 27841,
+  "foot": 20239,
+  "service": 13577,
+  "steps": 2790,
+  "bike": 1230,
+  "alley": 552,
+  "other": 544
+ },
+ "matched": {
+  "road": 38904,
+  "service": 2021,
+  "alley": 284
+ },
+ "gaps": {
+  "crossing": 28841,
+  "sidewalk": 27841,
+  "foot": 20239,
+  "service": 11556,
+  "steps": 2790,
+  "bike": 1230,
+  "road": 910,
+  "other": 544,
+  "alley": 268
+ },
+ "tiles": "ways.pmtiles",
+ "tile_layer": "ways",
+ "gap_files": "gaps/",
+ "gap_fields": [
+  "kind",
+  "highway",
+  "name",
+  "tags",
+  "coords"
+ ],
+ "coord_scale": 1000000,
+ "id": "w<way id>:n<first node>-n<last node>"
+}
