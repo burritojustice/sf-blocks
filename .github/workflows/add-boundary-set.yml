@@ -5,6 +5,9 @@
 #     to edit on the branch); run it again on that branch to build. A layer already listed is rebuilt.
 #   Search index: the businesses, addresses and landmarks apps search by name (scripts/build_search.py).
 #     Put anything in Set id (search).
+#   OSM ways: OpenStreetMap streets, paths, bike paths, stairs and sidewalks in the city, as pieces with ids
+#     (scripts/build_osm.py), from Geofabrik's Northern California extract, tiled into data/osm/ways.pmtiles.
+#     Put anything in Set id (osm).
 # It opens a pull request with a report (or adds a commit to the branch it's run on).
 # Run it on main to get a new branch and PR; run it on another branch (say, one where you uploaded a file)
 # to add a commit to that branch.
@@ -17,7 +20,7 @@ on:
       kind:
         description: 'What it is'
         type: choice
-        options: [Boundary set, Map layer, Search index]
+        options: [Boundary set, Map layer, Search index, OSM ways]
         default: Boundary set
       id:
         description: 'Set id: lowercase words joined by _, e.g. historic_districts'
@@ -78,14 +81,14 @@ jobs:
           cat "$RUNNER_TEMP/summary.md" >> "$GITHUB_STEP_SUMMARY"
       # map layers: tippecanoe (built once, then cached), then propose fields for a new layer or build a listed one
       - name: tippecanoe
-        if: inputs.kind == 'Map layer'
+        if: inputs.kind == 'Map layer' || inputs.kind == 'OSM ways'
         id: tc
         uses: actions/cache@v4
         with:
           path: ~/tippecanoe
           key: tippecanoe-4f26211
       - name: Build tippecanoe
-        if: inputs.kind == 'Map layer' && steps.tc.outputs.cache-hit != 'true'
+        if: (inputs.kind == 'Map layer' || inputs.kind == 'OSM ways') && steps.tc.outputs.cache-hit != 'true'
         run: |
           # 2.82.0 isn't tagged (tags stop at 2.79.0), so pin the commit
           git init -q ~/tippecanoe-src && git -C ~/tippecanoe-src fetch -q --depth 1 https://github.com/felt/tippecanoe.git 4f2621186acfec33b63ddf636f665623c0fef2dd && git -C ~/tippecanoe-src checkout -q FETCH_HEAD
@@ -150,10 +153,43 @@ jobs:
           c.write_text(s.replace('# Changelog\n\n', f'# Changelog\n\n## {v}\n{line}\n\n', 1))
           PY
           cat "$RUNNER_TEMP/summary.md" >> "$GITHUB_STEP_SUMMARY"
+      - name: Build the OSM ways
+        if: inputs.kind == 'OSM ways'
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq osmium-tool > /dev/null
+          T="$RUNNER_TEMP"
+          curl -fsSL -o "$T/norcal.osm.pbf" https://download.geofabrik.de/north-america/us/california/norcal-latest.osm.pbf
+          asof=$(osmium fileinfo -g header.option.osmosis_replication_timestamp "$T/norcal.osm.pbf" | cut -c1-10)
+          # the city's outline (bay_area_counties), then only the ways tagged highway=*
+          python3 -c "import json; d=json.load(open('data/boundaries/bay_area_counties.geojson')); print(json.dumps({'type':'FeatureCollection','features':[f for f in d['features'] if f['properties'].get('county')=='San Francisco']}))" > "$T/sf.geojson"
+          osmium extract -p "$T/sf.geojson" -s smart "$T/norcal.osm.pbf" -o "$T/sf.osm.pbf"
+          osmium tags-filter "$T/sf.osm.pbf" w/highway -o "$T/sf-highways.osm"
+          python3 scripts/build_osm.py "$T/sf-highways.osm" --as-of "$asof" --geojsonseq "$T/pieces.geojsonseq" --report "$T/body.md"
+          # each piece stays its own feature with its id: no dropping, no merging; sidewalks from zoom 15 (set per feature)
+          TC=(-l ways -Z12 -z16 --force --no-feature-limit --no-tile-size-limit -r1 --simplification=2 '--attribution=<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a>')
+          ~/tippecanoe/tippecanoe "${TC[@]}" -o data/osm/ways.pmtiles "$T/pieces.geojsonseq"
+          ~/tippecanoe/tippecanoe "${TC[@]}" -j '{"*":["!in","kind","sidewalk","crossing"]}' -o "$T/no-sidewalks.pmtiles" "$T/pieces.geojsonseq"
+          printf -- '- Tiles (`data/osm/ways.pmtiles`): %s MB; without sidewalks and crosswalks it would be %s MB.\n' \
+            "$(echo "scale=1; $(stat -c %s data/osm/ways.pmtiles)/1000000" | bc)" "$(echo "scale=1; $(stat -c %s "$T/no-sidewalks.pmtiles")/1000000" | bc)" >> "$T/body.md"
+          printf -- '- Downloads: Northern California %s MB, San Francisco %s MB, its highway ways %s MB.\n' \
+            "$(echo "scale=0; $(stat -c %s "$T/norcal.osm.pbf")/1000000" | bc)" "$(echo "scale=1; $(stat -c %s "$T/sf.osm.pbf")/1000000" | bc)" "$(echo "scale=1; $(stat -c %s "$T/sf-highways.osm")/1000000" | bc)" >> "$T/body.md"
+          v=$(date +%Y.%m.%d); [ "$(cat VERSION)" \> "$v" ] || [ "$(cat VERSION)" = "$v" ] && v="$(cat VERSION).$GITHUB_RUN_NUMBER"
+          echo "$v" > VERSION
+          { echo "**Built the OSM ways ($asof)**"; echo; cat "$T/body.md"; } > "$T/summary.md"
+          python3 - "$v" "$asof" <<'PY'
+          import sys, json, pathlib
+          v, asof = sys.argv[1], sys.argv[2]
+          i = json.loads(pathlib.Path('data/osm/index.json').read_text())
+          line = (f"- **OSM ways** ({asof}): {i['pieces']:,} pieces from {i['ways']:,} ways; {sum(i['gaps'].values()):,} run along no city street "
+                  f"(`data/osm/ways.pmtiles`, `data/osm/gaps/`). © OpenStreetMap contributors, ODbL.")
+          c = pathlib.Path('CHANGELOG.md'); s = c.read_text()
+          c.write_text(s.replace('# Changelog\n\n', f'# Changelog\n\n## {v}\n{line}\n\n', 1))
+          PY
+          cat "$T/summary.md" >> "$GITHUB_STEP_SUMMARY"
       # the same checks as check.yml: GitHub doesn't run workflows on pull requests an action opens
       - name: Check data
         run: |
-          for f in region.json data/aliases.json data/boundaries/*.json data/search/*.json data/search/addresses/*.json; do python3 -m json.tool "$f" > /dev/null || { echo "Bad JSON: $f"; exit 1; }; done
+          for f in region.json data/aliases.json data/boundaries/*.json data/search/*.json data/search/addresses/*.json $(ls data/osm/*.json data/osm/gaps/*.json 2>/dev/null); do python3 -m json.tool "$f" > /dev/null || { echo "Bad JSON: $f"; exit 1; }; done
           python3 scripts/get_layers.py --check
           python3 scripts/build_tiles.py --check
           printf '\n**Checks passed:** the JSON files parse and every boundary set passes `get_layers.py --check`.\n' >> "$RUNNER_TEMP/summary.md"
