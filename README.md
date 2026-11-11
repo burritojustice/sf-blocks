@@ -24,6 +24,7 @@ Another city can start its own repo with the same layout (nyc-blocks, london-blo
 | `data/boundaries/` | Polygons to join to: districts, ZIPs, five neighborhood sets, tracts, Cultural Districts, Bay Area counties and ZIPs, precincts and the districts made from them. `index.json` lists them; `sources.json` says where each comes from and how names match |
 | `data/aliases.json` | Other names people use for areas ("South Bayshore" → Bayview, "Calle 24" → Calle 24 Latino Cultural District), by boundary set. One list for every app and script |
 | `data/layers/` | City layers drawn on maps: schools, fire and police stations, health care (points); Muni, bike network, Slow Streets (lines); city-owned lands (polygons) |
+| `data/osm/` | OpenStreetMap ways in the city (streets, paths, bike paths, stairs, sidewalks) as pieces with ids and the CNNs they run along: `ways.pmtiles`, `gaps/` (pieces along no city street) and `index.json`. Built by `scripts/build_osm.py` through the Action (Kind: OSM ways). © OpenStreetMap contributors, ODbL |
 | `data/search/` | Search index for Address / Places search: businesses (name, owner, address, NAICS), every address with its point, lot and CNN, landmarks, and NAICS titles. Built by `scripts/build_search.py` |
 | `data/Land_Use_with_Active_Parcel_Information.pmtiles` | Parcels with land use, as vector tiles (24 MB) |
 | `data/uploads/` | Raw downloads and exports the layers and boundaries are built from, with their dates in the names. `wof/` is Who's On First, the source of the WOF neighbourhoods |

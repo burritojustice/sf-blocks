@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026.11.11
+- **OSM ways** (new, `scripts/build_osm.py`, standard library): OpenStreetMap's streets, alleys, paths, bike paths, stairs, sidewalks and crosswalks in San Francisco, split where they meet, each piece with a lasting id (`w<way>:n<first node>-n<last node>`) and the CNNs of the city street it runs along, if any. For picking paths the city's street file doesn't have (Golden Gate Park, SF State, the Presidio) and separated bike paths (O'Shaughnessy).
+  - Writes `data/osm/ways.pmtiles` (every piece, each its own feature with its id; sidewalks from zoom 15), `data/osm/gaps/<way id % 16>.json` (the pieces that run along no city street, by id, so an app can draw a picked one) and `data/osm/index.json`.
+  - **"Add or refresh data" → Kind: OSM ways** builds it: downloads Geofabrik's Northern California extract, clips it to the city with osmium, keeps `highway=*` ways (sidewalks included), runs the script and tippecanoe, and reports counts by kind, how many run along a city street, sizes with and without sidewalks, and gap pieces in Golden Gate Park, SF State, along O'Shaughnessy and in the Presidio.
+  - Data © OpenStreetMap contributors, under the ODbL; the derived files are too.
+
 ## 2026.11.10
 - **Search index** (`data/search/`, new) for the apps' Address / Places search, built by the new `scripts/build_search.py` (standard library):
   - `businesses.json`: 100,485 open business locations in the city (DataSF `g8m3-pdis`, 2026-11-10): name, owner when it differs, address, self-reported NAICS code, kind (from `business_kinds.json`, so non-storefronts can rank last) and the point.
