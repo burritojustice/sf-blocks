@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026.11.12
+- **`matcher/google-drive.js`:** `createSheet()` also returns the new sheet's tabs with their ids, which Block Party's project sheets use to link to each tab.
+- `VERSION` held two lines after #38 and #39 merged; it's one again.
+
 ## 2026.11.11.8
 - **`matcher/google-drive.js`:** `createSheet(title, tabs)` makes a new Google Sheet in the person's Drive (still only the drive.file permission), for Block Party's Save to Google Sheets. Nothing else changes.
 ## 2026.11.11.7
