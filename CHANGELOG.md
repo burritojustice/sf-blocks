@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026.11.11.7
+- **Street facts** (new, `scripts/build_facts.py`, standard library): what each street block's card shows, worked out ahead of time so apps don't have to read tiles and boundaries for every card. One row per CNN (17,176), built from files already here and matching Block Party's cards exactly on the blocks checked (Valencia, Holloway, …):
+  - `data/facts/streets.json` (1.8 MB, 0.47 MB gzipped): lots, homes, land use and zoning (parcels within 14 m, or 25 m on the same street); street trees by name; businesses (storefronts shown, addresses, and those hidden as not storefronts, by kind); people and homes from the 2020 census blocks; and the Supervisor, Assembly, State Senate, US House, BART, CBD, Cultural and Historic districts.
+  - `data/facts/lots.json` (1.9 MB, 0.38 MB gzipped): each block's lot ids and census blocks, for growing a selection and for exports, so apps load it only then.
+  - Intersections aren't in it: their cards add up half of each street, which apps still do from the tiles.
+- `region.json` has `facts` pointing at both files.
+- **"Add or refresh data" → Kind: Street facts** rebuilds them. They also rebuild by themselves after a Map layer build of street trees or businesses, or a Boundary set build of census blocks or a district set. Takes about 7 minutes.
+
 ## 2026.11.11.6
 - **OSM ways** (2026-11-10): 135,428 pieces from 65,763 ways; 94,219 run along no city street (`data/osm/ways.pmtiles`, `data/osm/gaps/`). © OpenStreetMap contributors, ODbL.
 

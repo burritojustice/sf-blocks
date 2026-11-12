@@ -8,6 +8,10 @@
 #   OSM ways: OpenStreetMap streets, paths, bike paths, stairs and sidewalks in the city, as pieces with ids
 #     (scripts/build_osm.py), from Geofabrik's Northern California extract, tiled into data/osm/ways.pmtiles.
 #     Put anything in Set id (osm).
+#   Street facts: what each street block's card shows (lots, homes, land use, zoning, trees, businesses,
+#     people, districts) in data/facts/ (scripts/build_facts.py). Put anything in Set id (facts). It also
+#     reruns by itself after a Map layer build of street_trees or businesses, and after a Boundary set build of
+#     census_blocks or a district set, so the facts never fall behind their sources.
 # It opens a pull request with a report (or adds a commit to the branch it's run on).
 # Run it on main to get a new branch and PR; run it on another branch (say, one where you uploaded a file)
 # to add a commit to that branch.
@@ -20,7 +24,7 @@ on:
       kind:
         description: 'What it is'
         type: choice
-        options: [Boundary set, Map layer, Search index, OSM ways]
+        options: [Boundary set, Map layer, Search index, OSM ways, Street facts]
         default: Boundary set
       id:
         description: 'Set id: lowercase words joined by _, e.g. historic_districts'
@@ -186,10 +190,40 @@ jobs:
           c.write_text(s.replace('# Changelog\n\n', f'# Changelog\n\n## {v}\n{line}\n\n', 1))
           PY
           cat "$T/summary.md" >> "$GITHUB_STEP_SUMMARY"
+      - name: Build the street facts
+        if: >-
+          inputs.kind == 'Street facts'
+          || (inputs.kind == 'Map layer' && contains(fromJSON('["street_trees","businesses"]'), inputs.id))
+          || (inputs.kind == 'Boundary set' && contains(fromJSON('["census_blocks","supervisor_districts","assembly_districts","state_senate_districts","us_house_districts","bart_districts","community_benefit_district","cultural_districts","historic_districts"]'), inputs.id))
+        env:
+          IN_KIND: ${{ inputs.kind }}
+        run: |
+          python3 scripts/build_facts.py 2> "$RUNNER_TEMP/facts.txt"; cat "$RUNNER_TEMP/facts.txt"
+          if [ "$IN_KIND" = "Street facts" ]; then
+            v=$(date +%Y.%m.%d); [ "$(cat VERSION)" \> "$v" ] || [ "$(cat VERSION)" = "$v" ] && v="$(cat VERSION).$GITHUB_RUN_NUMBER"
+            echo "$v" > VERSION
+          else v=$(cat VERSION); fi
+          python3 - "$v" "$RUNNER_TEMP/summary.md" "$RUNNER_TEMP/facts.txt" "$IN_KIND" <<'PY'
+          import sys, json, pathlib
+          v, out, logf, kind = sys.argv[1], pathlib.Path(sys.argv[2]), pathlib.Path(sys.argv[3]), sys.argv[4]
+          d = json.loads(pathlib.Path('data/facts/streets.json').read_text())
+          sizes = ' '.join(l.split(': ', 1)[1] for l in logf.read_text().splitlines() if l.startswith('wrote data/facts/streets'))
+          line = f"- **Street facts rebuilt** for {len(d['rows']):,} street blocks ({sizes})."
+          if kind == 'Street facts':
+              out.write_text('**Rebuilt the street facts**\n\n' + line + '\n')
+              c = pathlib.Path('CHANGELOG.md'); s = c.read_text()
+              c.write_text(s.replace('# Changelog\n\n', f'# Changelog\n\n## {v}\n{line}\n\n', 1))
+          else:
+              with out.open('a') as f: f.write('\n' + line + '\n')
+              c = pathlib.Path('CHANGELOG.md'); s = c.read_text()
+              head = f'## {v}\n'
+              if head in s: c.write_text(s.replace(head, head + line + '\n', 1))
+          PY
+          cat "$RUNNER_TEMP/summary.md" >> "$GITHUB_STEP_SUMMARY"
       # the same checks as check.yml: GitHub doesn't run workflows on pull requests an action opens
       - name: Check data
         run: |
-          for f in region.json data/aliases.json data/boundaries/*.json data/search/*.json data/search/addresses/*.json $(ls data/osm/*.json data/osm/gaps/*.json 2>/dev/null); do python3 -m json.tool "$f" > /dev/null || { echo "Bad JSON: $f"; exit 1; }; done
+          for f in region.json data/aliases.json data/boundaries/*.json data/search/*.json data/search/addresses/*.json $(ls data/facts/*.json 2>/dev/null) $(ls data/osm/*.json data/osm/gaps/*.json 2>/dev/null); do python3 -m json.tool "$f" > /dev/null || { echo "Bad JSON: $f"; exit 1; }; done
           python3 scripts/get_layers.py --check
           python3 scripts/build_tiles.py --check
           printf '\n**Checks passed:** the JSON files parse and every boundary set passes `get_layers.py --check`.\n' >> "$RUNNER_TEMP/summary.md"
