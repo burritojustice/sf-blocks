@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.11.11.8
+- **`matcher/google-drive.js`:** `createSheet(title, tabs)` makes a new Google Sheet in the person's Drive (still only the drive.file permission), for Block Party's Save to Google Sheets. Nothing else changes.
+
 ## 2026.11.11.6
 - **OSM ways** (2026-11-10): 135,428 pieces from 65,763 ways; 94,219 run along no city street (`data/osm/ways.pmtiles`, `data/osm/gaps/`). © OpenStreetMap contributors, ODbL.
 
