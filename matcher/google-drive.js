@@ -19,7 +19,7 @@
 //   await GoogleDrive.addTab(id, title)              -> sheetId
 //   await GoogleDrive.clearValues(id, "'Tab'")
 //   await GoogleDrive.putValues(id, "'Tab'!A1", rows) // rows written as typed (RAW), so CNNs stay text
-//   await GoogleDrive.createSheet(title, ['Tab', ...]) -> {id, url}   // a new spreadsheet
+//   await GoogleDrive.createSheet(title, ['Tab', ...]) -> {id, url, tabs}   // a new spreadsheet
 'use strict';
 window.GoogleDrive = (() => {
     const GIS = 'https://accounts.google.com/gsi/client';
@@ -114,11 +114,11 @@ window.GoogleDrive = (() => {
     async function clearValues(id, range) {
         await api(`${SHEETS(id)}/values/${encodeURIComponent(range)}:clear`, json('POST', {}));
     }
-    // a new spreadsheet in the person's Drive (drive.file covers files this page makes) -> {id, url}
+    // a new spreadsheet in the person's Drive (drive.file covers files this page makes) -> {id, url, tabs: [{title, sheetId}]}
     async function createSheet(title, tabs = ['Sheet1']) {
         const r = await (await api('https://sheets.googleapis.com/v4/spreadsheets', json('POST', { properties: { title },
             sheets: tabs.map(t => ({ properties: { title: t } })) }))).json();
-        return { id: r.spreadsheetId, url: r.spreadsheetUrl };
+        return { id: r.spreadsheetId, url: r.spreadsheetUrl, tabs: (r.sheets || []).map(x => ({ title: x.properties.title, sheetId: x.properties.sheetId })) };
     }
     async function putValues(id, range, values) {
         await api(`${SHEETS(id)}/values/${encodeURIComponent(range)}?valueInputOption=RAW`, json('PUT', { range, majorDimension: 'ROWS', values }));
