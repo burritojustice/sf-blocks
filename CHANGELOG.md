@@ -1,5 +1,7 @@
 # Changelog
 
+## 2026.11.11.8
+- **`matcher/google-drive.js`:** `createSheet(title, tabs)` makes a new Google Sheet in the person's Drive (still only the drive.file permission), for Block Party's Save to Google Sheets. Nothing else changes.
 ## 2026.11.11.7
 - **Street facts** (new, `scripts/build_facts.py`, standard library): what each street block's card shows, worked out ahead of time so apps don't have to read tiles and boundaries for every card. One row per CNN (17,176), built from files already here and matching Block Party's cards exactly on the blocks checked (Valencia, Holloway, …):
   - `data/facts/streets.json` (1.8 MB, 0.47 MB gzipped): lots, homes, land use and zoning (parcels within 14 m, or 25 m on the same street); street trees by name; businesses (storefronts shown, addresses, and those hidden as not storefronts, by kind); people and homes from the 2020 census blocks; and the Supervisor, Assembly, State Senate, US House, BART, CBD, Cultural and Historic districts.
