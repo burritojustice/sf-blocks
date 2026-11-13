@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.11.13
+- Proposed map layer `storm_drains` (fields to review)
+
 ## 2026.11.12
 - **`matcher/google-drive.js`:** `createSheet()` also returns the new sheet's tabs with their ids, which Block Party's project sheets use to link to each tab.
 - `VERSION` held two lines after #38 and #39 merged; it's one again.

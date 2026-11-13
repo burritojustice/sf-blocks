@@ -186,6 +186,33 @@
         "minzoom": 15,
         "maxzoom": 15
       }
+    },
+    {
+      "id": "storm_drains",
+      "label": "Storm Drains",
+      "dataset": "jtgq-b7c5",
+      "page": "https://data.sf.gov/d/jtgq-b7c5",
+      "year": "current",
+      "fields": {
+        "dpw_node_id": "text:dpw_node_id",
+        "puc_maximo_asset_id": "text:puc_maximo_asset_id",
+        "system_use_code": "text:system_use_code",
+        "system_use": "text:system_use",
+        "drain_type": "text:drain_type",
+        "point_x": "num:point_x",
+        "point_y": "num:point_y",
+        "analysis_neighborhood": "text:analysis_neighborhood",
+        "supervisor_district": "text:supervisor_district"
+      },
+      "categories": [],
+      "tiles": {
+        "minzoom": 15,
+        "maxzoom": 15
+      },
+      "format": "csv",
+      "point": {
+        "wkt": "location"
+      }
     }
   ]
 }
