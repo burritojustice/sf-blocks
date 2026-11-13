@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.11.13.8
+- Proposed map layer `bus_stops` (fields to review)
+
 ## 2026.11.13
 - Proposed map layer `storm_drains` (fields to review)
 
