@@ -213,6 +213,41 @@
       "point": {
         "wkt": "location"
       }
+    },
+    {
+      "id": "bus_stops",
+      "label": "Bus Stops",
+      "dataset": "i28k-bkz6",
+      "page": "https://data.sf.gov/d/i28k-bkz6",
+      "year": "current",
+      "fields": {
+        "stopname": "text:stopname",
+        "trapezestopabbr": "text:trapezestopabbr",
+        "rucusstopabbr": "text:rucusstopabbr",
+        "stopid": "num:stopid",
+        "latitude": "num:latitude",
+        "longitude": "num:longitude",
+        "accessibilitymask": "num:accessibilitymask",
+        "atstreet": "text:atstreet",
+        "onstreet": "text:onstreet",
+        "position": "text:position",
+        "orientation": "text:orientation",
+        "serviceplanningstoptype": "text:serviceplanningstoptype",
+        "shelter": "num:shelter",
+        "insert_timestamp": "text:insert_timestamp",
+        "sde_id": "num:sde_id",
+        "signupid": "num:signupid",
+        "supervisor_district": "text:supervisor_district"
+      },
+      "categories": [],
+      "tiles": {
+        "minzoom": 15,
+        "maxzoom": 15
+      },
+      "format": "csv",
+      "point": {
+        "wkt": "shape"
+      }
     }
   ]
 }
