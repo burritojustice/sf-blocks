@@ -41,6 +41,7 @@ Another city can start its own repo with the same layout (nyc-blocks, london-blo
 | `matcher/` | **Matcher**, the web page for the two matchers below: https://burritojustice.github.io/sf-blocks/matcher/ |
 | `scripts/match_blocks.py` | Matches free-text locations to blocks; also a library used by sf-striping |
 | `scripts/match_polygons.py` | Polygons (GeoJSON) → the blocks and intersections inside them |
+| `wof-descender/` | **Descender**: the descendants of any Who's On First place (SF neighbourhoods, Arizona counties, London boroughs) with their shapes, as GeoJSON or CSV with WKT. A script, `descender.py`, and a web page: https://burritojustice.github.io/sf-blocks/wof-descender/ |
 | `docs/apps-and-data.md` | What's in this repo, how Joiner, Block Party and sf-striping use it, Airtable, and the roadmap, with a diagram |
 | `VERSION` | Date-style version of the data and code, e.g. `2026.10.27` |
 

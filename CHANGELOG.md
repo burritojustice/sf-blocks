@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026.11.17
+- **Descender** (new, `wof-descender/`): the descendants of any Who's On First place, with their shapes, as GeoJSON and as CSV with WKT. Works for neighbourhoods in SF, counties in Arizona, boroughs in London and so on.
+  - `descender.py` (standard library) takes a WOF id or a Spelunker Descendants link. It has the Spelunker's filters (placetype, one or more; country; iscurrent; isdeprecated) and `--facets` for counts. It walks every page and downloads each record from data.whosonfirst.org. Fields: status, parent, the ancestors in between with names (macrohood, borough…), dates, label point, area and links. A general version of Joiner's SF-only `get_wof.mjs`.
+  - The web page (`index.html`) does the same in the browser: filters with counts, results on the standard map (Protomaps white, creek fix, satellite), a list, and Download GeoJSON / CSV (WKT). For the same choices its files are byte-for-byte the script's.
+  - The Spelunker doesn't let other sites read its descendant pages, so the page reads them through `descender.py --serve` on your own computer, or through the Cloudflare Worker in `proxy/` once it's deployed and named in `descender.json`.
+
 ## 2026.11.13.8
 - Proposed map layer `bus_stops` (fields to review)
 
