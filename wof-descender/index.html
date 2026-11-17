@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Descender · sf-blocks</title>
+<meta name="description" content="The descendants of any Who's On First place, with their shapes: neighbourhoods in San Francisco, counties in Arizona, boroughs in London. Save them as GeoJSON or CSV with WKT.">
+<link rel="icon" href="../matcher/favicon.svg?v=7" type="image/svg+xml">
+<link rel="icon" href="../matcher/favicon-32.png?v=7" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="../matcher/apple-touch-icon.png?v=7">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.16.0/dist/maplibre-gl.css">
+<link rel="stylesheet" href="descender.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="./" title="Descender">
+    <img src="../matcher/img/burritojustice.jpg" alt="" width="32" height="32">
+    <h1 class="logo">Descender</h1>
+  </a>
+  <p class="tagline">The places inside any Who's On First place, with their shapes</p>
+  <span class="pill" id="source" title="Where the descendant lists come from">Checking the Spelunker…</span>
+</header>
+
+<main class="app">
+  <aside class="side">
+    <section class="card">
+      <h2><span class="step">1</span> Place</h2>
+      <form class="link" id="place-form">
+        <input type="text" id="place" placeholder="WOF id or Spelunker link" aria-label="Who's On First id or Spelunker link" autocomplete="off" spellcheck="false">
+        <button type="submit" class="btn">Look up</button>
+      </form>
+      <p class="hint">Like <button type="button" class="linkish" data-eg="85922583">85922583</button> (San Francisco), <button type="button" class="linkish" data-eg="85688719">85688719</button> (Arizona), <button type="button" class="linkish" data-eg="101750367">101750367</button> (London), or a link from the Spelunker's Descendants page.</p>
+      <div class="place" id="place-info" hidden></div>
+    </section>
+
+    <section class="card" id="card-filters" hidden>
+      <h2><span class="step">2</span> Which descendants</h2>
+      <fieldset class="choice">
+        <legend>Placetype</legend>
+        <div class="pts" id="pts"></div>
+      </fieldset>
+      <label class="field">Country <select id="f-country"></select></label>
+      <label class="field">Current <select id="f-iscurrent"></select></label>
+      <label class="field">Deprecated <select id="f-isdeprecated"></select></label>
+      <label class="check"><input type="checkbox" id="all-props"> Keep every WOF property in the GeoJSON</label>
+      <button type="button" class="btn primary" id="go" disabled>Pick a placetype</button>
+      <p class="hint" id="go-hint"></p>
+    </section>
+
+    <section class="card" id="card-results" hidden>
+      <h2><span class="step">3</span> Results</h2>
+      <div class="tally" id="tally"></div>
+      <p class="hint" id="missing" hidden></p>
+      <div class="saves">
+        <button type="button" class="btn" id="save-geojson">Download GeoJSON</button>
+        <button type="button" class="btn" id="save-csv">Download CSV (WKT)</button>
+      </div>
+      <input type="search" id="search" placeholder="Search places" aria-label="Search places">
+      <ul class="list" id="list"></ul>
+      <details class="cli">
+        <summary>Same thing on the command line</summary>
+        <pre id="cli"></pre>
+        <button type="button" class="btn small" id="copy-cli">Copy</button>
+      </details>
+    </section>
+
+    <section class="card warn-card" id="card-blocked" hidden>
+      <h2>The Spelunker can't be read from here</h2>
+      <p>The Spelunker doesn't let other websites read its lists of descendants, so this page needs a helper in between. Two ways:</p>
+      <ul>
+        <li><strong>On your computer:</strong> in a copy of sf-blocks, run<br><code>python3 wof-descender/descender.py --serve</code><br>and open <a href="http://localhost:8765/wof-descender/">localhost:8765/wof-descender/</a>.</li>
+        <li><strong>Here:</strong> put the address of a proxy (see <code>wof-descender/proxy/</code>) in <code>descender.json</code>, or add <code>?spelunker=&lt;its address&gt;</code> to this page's link.</li>
+      </ul>
+      <p class="hint">Or run the script on its own; it writes the same files: <code id="cli-blocked">python3 wof-descender/descender.py 85922583 -p neighbourhood</code></p>
+    </section>
+
+    <p class="foot">Data from <a href="https://whosonfirst.org">Who's On First</a> (<a href="https://whosonfirst.org/docs/licenses/">licenses</a>) through the <a href="https://spelunker.whosonfirst.org">Spelunker</a>. Part of <a href="https://github.com/burritojustice/sf-blocks/tree/main/wof-descender">sf-blocks</a>.</p>
+  </aside>
+
+  <section class="stage">
+    <div id="map"></div>
+  </section>
+</main>
+
+<div class="toast" id="toast" hidden><span id="toast-text"></span><div class="bar"><i id="toast-bar"></i></div></div>
+
+<script src="https://unpkg.com/maplibre-gl@5.16.0/dist/maplibre-gl.js"></script>
+<script src="descender.js"></script>
+</body>
+</html>
