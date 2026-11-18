@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.11.18
+- **`data/layers/index.json`:** a list of the small map layers (Muni, bike network, Slow Streets, schools, stations, health, city lands), with each one's label, file, geometry, feature count, fields, the field to split it by and its DataSF source. Apps can now list these the same way as `data/tiles/index.json`, without knowing them; Joiner's new Layers menu reads both. `build_layers.py` writes it after every build, and `--index` writes only the list.
+
 ## 2026.11.17
 - **Descender** (new, `wof-descender/`): the descendants of any Who's On First place, with their shapes, as GeoJSON and as CSV with WKT. Works for neighbourhoods in SF, counties in Arizona, boroughs in London and so on.
   - `descender.py` (standard library) takes a WOF id or a Spelunker Descendants link. It has the Spelunker's filters (placetype, one or more; country; iscurrent; isdeprecated) and `--facets` for counts. It walks every page and downloads each record from data.whosonfirst.org. Fields: status, parent, the ancestors in between with names (macrohood, borough…), dates, label point, area and links. A general version of Joiner's SF-only `get_wof.mjs`.

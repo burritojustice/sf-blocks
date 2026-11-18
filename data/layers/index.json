@@ -1,0 +1,150 @@
+{
+ "_doc": "Small map layers: data/layers/<file>, GeoJSON, built by scripts/build_layers.py.",
+ "layers": [
+  {
+   "id": "muni",
+   "label": "Muni routes",
+   "file": "muni.geojson",
+   "format": "geojson",
+   "geometry": "LineString",
+   "features": 127,
+   "bytes": 443106,
+   "fields": {
+    "route": "text",
+    "service": "text",
+    "dir": "text"
+   },
+   "category": "service",
+   "name": "route",
+   "title": "Muni Simple Routes",
+   "dataset": "9exe-acju",
+   "page": "https://data.sf.gov/Transportation/Muni-Simple-Routes/9exe-acju/about_data",
+   "data_as_of": "2025-02-18"
+  },
+  {
+   "id": "bike",
+   "label": "Bike network",
+   "file": "bike.geojson",
+   "format": "geojson",
+   "geometry": "LineString",
+   "features": 5438,
+   "bytes": 1203266,
+   "fields": {
+    "kind": "text",
+    "cls": "text",
+    "cnn": "number",
+    "barrier": "text"
+   },
+   "category": "cls",
+   "name": "kind",
+   "title": "MTA Bike Network Linear Features",
+   "dataset": "ygmz-vaxd",
+   "page": "https://data.sf.gov/Transportation/MTA-Bike-Network-Linear-Features/ygmz-vaxd/about_data",
+   "data_as_of": "2025-06-16"
+  },
+  {
+   "id": "slow",
+   "label": "Slow Streets",
+   "file": "slow.geojson",
+   "format": "geojson",
+   "geometry": "LineString",
+   "features": 240,
+   "bytes": 58933,
+   "fields": {
+    "cnn": "number",
+    "corridor": "text",
+    "status": "text",
+    "type": "text",
+    "installed": "text"
+   },
+   "category": "status",
+   "name": "corridor",
+   "title": "Slow Streets",
+   "dataset": "hkz3-itiu",
+   "page": "https://data.sf.gov/Transportation/Slow-Streets/hkz3-itiu/about_data",
+   "data_as_of": "2023-09-20"
+  },
+  {
+   "id": "schools",
+   "label": "Schools",
+   "file": "schools.geojson",
+   "format": "geojson",
+   "geometry": "Point",
+   "features": 231,
+   "bytes": 39530,
+   "fields": {
+    "name": "text",
+    "type": "text",
+    "public": "text"
+   },
+   "category": "type",
+   "name": "name",
+   "title": "Schools",
+   "dataset": "7e7j-59qk",
+   "page": "https://data.sf.gov/Economy-and-Community/Schools/7e7j-59qk/about_data",
+   "data_as_of": "2026-02-03"
+  },
+  {
+   "id": "stations",
+   "label": "Fire and police stations",
+   "file": "stations.geojson",
+   "format": "geojson",
+   "geometry": "Point",
+   "features": 77,
+   "bytes": 11238,
+   "fields": {
+    "name": "text",
+    "kind": "text"
+   },
+   "category": "kind",
+   "name": "name",
+   "title": "City-owned Facilities: Fire and Police",
+   "dataset": "wt27-4jim",
+   "page": "https://data.sf.gov/City-Infrastructure/City-owned-Facilities-Fire-and-Police/wt27-4jim/about_data",
+   "data_as_of": null
+  },
+  {
+   "id": "health",
+   "label": "Health care facilities",
+   "file": "health.geojson",
+   "format": "geojson",
+   "geometry": "Point",
+   "features": 78,
+   "bytes": 16412,
+   "fields": {
+    "name": "text",
+    "type": "text",
+    "kind": "text",
+    "services": "text"
+   },
+   "category": "kind",
+   "name": "name",
+   "title": "Health Care Facilities",
+   "dataset": "jhsu-2pka",
+   "page": "https://data.sf.gov/Health-and-Social-Services/Health-Care-Facilities/jhsu-2pka/about_data",
+   "data_as_of": null
+  },
+  {
+   "id": "lands",
+   "label": "City-owned land",
+   "file": "lands.geojson",
+   "format": "geojson",
+   "geometry": "Polygon",
+   "features": 1034,
+   "bytes": 831164,
+   "fields": {
+    "name": "text",
+    "cat": "text",
+    "dept": "text",
+    "addr": "text",
+    "id": "text"
+   },
+   "category": "cat",
+   "name": "name",
+   "title": "City Lands",
+   "dataset": "gtnh-hgvs",
+   "page": "https://data.sf.gov/City-Infrastructure/City-Lands/gtnh-hgvs/about_data",
+   "data_as_of": "2026-09-24"
+  }
+ ]
+}

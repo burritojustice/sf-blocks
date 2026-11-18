@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-# sf-blocks 2026.10.27: master copy, moved here from civic-joy-fund/block-party.
+# sf-blocks 2026.11.18: master copy, moved here from civic-joy-fund/block-party.
 """Build the small map overlay files in data/layers/ from the raw downloads in data/uploads/.
 
-    python3 scripts/build_layers.py              # reads data/uploads/, writes data/layers/
+    python3 scripts/build_layers.py              # reads data/uploads/, writes data/layers/ and its index.json
+    python3 scripts/build_layers.py --index      # only rewrites data/layers/index.json from the files there
     python3 scripts/build_layers.py --download   # fetch fresh copies of every dataset first
 
 Standard library only. Any dataset in SOURCES with no file in data/uploads/ is downloaded from DataSF's API
@@ -56,6 +57,46 @@ SOURCES = {
                'url': 'https://data.sf.gov/Health-and-Social-Services/Health-Care-Facilities/jhsu-2pka/about_data',
                'also': ['health']},
 }
+
+
+# How apps list each layer (data/layers/index.json): a label, and the field to split it by, if any.
+LAYER_INFO = {
+    'muni': {'label': 'Muni routes', 'category': 'service', 'name': 'route'},
+    'bike': {'label': 'Bike network', 'category': 'cls', 'name': 'kind'},
+    'slow': {'label': 'Slow Streets', 'category': 'status', 'name': 'corridor'},
+    'schools': {'label': 'Schools', 'category': 'type', 'name': 'name'},
+    'stations': {'label': 'Fire and police stations', 'category': 'kind', 'name': 'name'},
+    'health': {'label': 'Health care facilities', 'category': 'kind', 'name': 'name'},
+    'lands': {'label': 'City-owned land', 'category': 'cat', 'name': 'name'},
+}
+
+
+def write_index():
+    """data/layers/index.json: every layer file here, with its label, geometry, fields and source, so apps can
+    list them without knowing them (Joiner's Layers menu). Same shape as data/tiles/index.json's entries."""
+    layers = []
+    for key, info in LAYER_INFO.items():
+        p = OUT / f'{key}.geojson'
+        if not p.exists():
+            continue
+        d = json.loads(p.read_text())
+        feats, src = d['features'], d.get('source') or {}
+        kinds = sorted({(f.get('geometry') or {}).get('type', '').replace('Multi', '') for f in feats} - {''})
+        fields = {}
+        for f in feats:
+            for k, v in (f.get('properties') or {}).items():
+                if v in (None, ''):
+                    continue
+                t = 'number' if isinstance(v, (int, float)) and not isinstance(v, bool) else 'text'
+                if fields.get(k) != 'text':
+                    fields[k] = t
+        layers.append({'id': key, 'label': info['label'], 'file': p.name, 'format': 'geojson',
+                       'geometry': kinds[0] if len(kinds) == 1 else kinds, 'features': len(feats), 'bytes': p.stat().st_size,
+                       'fields': fields, 'category': info.get('category'), 'name': info.get('name'),
+                       'title': src.get('title'), 'dataset': src.get('id'), 'page': src.get('url'), 'data_as_of': src.get('data_as_of')})
+    out = OUT / 'index.json'
+    out.write_text(json.dumps({'_doc': 'Small map layers: data/layers/<file>, GeoJSON, built by scripts/build_layers.py.', 'layers': layers}, indent=1) + '\n')
+    print(f'{out.relative_to(ROOT)}: {len(layers)} layers', flush=True)
 
 
 def norm(s):
@@ -338,7 +379,11 @@ def build_health(p):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--download', action='store_true', help='download fresh copies of every dataset (except schools) first')
+    ap.add_argument('--index', action='store_true', help='only rewrite data/layers/index.json from the files already there')
     a = ap.parse_args()
+    if a.index:
+        write_index()
+        return
     SRC.mkdir(exist_ok=True)
     jobs = {'muni': build_muni, 'bike': build_bike, 'schools': build_schools,
             'stations': build_stations, 'health': build_health, 'slow': build_slow, 'lands': build_lands}
@@ -355,6 +400,7 @@ def main():
             src = SOURCES[key]
             print(f'skipped {key}: no "{src["title"]}" download in layers/'
                   + (f' (get it from {src["url"]})' if src['url'] else ''), flush=True)
+    write_index()
 
 
 if __name__ == '__main__':
