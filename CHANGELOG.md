@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.11.18
+- Proposed map layer `utility_excavation_permits` (fields to review)
+
 ## 2026.11.17
 - **Descender** (new, `wof-descender/`): the descendants of any Who's On First place, with their shapes, as GeoJSON and as CSV with WKT. Works for neighbourhoods in SF, counties in Arizona, boroughs in London and so on.
   - `descender.py` (standard library) takes a WOF id or a Spelunker Descendants link. It has the Spelunker's filters (placetype, one or more; country; iscurrent; isdeprecated) and `--facets` for counts. It walks every page and downloads each record from data.whosonfirst.org. Fields: status, parent, the ancestors in between with names (macrohood, borough…), dates, label point, area and links. A general version of Joiner's SF-only `get_wof.mjs`.

@@ -248,6 +248,40 @@
       "point": {
         "wkt": "shape"
       }
+    },
+    {
+      "id": "utility_excavation_permits",
+      "label": "Large Utility Excavation Permits",
+      "dataset": "i926-ujnc",
+      "page": "https://data.sf.gov/d/i926-ujnc",
+      "year": "current",
+      "fields": {
+        "permit_number": "text:permit_number",
+        "street_name": "text:street_name",
+        "cross_street_1": "text:cross_street_1",
+        "cross_street_2": "text:cross_street_2",
+        "cnn": "num:cnn",
+        "agent": "text:agent",
+        "permit_purpose": "text:permit_purpose",
+        "permit_reason": "text:permit_reason",
+        "permit_status": "text:permit_status",
+        "permit_start_date": "date:permit_start_date",
+        "permit_end_date": "date:permit_end_date",
+        "permit_renewed_from_permit_number": "text:permit_renewed_from_permit_number",
+        "x": "num:x",
+        "y": "num:y",
+        "latitude": "num:latitude",
+        "longitude": "num:longitude"
+      },
+      "categories": [],
+      "tiles": {
+        "minzoom": 15,
+        "maxzoom": 15
+      },
+      "format": "csv",
+      "point": {
+        "wkt": "location"
+      }
     }
   ]
 }
