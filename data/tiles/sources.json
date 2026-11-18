@@ -250,6 +250,32 @@
       }
     },
     {
+      "id": "high_injury_network",
+      "label": "High Injury Network",
+      "dataset": "enwt-3u8m",
+      "page": "https://data.sf.gov/d/enwt-3u8m",
+      "year": "current",
+      "fields": {
+        "cnn_sgmt_pkey": "text:cnn_sgmt_pkey",
+        "street_name": "text:street_name",
+        "street_type": "text:street_type",
+        "street_layer": "text:street_layer",
+        "full_street_name": "text:full_street_name",
+        "class_code": "num:class_code",
+        "duel_car_way_yn": "text:duel_car_way_yn",
+        "duel_car_way_id": "num:duel_car_way_id",
+        "f_node_cnn_intrsctn_fkey": "text:f_node_cnn_intrsctn_fkey",
+        "t_node_cnn_intrsctn_fkey": "text:t_node_cnn_intrsctn_fkey",
+        "corrected_length_miles": "num:corrected_length_miles"
+      },
+      "categories": [],
+      "tiles": {
+        "minzoom": 15,
+        "maxzoom": 15
+      },
+      "format": "geojson"
+    },
+    {
       "id": "utility_excavation_permits",
       "label": "Large Utility Excavation Permits",
       "dataset": "i926-ujnc",

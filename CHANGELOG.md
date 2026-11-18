@@ -1,7 +1,10 @@
 # Changelog
 
-## 2026.11.18
+## 2026.11.18.3
 - Proposed map layer `utility_excavation_permits` (fields to review)
+
+## 2026.11.18
+- Proposed map layer `high_injury_network` (fields to review)
 
 ## 2026.11.17
 - **Descender** (new, `wof-descender/`): the descendants of any Who's On First place, with their shapes, as GeoJSON and as CSV with WKT. Works for neighbourhoods in SF, counties in Arizona, boroughs in London and so on.
