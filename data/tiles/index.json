@@ -1,5 +1,5 @@
 {
-  "_doc": "Map layers: data/tiles/<file>, built by scripts/build_tiles.py from sources.json. Read with PMTiles (format pmtiles) or as GeoJSON.",
+  "_doc": "Map layers: data/tiles/<file>, built by scripts/build_tiles.py from sources.json and sources/<id>.json. Read with PMTiles (format pmtiles) or as GeoJSON.",
   "layers": [
     {
       "id": "curbs",
@@ -136,6 +136,51 @@
       "dataset": "ynuv-fyni",
       "page": "https://data.sf.gov/Geographic-Locations-and-Boundaries/Building-Footprints/ynuv-fyni",
       "retrieved": "2026-11-03"
+    },
+    {
+      "id": "utility_excavation_permits",
+      "label": "Large Utility Excavation Permits",
+      "year": "current",
+      "file": "utility_excavation_permits.geojson",
+      "format": "geojson",
+      "layer": "utility_excavation_permits",
+      "bytes": 2047373,
+      "features": 2511,
+      "records": 2702,
+      "geometry": "LineString",
+      "fields": {
+        "cnn": "id",
+        "cnns": "text",
+        "n": "count",
+        "permit_status": "text",
+        "permit_purpose": "text",
+        "agent": "text",
+        "n_ACTIVE": "count",
+        "n_APPROVED": "count",
+        "items": "json"
+      },
+      "stats": "utility_excavation_permits.stats.json",
+      "dataset": "i926-ujnc",
+      "page": "https://data.sf.gov/d/i926-ujnc",
+      "retrieved": "2026-11-18",
+      "source": "6dbc3905ee70",
+      "join": "cnn",
+      "cnn_field": "cnn",
+      "cnn_missing": 0,
+      "stacked_by": "cnn",
+      "items_fields": {
+        "permit_number": "text",
+        "street_name": "text",
+        "cross_street_1": "text",
+        "cross_street_2": "text",
+        "agent": "text",
+        "permit_purpose": "text",
+        "permit_reason": "text",
+        "permit_status": "text",
+        "permit_start_date": "date",
+        "permit_end_date": "date",
+        "permit_renewed_from_permit_number": "text"
+      }
     }
   ]
 }

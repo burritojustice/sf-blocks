@@ -1,0 +1,38 @@
+# Actions → "Add areas" → Run workflow: boundaries to count by (districts, neighborhoods, zones), from a
+# DataSF dataset or a GeoJSON file uploaded to data/uploads/. It picks the field that names each area
+# (unless you say), builds the set and opens a pull request with a report and preview links.
+name: Add areas
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: 'DataSF dataset (link or id like 63x5-g3m4), or a file in data/uploads/'
+        required: true
+      id:
+        description: 'A short name for the set: lowercase words joined by _ (historic_districts)'
+        required: true
+      name_field:
+        description: 'The field that names each area. Blank: pick one'
+        required: false
+      label:
+        description: "Its title in the apps (Historic Districts). Blank: the dataset's name"
+        required: false
+      tab:
+        description: 'Where it goes in Joiner'
+        type: choice
+        options: [Other, Neighborhood, District, ZIP]
+        default: Other
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+jobs:
+  build:
+    uses: ./.github/workflows/build-data.yml
+    with:
+      kind: Boundary set
+      id: ${{ inputs.id }}
+      source: ${{ inputs.source }}
+      name_field: ${{ inputs.name_field }}
+      label: ${{ inputs.label }}
+      tab: ${{ inputs.tab }}

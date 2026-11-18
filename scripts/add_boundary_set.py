@@ -15,7 +15,7 @@ data/uploads/ (an export someone uploaded). It then:
      an id); names shared by several pieces make one area each (mergeByKey);
   3. adds or updates the set in data/boundaries/sources.json (fields to keep, label, Joiner tab);
   4. builds data/boundaries/<id>.geojson and index.json with get_layers.py;
-  5. bumps VERSION and adds a CHANGELOG entry;
+  5. writes its note in changes/<id>.md (VERSION and CHANGELOG.md are stamped after the merge);
   6. with --summary, writes a Markdown report (fields, the chosen name, counts, warnings, preview links)
      for the pull request.
 
@@ -80,20 +80,13 @@ def field_table(feats, fields):
     return '\n'.join(rows)
 
 
-def bump_version(note):
-    today = date.today().strftime('%Y.%m.%d')
-    old = (ROOT / 'VERSION').read_text().strip()
-    if old == today or old.startswith(today + '.'):
-        n = int(old.split('.')[3]) + 1 if old.count('.') == 3 else 2
-        new = f'{today}.{n}'
-    else:
-        new = today
-    (ROOT / 'VERSION').write_text(new + '\n')
-    log = ROOT / 'CHANGELOG.md'
-    s = log.read_text()
-    i = s.index('\n## ') + 1
-    log.write_text(s[:i] + f'## {new}\n{note}\n\n' + s[i:])
-    return new
+def note_change(name, note):
+    """the change's note in changes/<name>.md; the Stamp version action moves it to CHANGELOG.md and sets
+    VERSION after the pull request merges, so pull requests don't conflict"""
+    d = ROOT / 'changes'; d.mkdir(exist_ok=True)
+    p = d / f'{name}.md'
+    p.write_text((p.read_text() if p.exists() else '') + note + '\n')
+    return None
 
 
 def main(argv):
@@ -106,7 +99,7 @@ def main(argv):
     ap.add_argument('--keep', default='', help='other fields to keep, comma separated; blank: readable text fields')
     ap.add_argument('--summary', default='', help='write a Markdown report here')
     ap.add_argument('--branch', default='', help='branch the result is pushed to, for preview links')
-    ap.add_argument('--no-version', action='store_true', help="don't bump VERSION or CHANGELOG")
+    ap.add_argument('--no-version', action='store_true', help="don't write a note in changes/")
     a = ap.parse_args(argv)
 
     if not re.fullmatch(r'[a-z][a-z0-9_]{2,40}', a.id):
@@ -225,7 +218,7 @@ def main(argv):
     verb = 'Refreshed' if existing else 'Added'
     version = None
     if not a.no_version:
-        version = bump_version(f'- {verb} boundary set `{a.id}` ({entry["label"]}): {n} areas named by `{name}`, from '
+        version = note_change(f'boundary-{a.id}', f'- {verb} boundary set `{a.id}` ({entry["label"]}): {n} areas named by `{name}`, from '
                                + (f'DataSF [{dataset}]({entry["page"]})' if dataset and not a.source.endswith(('.geojson', '.json')) else f'`{rel}`')
                                + f'. Raw copy: `{rel}`.')
 

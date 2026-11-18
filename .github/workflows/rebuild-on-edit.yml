@@ -1,0 +1,39 @@
+# When a pull request adds or edits a map layer's entry (data/tiles/sources/<id>.json or sources.json),
+# build those layers again and add a commit to its branch, so what's merged is always built.
+# Only for branches in this repository (a fork's pull request can't be written to).
+name: Rebuild edited map layers
+on:
+  pull_request:
+    paths: ['data/tiles/sources.json', 'data/tiles/sources/**']
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+jobs:
+  which:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    outputs:
+      ids: ${{ steps.ids.outputs.ids }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - id: ids
+        run: |
+          ids=$(python3 scripts/build_tiles.py --changed-since "${{ github.event.pull_request.base.sha }}")
+          echo "Edited: ${ids:-none}" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "ids=$(python3 -c "import json,sys; print(json.dumps(sys.argv[1:]))" $ids)" >> "$GITHUB_OUTPUT"
+  build:
+    needs: which
+    if: needs.which.outputs.ids != '[]'
+    strategy:
+      max-parallel: 1           # one at a time: each adds a commit to the same branch
+      matrix:
+        id: ${{ fromJSON(needs.which.outputs.ids) }}
+    uses: ./.github/workflows/build-data.yml
+    with:
+      kind: Map layer
+      id: ${{ matrix.id }}
+      branch: ${{ github.event.pull_request.head.ref }}

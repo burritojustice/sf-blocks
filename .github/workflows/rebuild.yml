@@ -1,0 +1,26 @@
+# Actions → "Rebuild data" → Run workflow: download and build again something that's already here.
+#   A map layer or a set of areas: give its id (street_trees, supervisor_districts).
+#   Search index, OSM ways, Street facts: no id needed.
+# Run on main for a new pull request, or on a branch to add a commit there.
+name: Rebuild data
+on:
+  workflow_dispatch:
+    inputs:
+      what:
+        description: 'What to rebuild'
+        type: choice
+        options: [Map layer, Areas, Search index, OSM ways, Street facts]
+        default: Map layer
+      id:
+        description: 'For a map layer or areas: its id (street_trees, supervisor_districts)'
+        required: false
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+jobs:
+  build:
+    uses: ./.github/workflows/build-data.yml
+    with:
+      kind: ${{ inputs.what == 'Areas' && 'Boundary set' || inputs.what }}
+      id: ${{ inputs.id }}
