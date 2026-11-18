@@ -1,0 +1,383 @@
+{
+ "id": "utility_excavation_permits",
+ "records": 2702,
+ "built": "2026-11-18",
+ "fields": {
+  "cnn": {
+   "type": "number",
+   "n": 2702,
+   "missing": 0,
+   "min": 100000.0,
+   "max": 54239000.0,
+   "mean": 11631399.9027,
+   "median": 9198000.0,
+   "std": 9200401.7856,
+   "quantiles": {
+    "5": [
+     4534400.0,
+     7588600.0,
+     10638000.0,
+     20617800.0
+    ],
+    "7": [
+     3296000.8571,
+     5863000.0,
+     8124571.4286,
+     10220428.5714,
+     12731285.7143,
+     24302428.5714
+    ],
+    "10": [
+     2511300.0,
+     4534400.0,
+     6133471.0,
+     7588600.0,
+     9198000.0,
+     10638000.0,
+     12612200.0,
+     20617800.0,
+     25762900.0
+    ]
+   }
+  },
+  "agent": {
+   "type": "category",
+   "n": 2702,
+   "missing": 0,
+   "distinct": 22,
+   "values": {
+    "Esquivel Grading & Paving, Inc.": 745,
+    "Ronan Construction Inc.": 311,
+    "Cratus, Inc.": 239,
+    "Pacific Gas & Electric": 197,
+    "Mitchell Engineering. Inc.": 160,
+    "A. Ruiz Construction Co.": 154,
+    "Michael O'Shaugnessy Construction Inc.": 148,
+    "Precision Engineering, Inc.": 140,
+    "M Squared Construction": 138,
+    "Bay Area Lightworks": 128,
+    "Hernandez Engineering": 84,
+    "R & S Construction Management Inc": 72,
+    "Pavement Coatings Co": 72,
+    "NTK Construction, Inc": 30,
+    "McGuire and Hester": 19,
+    "Anvil Builders Inc": 14,
+    "J. Flores Construction Co.": 14,
+    "Bauman Landscape Construction, Inc.": 13,
+    "Pacific Bell Telephone Company": 12,
+    "Basset Engineering": 6,
+    "Bureau of Street & Sewer Repair": 5,
+    "Shimmick Construction Co., Inc.": 1
+   }
+  },
+  "permit_purpose": {
+   "type": "category",
+   "n": 2702,
+   "missing": 0,
+   "distinct": 60,
+   "values": {
+    "VARIOUS LOCATIONS PAVEMENT RENOVATION NO. 81 AND SEWER REPLACEMENT": 205,
+    "VARIOUS LOCATIONS PAVEMENT RENOVATION NO. 85 AND SEWER REPLACEMENT": 156,
+    "WW-727R Various Locations Sewer Replacement No. 16": 148,
+    "West Soma, Panhandle and Inner Sunset Sewer Improvements": 140,
+    "Various Locations Pavement Renovation No. 77 and Sewer Replacement": 121,
+    "Various Locations Pavement Renovation No. 80 and Sewer Replacement": 117,
+    "Various Locations Pavement Renovation No. 78 and Sewer Replacement.": 100,
+    "Various Locations Pavement Renovation No.74 and Sewer Replacement": 96,
+    "24-Inch Water Main Rehabilitation from University Mound Reservoir South to 3rd St. Contract No. WD-2923": 93,
+    "Contract No. 35 Traffic Signal Upgrades, Sourcing Event ID No. 0000002270": 84,
+    "(2955J) PW Folsom Streetscape Project, 0000004297": 82,
+    "Various Locations Pavement Renovation No.82 and Sewer Replacement": 79,
+    "WD-2876    8-Inch Ductile Iron Water Main Replacement and 16-Inch Ductile Iron  Water Main Installation on San Bruno Ave. from Campbell Ave. to Paul Ave. and on Blanken Ave. from Bayshore Blvd. to Executive Park Blvd.": 77,
+    "Various Locations Pavement Renovation No.69 and Sewer Replacement": 75,
+    "Various Locations Pavement Renovation No.90 and sewer Replacement": 71,
+    "WD-2921: Water Main and Sewer Replacement on Palou, Quesada, and Revere, from 3rd St to Griffith St": 71,
+    "WW-709R Various Locations Sewer Replacement No.13": 69,
+    "Water Main and Sewer Replacement on Moraga, Noriega, and Ortega Streets from 8th to 11th Ave. and Various Side Streets Contract No. WD-2920": 69,
+    "Jersey St Water Replacement": 67,
+    "8th St, Clay St and Leavenworth St - Pavement Renovation and Sewer Replacement": 57,
+    "WW-720 As-Needed Main Sewer Replacement No. 10": 54,
+    "0000005629 Various Locations Pavement Renovation No.62 and Sewer Replacement": 52,
+    "2255I - WW-730 - Various Location Sewer Replacement No.18": 48,
+    "Transbay Howard Streetscape Project": 44,
+    "As Needed Pavement Preservation Contract 6 - CSO 5": 42,
+    "PW VARIOUS LOCATIONS CURB RAMPS NO. 18": 35,
+    "PM 35442596 // R3 G 14D DE SOTO ST 3 SF GRP 22548": 33,
+    "R3 G 50A DR214 CLARENDON & STANYAN DEACT - TAG-105280": 31,
+    "13th Street Safety Improvements Project": 30,
+    "PW - As-Needed Citywide Pavement Preservation Contract 6": 30,
+    "R3 G GPRP RPL STANYAN SAN FRANCISCO": 27,
+    "Bay Corridor Transmission and Distribution Phase 4 and PW-11 Water ImprovementsSFPUC RE: Eric Gee egee@sfwater.org 925-699-0704SFPUC PM: Ada Zhu azhu@sfwater.orgSFPUC PE: Jimmy Fu jfu@sfwater.orgSFDPW RE or PM: Ricardo Trejo ricardo.trejo@sfdpw.org": 24,
+    "Automated Photo Enforcement System Upgrade, Contract 2, Sourcing Event ID No. 0000008917": 21,
+    "Buchanan Street Mall Renovation": 19,
+    "G GPRP RPL SOMA SAN FRANCISCO": 18,
+    "Powell Street Safety Project, Sourcing Event ID No. 0000008257": 18,
+    "R3 G GPRP RPL ALEMANY BLVD & ARCH ST SF": 17,
+    "WW-723R CHANNEL FORCE MAIN INTERTIE": 14,
+    "JOC 57-13 App Based - Traffic Calming Project District # 11": 14,
+    "R3 G 47B COVENTRY CT SAN FRANCISCO": 13,
+    "MINNA NATOMA STREETSCAPE PROJECT(REBID)": 13,
+    "R3 G 50A ORDWAY ST & SOMERSET ST SF": 13,
+    "Lowell & Hanover (PM 35190964)": 12,
+    "ATT JOB A05DK8E TRENCH SAN FRANCISCO CITY 2 ULLOA ST": 12,
+    "R3 G 50A SUNVIEW DR SAN FRANCISCO": 12,
+    "PM#35419004 R3 G 50A 100 HAROLD AVE SAN FRANCISCO": 11,
+    "1248I/0000004116 Transit U Improvement Project": 10,
+    "0000007964 M23-04 Bike Traffic Signal Upgrade": 9,
+    "WW-729 Various Locations #17, Scott Street between Broadway & Pacific Ave": 7,
+    "WW-729 Various Locations #17, 201-290 Penssylvania Ave between 18th St & Mariposa St.": 7,
+    "San Francisco Zoo Recycled Water Project": 6,
+    "BEALE STREET IMPROVEMENT PROJECT PHASE 1": 6,
+    "Main Street Improvements Phase I": 5,
+    "RO LOOP 506 BROADWAY/BUSH": 5,
+    "MISSION X 1128 (Ph 4 Loc 66 - 74)": 5,
+    "IDC OVERLAY": 4,
+    "Vista Grande Drainage Basin Improvements": 1,
+    "JOC 57-12 inSWL 349 Parking Accessin": 1,
+    "IDC GRIND AND PAVE": 1,
+    "WD2927 - CSO11 - 755 Duncan St": 1
+   }
+  },
+  "permit_status": {
+   "type": "category",
+   "n": 2702,
+   "missing": 0,
+   "distinct": 2,
+   "values": {
+    "APPROVED": 2465,
+    "ACTIVE": 237
+   }
+  },
+  "permit_start_date": {
+   "type": "date",
+   "n": 2702,
+   "missing": 0,
+   "min": "2025-01-09",
+   "max": "2027-02-08",
+   "mean": "2026-04-16",
+   "median": "2026-06-08",
+   "std_days": 190.7,
+   "quantiles": {
+    "5": [
+     "2025-09-21",
+     "2026-04-06",
+     "2026-07-27",
+     "2026-10-05"
+    ],
+    "7": [
+     "2025-08-31",
+     "2026-01-12",
+     "2026-04-20",
+     "2026-07-27",
+     "2026-09-01",
+     "2026-10-26"
+    ],
+    "10": [
+     "2025-07-21",
+     "2025-09-21",
+     "2026-01-12",
+     "2026-04-06",
+     "2026-06-08",
+     "2026-07-27",
+     "2026-09-01",
+     "2026-10-05",
+     "2026-11-07"
+    ]
+   },
+   "by_year": {
+    "2025": 764,
+    "2026": 1884,
+    "2027": 54
+   }
+  },
+  "permit_end_date": {
+   "type": "date",
+   "n": 2181,
+   "missing": 521,
+   "min": "2026-11-17",
+   "max": "2027-12-31",
+   "mean": "2027-05-09",
+   "median": "2027-02-28",
+   "std_days": 153.7,
+   "quantiles": {
+    "5": [
+     "2026-12-30",
+     "2027-01-31",
+     "2027-03-11",
+     "2027-12-31"
+    ],
+    "7": [
+     "2026-12-09",
+     "2026-12-31",
+     "2027-02-10",
+     "2027-03-11",
+     "2027-10-08",
+     "2027-12-31"
+    ],
+    "10": [
+     "2026-12-03",
+     "2026-12-30",
+     "2026-12-31",
+     "2027-01-31",
+     "2027-02-28",
+     "2027-03-11",
+     "2027-10-08",
+     "2027-12-31",
+     "2027-12-31"
+    ]
+   },
+   "by_year": {
+    "2026": 699,
+    "2027": 1482
+   }
+  },
+  "x": {
+   "type": "number",
+   "n": 2702,
+   "missing": 0,
+   "min": 5981423.40593,
+   "max": 6020589.40578,
+   "mean": 6003875.9401,
+   "median": 6004397.2433515005,
+   "std": 7879.2463,
+   "quantiles": {
+    "5": [
+     5996955.2017,
+     6001977.6641,
+     6007200.5787,
+     6011633.1979
+    ],
+    "7": [
+     5994178.7445,
+     5998841.3372,
+     6002625.3898,
+     6006459.7796,
+     6009459.6469,
+     6012878.5913
+    ],
+    "10": [
+     5993127.0231,
+     5996955.2017,
+     5999255.803,
+     6001977.6641,
+     6004397.2434,
+     6007200.5787,
+     6009139.0443,
+     6011633.1979,
+     6013807.5734
+    ]
+   }
+  },
+  "y": {
+   "type": "number",
+   "n": 2702,
+   "missing": 0,
+   "min": 2086027.30266,
+   "max": 2122384.05009,
+   "mean": 2105406.7796,
+   "median": 2107542.876125,
+   "std": 9771.4267,
+   "quantiles": {
+    "5": [
+     2094261.6552,
+     2103376.74,
+     2110315.2983,
+     2114294.9853
+    ],
+    "7": [
+     2092699.3027,
+     2099062.3326,
+     2104295.6284,
+     2109866.2132,
+     2112514.4977,
+     2115384.8614
+    ],
+    "10": [
+     2090887.9186,
+     2094261.6552,
+     2099507.4478,
+     2103376.74,
+     2107542.8761,
+     2110315.2983,
+     2112239.5819,
+     2114294.9853,
+     2116884.5136
+    ]
+   }
+  },
+  "latitude": {
+   "type": "number",
+   "n": 2702,
+   "missing": 0,
+   "min": 37.70821500444263,
+   "max": 37.80811367832506,
+   "mean": 37.7613,
+   "median": 37.76676482376529,
+   "std": 0.0268,
+   "quantiles": {
+    "5": [
+     37.7313,
+     37.7552,
+     37.7748,
+     37.7858
+    ],
+    "7": [
+     37.7267,
+     37.7434,
+     37.758,
+     37.7736,
+     37.7808,
+     37.7889
+    ],
+    "10": [
+     37.7217,
+     37.7313,
+     37.7447,
+     37.7552,
+     37.7668,
+     37.7748,
+     37.7799,
+     37.7858,
+     37.7928
+    ]
+   }
+  },
+  "longitude": {
+   "type": "number",
+   "n": 2702,
+   "missing": 0,
+   "min": -122.50727069079234,
+   "max": -122.37107553392106,
+   "mean": -122.4297,
+   "median": -122.42833383536443,
+   "std": 0.0273,
+   "quantiles": {
+    "5": [
+     -122.4532,
+     -122.4365,
+     -122.419,
+     -122.4024
+    ],
+    "7": [
+     -122.4623,
+     -122.4472,
+     -122.4347,
+     -122.4213,
+     -122.4104,
+     -122.3986
+    ],
+    "10": [
+     -122.4663,
+     -122.4532,
+     -122.4456,
+     -122.4365,
+     -122.4283,
+     -122.419,
+     -122.4119,
+     -122.4024,
+     -122.3951
+    ]
+   }
+  }
+ }
+}
