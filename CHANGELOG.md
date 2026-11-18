@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026.11.18.5
+- **Shoreline 1850–1857** (`data/layers/shoreline.geojson`): San Francisco's shoreline from three NOAA Office of Coast Survey historical surveys (T-sheets), as one layer with a `survey` field: `1850–52` (register CA37A02), `1853` (CA37B07) and `1857` (CA37B08). 417 lines, with `kind` in plain words (mean high water, marsh or swamp edge, man-made, wharf or quay…), `year`, `sheet` (the T-sheet number) and `register`. The lines that are only the edge of a map sheet ("User Added Line", cartographic limit) are left out. The three exports are kept as they came in `data/uploads/shoreline/`.
+- `data/layers/index.json` entries now have `categories` (the category field's values with counts) and, for the shoreline, `colors` (one per survey), so apps can show and color the categories.
+- `build_layers.py` builds only the layers you name (`python3 scripts/build_layers.py shoreline`), and can build a layer from a folder of files.
+
 ## 2026.11.18.4
 - **`data/layers/index.json`:** a list of the small map layers (Muni, bike network, Slow Streets, schools, stations, health, city lands), with each one's label, file, geometry, feature count, fields, the field to split it by and its DataSF source. Apps can now list these the same way as `data/tiles/index.json`, without knowing them; Joiner's new Layers menu reads both. `build_layers.py` writes it after every build, and `--index` writes only the list.
 

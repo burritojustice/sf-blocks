@@ -17,3 +17,8 @@ City layers that apps draw on the map (Block Party's Layers menu). Each is trimm
 ## Rebuilding
 
 `python3 scripts/build_layers.py` finds each source in `../uploads/` by its dataset title, taking the newest date stamp, and rebuilds all seven, then `index.json`. `--index` rewrites only `index.json`. `--download` fetches fresh copies from DataSF first (except schools). The dataset list is `SOURCES` at the top of the script.
+
+## Shoreline 1850–1857
+
+`shoreline.geojson` is built from `../uploads/shoreline/`, one GeoJSON per NOAA historical survey (T-sheet), exported through Selecter from NOAA's shapefiles ([NOAA historical surveys](https://shoreline.noaa.gov/t-sheets.html)). The survey comes from the register number in each file's name (`CA37A02` → 1850–52, `CA37B07` → 1853, `CA37B08` → 1857). To add a survey, put its export there with its register number in the name, add the number to `SHORE_SURVEY` in `build_layers.py` (and a color in `LAYER_INFO`), and run `python3 scripts/build_layers.py shoreline`.
+

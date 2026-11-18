@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-# sf-blocks 2026.11.18.4: master copy, moved here from civic-joy-fund/block-party.
+# sf-blocks 2026.11.18.5: master copy, moved here from civic-joy-fund/block-party.
 """Build the small map overlay files in data/layers/ from the raw downloads in data/uploads/.
 
     python3 scripts/build_layers.py              # reads data/uploads/, writes data/layers/ and its index.json
     python3 scripts/build_layers.py --index      # only rewrites data/layers/index.json from the files there
+    python3 scripts/build_layers.py shoreline    # builds only the layers named
     python3 scripts/build_layers.py --download   # fetch fresh copies of every dataset first
 
 Standard library only. Any dataset in SOURCES with no file in data/uploads/ is downloaded from DataSF's API
@@ -31,6 +32,10 @@ SRC, OUT = ROOT / 'data' / 'uploads', ROOT / 'data' / 'layers'
 
 # out name -> where it comes from. 'title' is the DataSF dataset title, which is also how downloads are named.
 SOURCES = {
+    # NOAA Office of Coast Survey historical surveys (T-sheets), exported through Selecter: one GeoJSON per
+    # survey in data/uploads/shoreline/, built into one layer with a survey field (not from DataSF)
+    'shoreline': {'title': 'NOAA historical shoreline surveys (T-sheets)', 'id': None, 'format': 'GeoJSON',
+                  'url': 'https://shoreline.noaa.gov/t-sheets.html', 'also': ['shoreline'], 'folder': 'shoreline'},
     'muni': {'title': 'Muni Simple Routes', 'id': '9exe-acju', 'format': 'GeoJSON',
              'url': 'https://data.sf.gov/Transportation/Muni-Simple-Routes/9exe-acju/about_data',
              'also': ['muni']},
@@ -68,7 +73,21 @@ LAYER_INFO = {
     'stations': {'label': 'Fire and police stations', 'category': 'kind', 'name': 'name'},
     'health': {'label': 'Health care facilities', 'category': 'kind', 'name': 'name'},
     'lands': {'label': 'City-owned land', 'category': 'cat', 'name': 'name'},
+    'shoreline': {'label': 'Shoreline 1850–1857', 'category': 'survey', 'name': 'kind',
+                  'colors': {'1850–52': '#1C7ED6', '1853': '#E8590C', '1857': '#2F9E44'}},
 }
+
+
+def cats(feats, field):
+    """the category field's values, most common first, with counts (up to 24), for apps' chips and keys"""
+    if not field:
+        return None
+    n = {}
+    for f in feats:
+        v = (f.get('properties') or {}).get(field)
+        if v not in (None, ''):
+            n[str(v)] = n.get(str(v), 0) + 1
+    return dict(sorted(n.items(), key=lambda kv: -kv[1])[:24]) or None
 
 
 def write_index():
@@ -93,6 +112,7 @@ def write_index():
         layers.append({'id': key, 'label': info['label'], 'file': p.name, 'format': 'geojson',
                        'geometry': kinds[0] if len(kinds) == 1 else kinds, 'features': len(feats), 'bytes': p.stat().st_size,
                        'fields': fields, 'category': info.get('category'), 'name': info.get('name'),
+                       'categories': cats(feats, info.get('category')), 'colors': info.get('colors'),
                        'title': src.get('title'), 'dataset': src.get('id'), 'page': src.get('url'), 'data_as_of': src.get('data_as_of')})
     out = OUT / 'index.json'
     out.write_text(json.dumps({'_doc': 'Small map layers: data/layers/<file>, GeoJSON, built by scripts/build_layers.py.', 'layers': layers}, indent=1) + '\n')
@@ -376,19 +396,55 @@ def build_health(p):
     write('health', feats, p)
 
 
+# NOAA's ATTRIBUTE codes in plain words
+SHORE_KIND = {'Natural.Mean High Water': 'Mean high water', 'Natural.Apparent.Marsh Or Swamp': 'Marsh or swamp (edge)',
+              'Man-made': 'Man-made', 'Man-made.Wharf Or Quay': 'Wharf or quay', 'Undetermined Alongshore Feature': 'Alongshore feature',
+              'Shoreline/Alongshore Feature Boundary': 'Shoreline / alongshore boundary', 'Undetermined.Approximate': 'Approximate'}
+# each survey file's register number → the survey's name on the map
+SHORE_SURVEY = {'CA37A02': '1850–52', 'CA37B07': '1853', 'CA37B08': '1857'}
+
+
+def build_shoreline(folder):
+    """data/uploads/shoreline/*.geojson (one per survey) → one layer. Lines that are only the edge of the map
+    sheet (NOAA class CARTOGRAPHIC LIMIT, "User Added Line") are left out; empty and system fields too."""
+    feats, files = [], sorted(folder.glob('*.geojson'))
+    for p in files:
+        reg = next((k for k in SHORE_SURVEY if k in p.name), None)
+        if not reg:
+            print(f'  shoreline: {p.name} has no known survey number in its name, skipped', flush=True)
+            continue
+        for f in json.loads(p.read_text())['features']:
+            pr, g = f.get('properties') or {}, geom(f.get('geometry'))
+            if not g or (pr.get('CLASS') or '').upper() == 'CARTOGRAPHIC LIMIT':
+                continue
+            note = (pr.get('INFORM') or '').replace('\x00', '').strip()
+            att = pr.get('ATTRIBUTE') or ''
+            feats.append(feat(g, {'id': pr.get('FEATURE_ID'), 'survey': SHORE_SURVEY[reg], 'register': reg,
+                                  'year': int(str(pr.get('SRC_DATE'))[:4]) if str(pr.get('SRC_DATE') or '')[:4].isdigit() else None,
+                                  'sheet': pr.get('SOURCE_ID'), 'kind': SHORE_KIND.get(att, att), 'class': (pr.get('CLASS') or '').capitalize(),
+                                  'note': note or None}))
+    if files:
+        write('shoreline', feats, files[-1], None)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--download', action='store_true', help='download fresh copies of every dataset (except schools) first')
     ap.add_argument('--index', action='store_true', help='only rewrite data/layers/index.json from the files already there')
+    ap.add_argument('only', nargs='*', help='build only these layers (muni, bike, shoreline…); all when none')
     a = ap.parse_args()
     if a.index:
         write_index()
         return
     SRC.mkdir(exist_ok=True)
     jobs = {'muni': build_muni, 'bike': build_bike, 'schools': build_schools,
-            'stations': build_stations, 'health': build_health, 'slow': build_slow, 'lands': build_lands}
+            'stations': build_stations, 'health': build_health, 'slow': build_slow, 'lands': build_lands,
+            'shoreline': build_shoreline}
     for key, fn in jobs.items():
-        p = find(key)
+        if a.only and key not in a.only:
+            continue
+        # a layer built from a folder of files (shoreline) gets the folder
+        p = (SRC / SOURCES[key]['folder']) if SOURCES[key].get('folder') and (SRC / SOURCES[key]['folder']).is_dir() else find(key)
         if (not p or (a.download and key != 'schools')) and SOURCES[key]['id']:
             try:
                 p = download(key)
