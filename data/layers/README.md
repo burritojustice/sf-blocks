@@ -12,6 +12,8 @@ City layers that apps draw on the map (Block Party's Layers menu). Each is trimm
 | `slow.geojson` | lines | [Slow Streets](https://data.sf.gov/Transportation/Slow-Streets/hkz3-itiu/about_data) `hkz3-itiu` | `Slow_Streets_20261012.geojson` |
 | `lands.geojson` | polygons | [City Lands](https://data.sf.gov/City-Infrastructure/City-Lands/gtnh-hgvs/about_data) `gtnh-hgvs` | `City_Lands_20261013.geojson` |
 
+`index.json` lists them for apps (label, file, geometry, fields, the field to split by, source), in the same shape as `../tiles/index.json`.
+
 ## Rebuilding
 
-`python3 scripts/build_layers.py` finds each source in `../uploads/` by its dataset title, taking the newest date stamp, and rebuilds all seven. `--download` fetches fresh copies from DataSF first (except schools). The dataset list is `SOURCES` at the top of the script.
+`python3 scripts/build_layers.py` finds each source in `../uploads/` by its dataset title, taking the newest date stamp, and rebuilds all seven, then `index.json`. `--index` rewrites only `index.json`. `--download` fetches fresh copies from DataSF first (except schools). The dataset list is `SOURCES` at the top of the script.

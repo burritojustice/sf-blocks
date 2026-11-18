@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.11.18.4
+- **`data/layers/index.json`:** a list of the small map layers (Muni, bike network, Slow Streets, schools, stations, health, city lands), with each one's label, file, geometry, feature count, fields, the field to split it by and its DataSF source. Apps can now list these the same way as `data/tiles/index.json`, without knowing them; Joiner's new Layers menu reads both. `build_layers.py` writes it after every build, and `--index` writes only the list.
+
 ## 2026.11.18.3
 - Proposed map layer `utility_excavation_permits` (fields to review)
 
