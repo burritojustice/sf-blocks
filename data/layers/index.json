@@ -16,6 +16,18 @@
    },
    "category": "service",
    "name": "route",
+   "categories": {
+    "Grid": 34,
+    "Connector": 24,
+    "Frequent Local": 22,
+    "Muni Metro": 14,
+    "Specialized": 11,
+    "Rapid Bus": 10,
+    "Cable Car": 6,
+    "Owl": 4,
+    "Historic": 2
+   },
+   "colors": null,
    "title": "Muni Simple Routes",
    "dataset": "9exe-acju",
    "page": "https://data.sf.gov/Transportation/Muni-Simple-Routes/9exe-acju/about_data",
@@ -37,6 +49,13 @@
    },
    "category": "cls",
    "name": "kind",
+   "categories": {
+    "CLASS III": 2646,
+    "CLASS II": 1816,
+    "CLASS IV": 605,
+    "CLASS I": 371
+   },
+   "colors": null,
    "title": "MTA Bike Network Linear Features",
    "dataset": "ygmz-vaxd",
    "page": "https://data.sf.gov/Transportation/MTA-Bike-Network-Linear-Features/ygmz-vaxd/about_data",
@@ -59,6 +78,11 @@
    },
    "category": "status",
    "name": "corridor",
+   "categories": {
+    "Implemented": 222,
+    "Planned": 18
+   },
+   "colors": null,
    "title": "Slow Streets",
    "dataset": "hkz3-itiu",
    "page": "https://data.sf.gov/Transportation/Slow-Streets/hkz3-itiu/about_data",
@@ -79,6 +103,19 @@
    },
    "category": "type",
    "name": "name",
+   "categories": {
+    "Elementary Schools (Public)": 76,
+    "Elementary School (Private)": 69,
+    "K-12 Schools (Private)": 20,
+    "Intermediate/Middle Schools (Public)": 16,
+    "High Schools (Public)": 16,
+    "High Schools (Private)": 12,
+    "Preschool": 11,
+    "Kindergartens (Private)": 5,
+    "Alternative Schools of Choice": 4,
+    "Continuation High Schools": 2
+   },
+   "colors": null,
    "title": "Schools",
    "dataset": "7e7j-59qk",
    "page": "https://data.sf.gov/Economy-and-Community/Schools/7e7j-59qk/about_data",
@@ -98,6 +135,11 @@
    },
    "category": "kind",
    "name": "name",
+   "categories": {
+    "fire": 56,
+    "police": 21
+   },
+   "colors": null,
    "title": "City-owned Facilities: Fire and Police",
    "dataset": "wt27-4jim",
    "page": "https://data.sf.gov/City-Infrastructure/City-owned-Facilities-Fire-and-Police/wt27-4jim/about_data",
@@ -119,6 +161,11 @@
    },
    "category": "kind",
    "name": "name",
+   "categories": {
+    "clinic": 65,
+    "hospital": 13
+   },
+   "colors": null,
    "title": "Health Care Facilities",
    "dataset": "jhsu-2pka",
    "page": "https://data.sf.gov/Health-and-Social-Services/Health-Care-Facilities/jhsu-2pka/about_data",
@@ -141,10 +188,63 @@
    },
    "category": "cat",
    "name": "name",
+   "categories": {
+    "park": 235,
+    "school": 146,
+    "works": 144,
+    "puc": 91,
+    "realestate": 72,
+    "other": 72,
+    "mta": 54,
+    "fire": 51,
+    "port": 42,
+    "housing": 40,
+    "library": 28,
+    "ocii": 22,
+    "health": 20,
+    "police": 13,
+    "openspace": 4
+   },
+   "colors": null,
    "title": "City Lands",
    "dataset": "gtnh-hgvs",
    "page": "https://data.sf.gov/City-Infrastructure/City-Lands/gtnh-hgvs/about_data",
    "data_as_of": "2026-09-24"
+  },
+  {
+   "id": "shoreline",
+   "label": "Shoreline 1850\u20131857",
+   "file": "shoreline.geojson",
+   "format": "geojson",
+   "geometry": "LineString",
+   "features": 417,
+   "bytes": 638829,
+   "fields": {
+    "id": "number",
+    "survey": "text",
+    "register": "text",
+    "year": "number",
+    "sheet": "text",
+    "kind": "text",
+    "class": "text",
+    "note": "text"
+   },
+   "category": "survey",
+   "name": "kind",
+   "categories": {
+    "1857": 165,
+    "1850\u201352": 146,
+    "1853": 106
+   },
+   "colors": {
+    "1850\u201352": "#1C7ED6",
+    "1853": "#E8590C",
+    "1857": "#2F9E44"
+   },
+   "title": "NOAA historical shoreline surveys (T-sheets)",
+   "dataset": null,
+   "page": "https://shoreline.noaa.gov/t-sheets.html",
+   "data_as_of": null
   }
  ]
 }
