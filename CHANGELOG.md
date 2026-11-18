@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.11.18.3
+- Proposed map layer `utility_excavation_permits` (fields to review)
+
 ## 2026.11.18
 - Proposed map layer `high_injury_network` (fields to review)
 
