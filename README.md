@@ -24,7 +24,7 @@ Another city can start its own repo with the same layout (nyc-blocks, london-blo
 | `data/boundaries/` | Polygons to join to: districts, ZIPs, five neighborhood sets, tracts, Cultural Districts, Bay Area counties and ZIPs, precincts and the districts made from them. `index.json` lists them; `sources.json` says where each comes from and how names match |
 | `data/aliases.json` | Other names people use for areas ("South Bayshore" → Bayview, "Calle 24" → Calle 24 Latino Cultural District), by boundary set. One list for every app and script |
 | `data/layers/` | City layers drawn on maps: schools, fire and police stations, health care (points); Muni, bike network, Slow Streets (lines); city-owned lands (polygons) |
-| `data/osm/` | OpenStreetMap ways in the city (streets, paths, bike paths, stairs, sidewalks) as pieces with ids and the CNNs they run along: `ways.pmtiles`, `gaps/` (pieces along no city street) and `index.json`. Built by `scripts/build_osm.py` through the Action (Kind: OSM ways). © OpenStreetMap contributors, ODbL |
+| `data/osm/` | OpenStreetMap ways in the city (streets, paths, bike paths, stairs, sidewalks) as pieces with ids and the CNNs they run along: `ways.pmtiles`, `gaps/` (pieces along no city street) and `index.json`. Built by `scripts/build_osm.py` through Actions → Rebuild data → OSM ways. © OpenStreetMap contributors, ODbL |
 | `data/search/` | Search index for Address / Places search: businesses (name, owner, address, NAICS), every address with its point, lot and CNN, landmarks, and NAICS titles. Built by `scripts/build_search.py` |
 | `data/facts/` | Facts per street block (CNN), worked out the way the apps' cards do: `streets.json` (lots, homes, land use, zoning, trees, businesses, people, districts) and `lots.json` (each block's lot ids and census blocks). Built by `scripts/build_facts.py` from the parcels, tiles and boundaries here |
 | `data/Land_Use_with_Active_Parcel_Information.pmtiles` | Parcels with land use, as vector tiles (24 MB) |
@@ -35,7 +35,8 @@ Another city can start its own repo with the same layout (nyc-blocks, london-blo
 | `reference/` | Public contact lists: SF Planning's neighborhood groups, Cultural Districts |
 | `scripts/build_data.py` | CSVs → `data/streets.json` |
 | `scripts/build_layers.py` | `data/uploads/` → `data/layers/` |
-| `scripts/add_boundary_set.py` | Adds or refreshes one boundary set in one step (what the Action runs) |
+| `scripts/add_boundary_set.py` | Adds or refreshes one boundary set in one step (what the Add areas Action runs) |
+| `scripts/stamp_version.py` | After a merge, sets `VERSION` and moves the notes in `changes/` into `CHANGELOG.md` (the Stamp version Action) |
 | `scripts/get_layers.py` | DataSF (or a local export) → `data/boundaries/` and its `index.json` |
 | `scripts/build_neighborhood_groups.py` | SF Planning's list → `reference/neighborhood-groups/neighborhood_groups.json` |
 | `matcher/` | **Matcher**, the web page for the two matchers below: https://burritojustice.github.io/sf-blocks/matcher/ |
@@ -47,7 +48,7 @@ Another city can start its own repo with the same layout (nyc-blocks, london-blo
 
 ### Rebuilding the boundaries
 
-To add a new set or refresh one, see **[ADDING-DATA.md](ADDING-DATA.md)**: a GitHub Action does it from a DataSF link or an uploaded file and opens a pull request, no command line needed.
+To add a new set or refresh one, see **[ADDING-DATA.md](ADDING-DATA.md)**: GitHub Actions (Add a map layer, Add areas, Rebuild data) do it from a DataSF link or an uploaded file and open a pull request, no command line needed.
 
 
 `data/boundaries/sources.json` lists each set: its DataSF dataset (or local files, or another set to dissolve), join key, fields to keep and matching rules. `scripts/get_layers.py` downloads and cleans them into `data/boundaries/<id>.geojson` and writes the manifest `index.json`, which the apps read:

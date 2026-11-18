@@ -1,0 +1,37 @@
+# Actions → "Add a map layer" → Run workflow: points, lines or shapes for the maps (bus stops, storm drains,
+# permits), from a DataSF dataset. One run does it all: it picks the fields worth keeping, builds the layer,
+# and opens a pull request with a report and preview links. To change the fields afterwards, edit the
+# layer's file (data/tiles/sources/<id>.json) on that pull request: it's rebuilt by itself.
+name: Add a map layer
+on:
+  workflow_dispatch:
+    inputs:
+      dataset:
+        description: 'DataSF dataset: its link, or its id (like i926-ujnc)'
+        required: true
+      id:
+        description: 'A short name for it: lowercase words joined by _ (bus_stops, storm_drains)'
+        required: true
+      label:
+        description: "Its title in the apps (Bus stops). Blank: the dataset's name"
+        required: false
+      year:
+        description: 'The year the data describes (2016), or blank for current'
+        required: false
+      keep:
+        description: 'Only these fields, comma separated. Blank: every field worth keeping'
+        required: false
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+jobs:
+  build:
+    uses: ./.github/workflows/build-data.yml
+    with:
+      kind: Map layer
+      id: ${{ inputs.id }}
+      source: ${{ inputs.dataset }}
+      label: ${{ inputs.label }}
+      year: ${{ inputs.year }}
+      keep: ${{ inputs.keep }}

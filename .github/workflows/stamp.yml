@@ -1,0 +1,28 @@
+# After a pull request merges: stamp VERSION, move the notes in changes/ into CHANGELOG.md, stamp the
+# changed scripts' first lines (scripts/stamp_version.py). Pull requests only add changes/<name>.md, so they
+# never conflict over VERSION or CHANGELOG.md. Pushes made by this action don't start it again.
+name: Stamp version
+on:
+  push:
+    branches: [main]
+    paths: ['changes/**']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: stamp
+jobs:
+  stamp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Stamp
+        run: |
+          python3 scripts/stamp_version.py | tee -a "$GITHUB_STEP_SUMMARY"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A VERSION CHANGELOG.md changes scripts
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -q -m "Version $(cat VERSION)"
+          git push origin HEAD:main

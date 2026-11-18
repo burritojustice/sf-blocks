@@ -1,71 +1,54 @@
-# Add or refresh data without a command line: Actions → "Add or refresh data" → Run workflow.
+# The builder behind "Add a map layer", "Add areas" and "Rebuild data" (and the rebuild when a pull request
+# edits a map layer's entry). Those are the ones to run, from Actions; this one only runs when they call it.
 #   Boundary set: areas to join to (scripts/add_boundary_set.py), from DataSF or a file in data/uploads/.
 #   Map layer: points, lines or polygons for the maps (scripts/build_tiles.py), tiled with tippecanoe when
-#     big. A new layer's first run only proposes its fields (a report and an entry in data/tiles/sources.json
-#     to edit on the branch); run it again on that branch to build. A layer already listed is rebuilt.
-#   Search index: the businesses, addresses and landmarks apps search by name (scripts/build_search.py).
-#     Put anything in Set id (search).
-#   OSM ways: OpenStreetMap streets, paths, bike paths, stairs and sidewalks in the city, as pieces with ids
-#     (scripts/build_osm.py), from Geofabrik's Northern California extract, tiled into data/osm/ways.pmtiles.
-#     Put anything in Set id (osm).
-#   Street facts: what each street block's card shows (lots, homes, land use, zoning, trees, businesses,
-#     people, districts) in data/facts/ (scripts/build_facts.py). Put anything in Set id (facts). It also
-#     reruns by itself after a Map layer build of street_trees or businesses, and after a Boundary set build of
-#     census_blocks or a district set, so the facts never fall behind their sources.
-# It opens a pull request with a report (or adds a commit to the branch it's run on).
-# Run it on main to get a new branch and PR; run it on another branch (say, one where you uploaded a file)
-# to add a commit to that branch.
+#     big. A new layer gets an entry in data/tiles/sources/<id>.json with the suggested fields and is built in
+#     the same run; edit that file on the pull request and the layer is rebuilt (rebuild-on-edit.yml).
+#   Search index (scripts/build_search.py), OSM ways (scripts/build_osm.py), Street facts
+#     (scripts/build_facts.py, which also reruns by itself after the street trees, businesses, census blocks
+#     or a district set are built, so the facts never fall behind).
+# It writes its notes in changes/<name>.md (the Stamp version action sets VERSION and CHANGELOG.md after the
+# merge) and opens a pull request with a report, or adds a commit to the branch it's run on.
 # Needs: Settings → Actions → General → Workflow permissions: "Read and write", and
 # "Allow GitHub Actions to create and approve pull requests".
-name: Add or refresh data
+name: Build data
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
-      kind:
-        description: 'What it is'
-        type: choice
-        options: [Boundary set, Map layer, Search index, OSM ways, Street facts]
-        default: Boundary set
-      id:
-        description: 'Set id: lowercase words joined by _, e.g. historic_districts'
-        required: true
-      source:
-        description: 'DataSF dataset id or page link (63x5-g3m4), or a file in data/uploads/ (boundary sets). Blank: refresh from its dataset'
-        required: false
-      name_field:
-        description: 'Field that names each area (what rows match). Blank: pick one'
-        required: false
-      label:
-        description: "Title in the apps, e.g. Historic Districts. Blank: the dataset's name"
-        required: false
-      year:
-        description: 'Map layers: the year the data describes (2016), or current. Blank: current'
-        required: false
-      tab:
-        description: 'Joiner tab (boundary sets)'
-        type: choice
-        options: [Other, Neighborhood, District, ZIP]
-        default: Other
-      keep:
-        description: 'Other fields to keep, comma separated. Blank: readable text fields'
-        required: false
+      kind: { type: string, required: true }
+      id: { type: string, required: false, default: '' }
+      source: { type: string, required: false, default: '' }
+      name_field: { type: string, required: false, default: '' }
+      label: { type: string, required: false, default: '' }
+      year: { type: string, required: false, default: '' }
+      tab: { type: string, required: false, default: 'Other' }
+      keep: { type: string, required: false, default: '' }
+      branch: { type: string, required: false, default: '' }
 permissions:
   contents: write
   pull-requests: write
+  actions: write
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.branch || github.ref }}
       - name: Branch
         id: branch
         env:
           IN_ID: ${{ inputs.id }}
           IN_KIND: ${{ inputs.kind }}
+          IN_BRANCH: ${{ inputs.branch }}
         run: |
-          if ! [[ "$IN_ID" =~ ^[a-z][a-z0-9_]{2,40}$ ]]; then echo "Bad id: $IN_ID"; exit 1; fi
+          case "$IN_KIND" in "Map layer"|"Boundary set")
+            if ! [[ "$IN_ID" =~ ^[a-z][a-z0-9_]{2,40}$ ]]; then echo "The id should be lowercase words joined by _, like bus_stops (got: $IN_ID)"; exit 1; fi;;
+          *) IN_ID=$(echo "$IN_KIND" | tr 'A-Z ' 'a-z_');; esac
+          echo "id=$IN_ID" >> "$GITHUB_OUTPUT"
+          if [ -n "$IN_BRANCH" ]; then echo "name=$IN_BRANCH" >> "$GITHUB_OUTPUT"; echo "new=0" >> "$GITHUB_OUTPUT"; exit 0; fi
           if [ "$GITHUB_REF_NAME" = main ]; then
-            pre=$([ "$IN_KIND" = "Map layer" ] && echo layer || echo boundary)
+            case "$IN_KIND" in "Map layer") pre=layer;; "Boundary set") pre=areas;; *) pre=rebuild;; esac
             b="$pre-$IN_ID-$(date +%Y%m%d)-$GITHUB_RUN_NUMBER"; git checkout -b "$b"; echo "new=1" >> "$GITHUB_OUTPUT"
           else b="$GITHUB_REF_NAME"; echo "new=0" >> "$GITHUB_OUTPUT"; fi
           echo "name=$b" >> "$GITHUB_OUTPUT"
@@ -106,55 +89,54 @@ jobs:
           IN_LABEL: ${{ inputs.label }}
           IN_YEAR: ${{ inputs.year }}
           IN_KEEP: ${{ inputs.keep }}
+          BRANCH: ${{ steps.branch.outputs.name }}
           GH_TOKEN: ${{ github.token }}
         run: |
           ds=$(echo "$IN_SOURCE" | grep -oE '[a-z0-9]{4}-[a-z0-9]{4}' | tail -1 || true)
-          if python3 -c "import json,sys; sys.exit(0 if any(l['id']=='$IN_ID' for l in json.load(open('data/tiles/sources.json'))['layers']) else 1)"; then
-            mkdir -p "$RUNNER_TEMP/raw"
-            python3 scripts/build_tiles.py "$IN_ID" --tippecanoe ~/tippecanoe --raw "$RUNNER_TEMP/raw" --report "$RUNNER_TEMP/body.md"
-            # raw downloads: in data/uploads/ when small, otherwise attached to a release (archived, not served)
-            for f in "$RUNNER_TEMP"/raw/*; do
-              name="$(basename "${f%.*}")_$(date +%Y%m%d).${f##*.}"
-              if [ "$(stat -c %s "$f")" -lt 10000000 ]; then cp "$f" "data/uploads/$name"; echo "- Raw copy: \`data/uploads/$name\`" >> "$RUNNER_TEMP/body.md"
-              else
-                gzip -9 -c "$f" > "$RUNNER_TEMP/$name.gz"
-                tag="raw-$IN_ID-$(date +%Y%m%d)-$GITHUB_RUN_NUMBER"
-                gh release create "$tag" "$RUNNER_TEMP/$name.gz" --title "Raw download: $IN_ID $(date +%Y-%m-%d)" --notes "Archived by the Add or refresh data action (run $GITHUB_RUN_NUMBER). Not used by the apps." --target "$GITHUB_SHA" > /dev/null
-                echo "- Raw copy (too big for the repo): release [$tag]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$tag)" >> "$RUNNER_TEMP/body.md"
-              fi
-            done
-            title="Built map layer \`$IN_ID\`"
+          : > "$RUNNER_TEMP/body.md"
+          if python3 -c "import sys; sys.path.insert(0, 'scripts'); import build_tiles as b; sys.exit(0 if any(l['id'] == '$IN_ID' for l in b.load_sources()) else 1)"; then
+            verb=Rebuilt
           else
-            [ -n "$ds" ] || { echo "A new layer needs a DataSF dataset id in Source"; exit 1; }
-            python3 scripts/build_tiles.py --profile "$ds" --add "$IN_ID" --label "$IN_LABEL" --year "${IN_YEAR:-current}" --keep "$IN_KEEP" --report "$RUNNER_TEMP/body.md" > /dev/null
-            title="Proposed map layer \`$IN_ID\` (fields to review)"
+            # a new layer: its entry with the suggested fields, then build it in the same run
+            [ -n "$ds" ] || { echo "A new layer needs its DataSF dataset (a link or an id like 63x5-g3m4)"; exit 1; }
+            python3 scripts/build_tiles.py --profile "$ds" --add "$IN_ID" --label "$IN_LABEL" --year "${IN_YEAR:-current}" --keep "$IN_KEEP" --report "$RUNNER_TEMP/profile.md" > /dev/null
+            verb=Added
           fi
-          v=$(date +%Y.%m.%d); [ "$(cat VERSION)" \> "$v" ] || [ "$(cat VERSION)" = "$v" ] && v="$(cat VERSION).$GITHUB_RUN_NUMBER"
-          echo "$v" > VERSION
-          { echo "**$title**"; echo; cat "$RUNNER_TEMP/body.md"; } > "$RUNNER_TEMP/summary.md"
-          python3 - "$v" "$RUNNER_TEMP/summary.md" <<'PY'
-          import sys, pathlib
-          v, body = sys.argv[1], pathlib.Path(sys.argv[2]).read_text()
-          c = pathlib.Path('CHANGELOG.md'); s = c.read_text()
-          lines = [l for l in body.splitlines()[2:] if l.startswith('-')] or ['- ' + body.splitlines()[0].strip('*')]
-          c.write_text(s.replace('# Changelog\n\n', f'# Changelog\n\n## {v}\n' + '\n'.join(lines) + '\n\n', 1))
-          PY
+          mkdir -p "$RUNNER_TEMP/raw"
+          python3 scripts/build_tiles.py "$IN_ID" --tippecanoe ~/tippecanoe --raw "$RUNNER_TEMP/raw" --report "$RUNNER_TEMP/body.md"
+          # raw downloads: in data/uploads/ when small, otherwise attached to a release (archived, not served)
+          for f in "$RUNNER_TEMP"/raw/*; do
+            [ -e "$f" ] || continue
+            name="$(basename "${f%.*}")_$(date +%Y%m%d).${f##*.}"
+            if [ "$(stat -c %s "$f")" -lt 10000000 ]; then cp "$f" "data/uploads/$name"; echo "- Raw copy: \`data/uploads/$name\`" >> "$RUNNER_TEMP/body.md"
+            else
+              gzip -9 -c "$f" > "$RUNNER_TEMP/$name.gz"
+              tag="raw-$IN_ID-$(date +%Y%m%d)-$GITHUB_RUN_NUMBER"
+              gh release create "$tag" "$RUNNER_TEMP/$name.gz" --title "Raw download: $IN_ID $(date +%Y-%m-%d)" --notes "Archived by the Build data action (run $GITHUB_RUN_NUMBER). Not used by the apps." --target "$GITHUB_SHA" > /dev/null
+              echo "- Raw copy (too big for the repo): release [$tag]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$tag)" >> "$RUNNER_TEMP/body.md"
+            fi
+          done
+          # see it in the apps before merging: they read sf-blocks from this branch
+          live="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$BRANCH/"
+          { echo; echo "**Preview** (reads this branch): [Joiner](https://burritojustice.github.io/joiner/?sfblocks=$live&layers=$IN_ID) · [Block Party](https://burritojustice.github.io/block-party/?sfblocks=$live)"; } >> "$RUNNER_TEMP/body.md"
+          f=data/tiles/sources/$IN_ID.json; [ -f "$f" ] || f=data/tiles/sources.json
+          { echo; echo "To change the fields, categories or zooms, edit \`$f\` on this pull request's branch: the layer is rebuilt by itself."; } >> "$RUNNER_TEMP/body.md"
+          [ -f "$RUNNER_TEMP/profile.md" ] && { echo; echo '<details><summary>Field report</summary>'; echo; cat "$RUNNER_TEMP/profile.md"; echo; echo '</details>'; } >> "$RUNNER_TEMP/body.md"
+          { echo "**$verb map layer \`$IN_ID\`**"; echo; cat "$RUNNER_TEMP/body.md"; } > "$RUNNER_TEMP/summary.md"
+          grep -m1 '^- \*\*' "$RUNNER_TEMP/body.md" > "changes/layer-$IN_ID.md" || echo "- $verb map layer \`$IN_ID\`." > "changes/layer-$IN_ID.md"
           cat "$RUNNER_TEMP/summary.md" >> "$GITHUB_STEP_SUMMARY"
       - name: Build the search index
         if: inputs.kind == 'Search index'
         run: |
           python3 scripts/build_search.py 2> "$RUNNER_TEMP/log.txt"
-          v=$(date +%Y.%m.%d); [ "$(cat VERSION)" \> "$v" ] || [ "$(cat VERSION)" = "$v" ] && v="$(cat VERSION).$GITHUB_RUN_NUMBER"
-          echo "$v" > VERSION
-          python3 - "$v" "$RUNNER_TEMP/summary.md" <<'PY'
+          python3 - "$RUNNER_TEMP/summary.md" <<'PY'
           import sys, json, pathlib
-          v, out = sys.argv[1], pathlib.Path(sys.argv[2])
+          out = pathlib.Path(sys.argv[1])
           i = json.loads(pathlib.Path('data/search/index.json').read_text())
           line = (f"- **Search index rebuilt:** {i['businesses']['n']:,} businesses (DataSF `{i['businesses']['dataset']}`, {i['businesses']['as_of']}), "
                   f"{i['addresses']['n']:,} addresses on {len(i['streets']):,} streets and {i['landmarks']['n']:,} landmarks (`{i['addresses']['dataset']}`, {i['addresses']['as_of']}).")
           out.write_text('**Rebuilt the search index**\n\n' + line + '\n')
-          c = pathlib.Path('CHANGELOG.md'); s = c.read_text()
-          c.write_text(s.replace('# Changelog\n\n', f'# Changelog\n\n## {v}\n{line}\n\n', 1))
+          pathlib.Path('changes/rebuild-search.md').write_text(line + '\n')
           PY
           cat "$RUNNER_TEMP/summary.md" >> "$GITHUB_STEP_SUMMARY"
       - name: Build the OSM ways
@@ -177,17 +159,14 @@ jobs:
             "$(echo "scale=1; $(stat -c %s data/osm/ways.pmtiles)/1000000" | bc)" "$(echo "scale=1; $(stat -c %s "$T/no-sidewalks.pmtiles")/1000000" | bc)" >> "$T/body.md"
           printf -- '- Downloads: Northern California %s MB, San Francisco %s MB, its highway ways %s MB.\n' \
             "$(echo "scale=0; $(stat -c %s "$T/norcal.osm.pbf")/1000000" | bc)" "$(echo "scale=1; $(stat -c %s "$T/sf.osm.pbf")/1000000" | bc)" "$(echo "scale=1; $(stat -c %s "$T/sf-highways.osm")/1000000" | bc)" >> "$T/body.md"
-          v=$(date +%Y.%m.%d); [ "$(cat VERSION)" \> "$v" ] || [ "$(cat VERSION)" = "$v" ] && v="$(cat VERSION).$GITHUB_RUN_NUMBER"
-          echo "$v" > VERSION
           { echo "**Built the OSM ways ($asof)**"; echo; cat "$T/body.md"; } > "$T/summary.md"
-          python3 - "$v" "$asof" <<'PY'
+          python3 - "$asof" <<'PY'
           import sys, json, pathlib
-          v, asof = sys.argv[1], sys.argv[2]
+          asof = sys.argv[1]
           i = json.loads(pathlib.Path('data/osm/index.json').read_text())
           line = (f"- **OSM ways** ({asof}): {i['pieces']:,} pieces from {i['ways']:,} ways; {sum(i['gaps'].values()):,} run along no city street "
                   f"(`data/osm/ways.pmtiles`, `data/osm/gaps/`). © OpenStreetMap contributors, ODbL.")
-          c = pathlib.Path('CHANGELOG.md'); s = c.read_text()
-          c.write_text(s.replace('# Changelog\n\n', f'# Changelog\n\n## {v}\n{line}\n\n', 1))
+          pathlib.Path('changes/rebuild-osm.md').write_text(line + '\n')
           PY
           cat "$T/summary.md" >> "$GITHUB_STEP_SUMMARY"
       - name: Build the street facts
@@ -199,48 +178,44 @@ jobs:
           IN_KIND: ${{ inputs.kind }}
         run: |
           python3 scripts/build_facts.py 2> "$RUNNER_TEMP/facts.txt"; cat "$RUNNER_TEMP/facts.txt"
-          if [ "$IN_KIND" = "Street facts" ]; then
-            v=$(date +%Y.%m.%d); [ "$(cat VERSION)" \> "$v" ] || [ "$(cat VERSION)" = "$v" ] && v="$(cat VERSION).$GITHUB_RUN_NUMBER"
-            echo "$v" > VERSION
-          else v=$(cat VERSION); fi
-          python3 - "$v" "$RUNNER_TEMP/summary.md" "$RUNNER_TEMP/facts.txt" "$IN_KIND" <<'PY'
+          python3 - "$RUNNER_TEMP/summary.md" "$RUNNER_TEMP/facts.txt" "$IN_KIND" <<'PY'
           import sys, json, pathlib
-          v, out, logf, kind = sys.argv[1], pathlib.Path(sys.argv[2]), pathlib.Path(sys.argv[3]), sys.argv[4]
+          out, logf, kind = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2]), sys.argv[3]
           d = json.loads(pathlib.Path('data/facts/streets.json').read_text())
           sizes = ' '.join(l.split(': ', 1)[1] for l in logf.read_text().splitlines() if l.startswith('wrote data/facts/streets'))
           line = f"- **Street facts rebuilt** for {len(d['rows']):,} street blocks ({sizes})."
-          if kind == 'Street facts':
-              out.write_text('**Rebuilt the street facts**\n\n' + line + '\n')
-              c = pathlib.Path('CHANGELOG.md'); s = c.read_text()
-              c.write_text(s.replace('# Changelog\n\n', f'# Changelog\n\n## {v}\n{line}\n\n', 1))
+          if kind == 'Street facts': out.write_text('**Rebuilt the street facts**\n\n' + line + '\n')
           else:
               with out.open('a') as f: f.write('\n' + line + '\n')
-              c = pathlib.Path('CHANGELOG.md'); s = c.read_text()
-              head = f'## {v}\n'
-              if head in s: c.write_text(s.replace(head, head + line + '\n', 1))
+          with open('changes/rebuild-facts.md', 'a') as f: f.write(line + '\n')
           PY
           cat "$RUNNER_TEMP/summary.md" >> "$GITHUB_STEP_SUMMARY"
       # the same checks as check.yml: GitHub doesn't run workflows on pull requests an action opens
       - name: Check data
+        env:
+          IN_KIND: ${{ inputs.kind }}
+          IN_ID: ${{ inputs.id }}
         run: |
           for f in region.json data/aliases.json data/boundaries/*.json data/search/*.json data/search/addresses/*.json $(ls data/facts/*.json 2>/dev/null) $(ls data/osm/*.json data/osm/gaps/*.json 2>/dev/null); do python3 -m json.tool "$f" > /dev/null || { echo "Bad JSON: $f"; exit 1; }; done
           python3 scripts/get_layers.py --check
-          python3 scripts/build_tiles.py --check
+          python3 scripts/build_tiles.py --check --require "$([ "$IN_KIND" = "Map layer" ] && echo "$IN_ID")"
           printf '\n**Checks passed:** the JSON files parse and every boundary set passes `get_layers.py --check`.\n' >> "$RUNNER_TEMP/summary.md"
       - name: Commit and open a pull request
         env:
           GH_TOKEN: ${{ github.token }}
-          IN_ID: ${{ inputs.id }}
+          IN_ID: ${{ steps.branch.outputs.id }}
           BRANCH: ${{ steps.branch.outputs.name }}
           NEW: ${{ steps.branch.outputs.new }}
           IN_KIND: ${{ inputs.kind }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A data VERSION CHANGELOG.md
+          git add -A data changes
           if git diff --cached --quiet; then echo "Nothing changed."; exit 0; fi
-          git commit -m "$(head -1 "$RUNNER_TEMP/summary.md" | tr -d '*')" -m "Run by ${GITHUB_ACTOR} with the Add or refresh a boundary set action."
+          git commit -m "$(head -1 "$RUNNER_TEMP/summary.md" | tr -d '*')" -m "Run by ${GITHUB_ACTOR} with the Build data action."
           git push origin "HEAD:$BRANCH"
+          # pushes from an action don't start other workflows, but a dispatch does: run the PR checks on this commit
+          gh workflow run check.yml --ref "$BRANCH" || true
           if [ "$NEW" = 1 ]; then
             gh pr create --base main --head "$BRANCH" --title "$IN_KIND: $IN_ID" --body-file "$RUNNER_TEMP/summary.md"
           else

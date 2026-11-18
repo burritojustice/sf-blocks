@@ -20,13 +20,13 @@ Any of these three ways ends with a pull request. Its description lists the fiel
 
 ### 1. From DataSF, in the browser (anyone with write access)
 
-1. On GitHub, open **Actions → Add or refresh a boundary set → Run workflow**, on `main`.
+1. On GitHub, open **Actions → Add areas → Run workflow**, on `main`.
 2. Fill in:
-   - **Set id**: lowercase words joined by `_`, plural: `historic_districts`. The apps and links use it, so don't change it later.
    - **Source**: the DataSF dataset id (`63x5-g3m4`) or just paste the dataset's page link.
+   - **Id**: lowercase words joined by `_`, plural: `historic_districts`. The apps and links use it, so don't change it later.
    - **Name field**: leave blank the first time. The action picks the field that names each area (a name-like, readable field, not an id).
    - **Title**: leave blank for the dataset's own name, or write the one people know.
-   - **Joiner tab**: Other, unless it's one of the existing kinds.
+   - **Where it goes in Joiner**: Other, unless it's one of the existing kinds.
 3. In a minute or two there's a pull request. Open the **Joiner** link in it, choose the set, and check the area list:
    - Names, not numbers or codes? If it picked the wrong field, run the action again on the PR's branch (the **Use workflow from** menu) with **Name field** set from the field table in the PR.
    - The right number of areas? Pieces that share a name become one area, which the PR says.
@@ -35,7 +35,7 @@ Any of these three ways ends with a pull request. Its description lists the fiel
 ### 2. From a file you have (an export, or data that isn't on DataSF)
 
 1. On GitHub, open `data/uploads/` → **Add file → Upload files**. Name the file with its date, then pick **Create a new branch … and start a pull request**.
-2. Open **Actions → Add or refresh a boundary set → Run workflow**, choose that branch under **Use workflow from**, and put the file's path (`data/uploads/Historic_Districts_20261028.geojson`) in **Source**.
+2. Open **Actions → Add areas → Run workflow**, choose that branch under **Use workflow from**, and put the file's path (`data/uploads/Historic_Districts_20261028.geojson`) in **Source**.
 3. The action builds the set on your branch and comments on the pull request with the report. Check it and merge as above.
 
 GeoJSON only, in longitude/latitude (WGS 84). From a shapefile or other formats, convert first (for example at mapshaper.org, "Export → GeoJSON", with "proj wgs84" if it isn't already).
@@ -53,7 +53,7 @@ Then branch, commit, push and open the pull request yourself. `python3 scripts/g
 
 ### Refreshing a set
 
-Run the action (or the script) with just the **Set id**. It downloads the dataset again, keeps the same name field and settings, and opens a pull request only if something changed.
+Run **Actions → Rebuild data** with **Areas** and the set's id (or the script with just `--id`). It downloads the dataset again, keeps the same name field and settings, and opens a pull request only if something changed.
 
 ## Adding fields to a set
 
@@ -73,7 +73,7 @@ Sometimes a set needs more than the city publishes: ids with their leading zeros
 - **`derive`** divides one field by another (here people per square mile; land area is in square metres).
 - **`choropleth`** tells Joiner and Block Party which field to color the set by, its name, palette and class breaks (here each break doubles the last, a log scale). Without `breaks`, the apps use quantiles.
 
-Edit the entry in a pull request, then run the Action with just the set id to rebuild it.
+Edit the entry in a pull request, then run **Rebuild data** (Areas, the set's id) on that branch to rebuild it.
 
 **Data from somewhere else** (school enrollment from the state, say) is a different case: it's its own dataset with its own source and date. The plan is to save it in `data/uploads/` like any download, and add a `"join"` step that matches it to the set by a shared key (the school's CDS code) and copies the chosen fields in. It isn't built yet.
 
@@ -81,17 +81,17 @@ Edit the entry in a pull request, then run the Action with just the set id to re
 
 For points, lines or polygons people look at on the map rather than join rows to: trees, businesses, curbs, building footprints.
 
-1. **Actions → Add or refresh data → Run workflow**, Kind **Map layer**, a new **Set id** (`street_trees`), the DataSF dataset in **Source**, and the **Year** the data describes (`2016`, or `current`). Socrata's "updated" date can be years after the data itself (building footprints say 2026; they're from 2016), so check it.
-2. The first run doesn't build anything. Its pull request has a **field report** (each field's type, how often it's filled, how many distinct values, examples, and keep or drop) and a size estimate, and adds a first entry for the layer to `data/tiles/sources.json`.
-3. On the PR's branch, edit that entry:
+1. **Actions → Add a map layer → Run workflow**: the DataSF dataset (its link or id), a short **id** (`street_trees`), and the **year** the data describes (`2016`, or blank for current). Socrata's "updated" date can be years after the data itself (building footprints say 2026; they're from 2016), so check it.
+2. One run does everything. It reads the dataset's fields and suggests what to keep (readable, mostly filled, not system fields), which text fields to use as **categories** (a few values that repeat: status, type), and, for a point dataset with a `cnn` field, to draw the streets instead of points. It writes that as the layer's own file, `data/tiles/sources/<id>.json`, downloads every row, and builds `data/tiles/<id>.pmtiles` (or `.geojson` when small: under 20,000 features and 5 MB), `<id>.stats.json` and the manifest `index.json`. The raw download goes in `data/uploads/` when it's under 10 MB, and otherwise into a GitHub release (archived, not served to the apps).
+3. Its pull request has the build report, the field report (each field's type, how often it's filled, distinct values, examples, keep or drop), and **preview links**: Joiner and Block Party reading that branch, so you can see the layer before merging.
+4. To change something, edit `data/tiles/sources/<id>.json` on the pull request's branch (GitHub's pencil button is fine). Saving it **rebuilds the layer by itself** and adds a commit to the pull request:
    - `fields`: remove what you don't want, and set each one's type, `int`, `num1` (one decimal), `date`, `id` (a number that's an identifier) or `text`. `"a|b"` uses the first of two fields with a value.
    - `categories`: fields to count each value of (species, license type), for chips and legends.
    - `geometry`: for a dataset keyed by street, `{"cnn": "cnn"}` draws each row as that street's line from `data/streets.json` (a corner's CNN as its point) instead of the dataset's point; `{"cnns": "<field>"}` takes a field listing several CNNs. Add `"stack_by_cnn": {"keep": ["status", …]}` so rows on the same street become one line with `n` rows, the most common value of each `keep` field, and every row in `items`.
    - `tiles`: `minzoom` / `maxzoom` for full detail (15, like Parcels, by default), and an optional `overview` (zooms 10–14 with only a few fields, thinned where dense) to show the spread when zoomed out.
-4. Run the action again **on that branch** with the same id. It downloads every row, keeps the chosen fields, and writes `data/tiles/<id>.pmtiles` (or `.geojson` when small: under 20,000 features and 5 MB), `<id>.stats.json` and the manifest `index.json`. The raw download goes in `data/uploads/` when it's under 10 MB, and otherwise into a GitHub release (archived, not served to the apps).
-5. Check the report in the PR, then merge.
+5. Merge. The **Check data** check fails if a layer the pull request adds or edits isn't built from its current entry, so a layer can't be merged without its files.
 
-A layer already in `sources.json` is rebuilt from its dataset whenever the action runs with its id.
+To refresh a layer from its dataset, run **Actions → Rebuild data** with **Map layer** and its id. **Rebuild data** also rebuilds the search index, the OSM ways and the street facts (no id needed). Older layers' entries are in `data/tiles/sources.json`; new ones each get a file in `data/tiles/sources/`, so two pull requests adding layers never touch the same lines.
 
 **Stats** (`<id>.stats.json`): for each number and date field, min, max, mean, median, standard deviation and quantile breaks for 5, 7 and 10 classes (dates also by year); for each category field, how many rows have each value (the top 60, then a count of the rest). The apps use these for legends, palettes and chips without reading the tiles.
 
@@ -107,11 +107,11 @@ A layer already in `sources.json` is rebuilt from its dataset whenever the actio
 
 ## Rules
 
-- **Pull requests, not direct commits to `main`.** The apps read `main` live; the **Check data** action runs on every pull request you open, and the Add action runs the same checks on its own pull requests.
+- **Pull requests, not direct commits to `main`.** The apps read `main` live; the **Check data** action runs on every pull request you open, and the actions start it on the pull requests they open.
 - **Don't rename or move published files.** Live links would break. Add the new path, update the apps, then remove the old one.
 - **Public data only.** No names, emails or phone numbers of private people, except in registries the city itself publishes (Active Business Locations), which are kept because they're how organizers reach their neighbors. Other contact lists only when the city or the organization publishes them, with `source_url` and `checked` columns.
 - **Note the source.** The set's `page` in `sources.json` links to where it came from; the action fills it in for DataSF.
-- **Version:** the action bumps `VERSION` and adds a `CHANGELOG.md` entry. By hand, do the same.
+- **Version:** don't edit `VERSION` or `CHANGELOG.md` in a pull request. Add a note in `changes/<name>.md` (one `- ` line per change); the actions do this themselves. After the merge, the **Stamp version** action sets `VERSION`, moves the notes into `CHANGELOG.md` and stamps the changed scripts' first lines (`changes/README.md`).
 
 ## Repository settings the actions need
 

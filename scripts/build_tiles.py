@@ -2,13 +2,17 @@
 # sf-blocks 2026.11.18.6
 """Build map layers (points, lines, polygons too big for a plain GeoJSON file) into data/tiles/.
 
-    python3 scripts/build_tiles.py                     every layer in data/tiles/sources.json
+    python3 scripts/build_tiles.py                     every layer in data/tiles/sources.json and data/tiles/sources/
     python3 scripts/build_tiles.py street_trees        just these
     python3 scripts/build_tiles.py --file street_trees=trees.csv   use a download you already have
     python3 scripts/build_tiles.py --profile tkzw-k3nq  field report for a DataSF dataset (Markdown), to choose fields
     python3 scripts/build_tiles.py --profile 63x5-g3m4 --add historic_sites --year 2015
-                                                       ...and add a first entry for it to sources.json
-    python3 scripts/build_tiles.py --check             re-validate index.json against the files
+                                                       ...and add an entry for it in data/tiles/sources/historic_sites.json
+    python3 scripts/build_tiles.py --check             re-validate index.json against the files; warn about layers not built
+    python3 scripts/build_tiles.py --check --require bus_stops   ...and fail unless these are built from their current entries
+
+New layers each get their own file, data/tiles/sources/<id>.json (the layer's entry), so two pull requests adding
+layers never touch the same lines. sources.json keeps the older ones; both are read, sources.json first.
 
 For each layer it downloads the dataset from DataSF (all rows, in pages), keeps the fields in its `fields`
 (name → "type:source", "a|b" = the first source with a value), drops rows outside the region's bbox, and
@@ -502,7 +506,7 @@ def build(layer, src_rows, bbox, tdir):
              **({'minzoom': zmin, 'maxzoom': zmax, 'detailzoom': (layer.get('tiles') or {}).get('minzoom', 15)} if tiled else {}),
              'fields': fields_out,
              'stats': f"{layer['id']}.stats.json", 'dataset': layer.get('dataset'), 'page': layer.get('page'),
-             'retrieved': date.today().isoformat()}
+             'retrieved': date.today().isoformat(), 'source': entry_hash(layer)}
     if layer.get('group'):
         entry['grouped_by'] = layer['group']['by']
         entry['items_fields'] = {f: rowf.get(f, 'text') for f in layer['group']['list'] + ([layer['group']['by']] if layer['group'].get('stack') else [])}
@@ -519,6 +523,58 @@ def build(layer, src_rows, bbox, tdir):
     log(f"  → data/tiles/{out.name}: {len(feats):,} features from {len(records):,} rows ({skipped:,} outside the region or without a location), "
         f"{out.stat().st_size / 1e6:.1f} MB")
     return entry, review, skipped
+
+
+# ---------- the layers' entries ----------
+def load_sources():
+    """every layer's entry: sources.json first, then data/tiles/sources/<id>.json by name"""
+    layers = json.loads((OUT / 'sources.json').read_text())['layers']
+    d = OUT / 'sources'
+    if d.is_dir():
+        for p in sorted(d.glob('*.json')):
+            e = json.loads(p.read_text())
+            if e.get('id') != p.stem: raise SystemExit(f'{p}: its id should be {p.stem!r}')
+            if any(l['id'] == e['id'] for l in layers): raise SystemExit(f'{e["id"]} is in sources.json and in {p.name}')
+            layers.append(e)
+    return layers
+
+
+def changed_since(base):
+    """ids of layers added or edited since a git commit (for the checks and the rebuild on a pull request)"""
+    def at(path):
+        r = subprocess.run(['git', 'show', f'{base}:{path}'], cwd=ROOT, capture_output=True, text=True)
+        return json.loads(r.stdout) if r.returncode == 0 else None
+    old = {l['id']: l for l in (at('data/tiles/sources.json') or {'layers': []})['layers']}
+    r = subprocess.run(['git', 'ls-tree', '--name-only', base, 'data/tiles/sources/'], cwd=ROOT, capture_output=True, text=True)
+    for path in r.stdout.split():
+        e = at(path)
+        if e: old[e['id']] = e
+    return [l['id'] for l in load_sources() if old.get(l['id']) != l]
+
+
+def entry_hash(layer):
+    """a short fingerprint of a layer's entry, kept in index.json, so a check can tell a stale build"""
+    import hashlib
+    return hashlib.sha1(json.dumps(layer, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:12]
+
+
+def check(index, layers, require):
+    """files present for every built layer; warn about listed layers not built (or built from an older
+    entry); fail for those in `require`"""
+    built = {l['id']: l for l in index['layers']}
+    bad = [l['id'] for l in index['layers'] if not (OUT / l['file']).exists() or not (OUT / l['stats']).exists()]
+    for l in index['layers']: log(f"{l['id']}: {l['features']:,} features, {l['file']}" + (' MISSING' if l['id'] in bad else ' ok'))
+    stale = []
+    for l in layers:
+        b = built.get(l['id'])
+        why = 'not built' if not b else 'built from an older entry' if b.get('source') and b['source'] != entry_hash(l) else None
+        if why:
+            stale.append(l['id'])
+            log(f"{'ERROR' if l['id'] in require else 'warning'}: {l['id']} is {why}. "
+                f"Run Actions → Rebuild data with {l['id']} (or edit its entry on a pull request, which rebuilds it).")
+    missing = [i for i in require if i not in {l['id'] for l in layers}]
+    for i in missing: log(f'ERROR: {i} is not in the sources')
+    return bool(bad or missing or set(require) & set(stale))
 
 
 # ---------- profile: choose fields before building ----------
@@ -563,27 +619,40 @@ GEOM = {'point': 'Point', 'location': 'Point', 'line': 'LineString', 'multiline'
 
 
 def add(layer_id, ds, label=None, year=None, keep=None):
-    """A first entry for a new layer in sources.json: the fields the profile would keep, for review in the PR."""
-    conf_file = OUT / 'sources.json'; conf = json.loads(conf_file.read_text())
-    if any(l['id'] == layer_id for l in conf['layers']): raise SystemExit(f'{layer_id} is already in sources.json')
+    """An entry for a new layer, in data/tiles/sources/<id>.json, with what the profile suggests: the fields
+    worth keeping, text fields with a few values as categories (for chips and legends), and a point dataset
+    keyed by street (a `cnn` field) drawn as its streets. Built straight away by the action; edit it on the
+    pull request to change it, and the layer is rebuilt."""
+    if any(l['id'] == layer_id for l in load_sources()): raise SystemExit(f'{layer_id} is already listed')
     meta = json.loads(get(f'{PORTAL}/api/views/{ds}.json'))
     cols = [c for c in meta['columns'] if not c['fieldName'].startswith(':')]
     geo = [c for c in cols if c['dataTypeName'] in GEOM]
     sample = json.loads(get(f'{PORTAL}/resource/{ds}.json?$limit=2000&$order=:id'))
     want = {k.strip() for k in (keep or '').split(',') if k.strip()}
-    fields = {}
+    fields, cats = {}, []
     for c in cols:
         f, t = c['fieldName'], c['dataTypeName']
         if t in GEOM or (SKIP.search(f) and f not in want): continue
-        filled = sum(1 for r in sample if r.get(f) not in (None, '')) / max(1, len(sample))
-        if f in want or (not want and filled >= 0.02): fields[f] = f"{TYPE.get(t, 'text')}:{f}"
+        vals = [r[f] for r in sample if r.get(f) not in (None, '')]
+        filled = len(vals) / max(1, len(sample))
+        if f in want or (not want and filled >= 0.02):
+            fields[f] = f"{TYPE.get(t, 'text')}:{f}"
+            # categories: text with 2–40 values that repeat, not an address or a name
+            dist = len(set(map(str, vals)))
+            if TYPE.get(t, 'text') == 'text' and 2 <= dist <= 40 and dist < len(vals) / 3 and not CONTACT.search(f) and not re.search(r'name|street|address', f, re.I):
+                cats.append(f)
+    for f in ('cnn', 'cnn_id', 'cnn_sgmt_pkey'):      # street ids: numbers, but no stats
+        if f in fields: fields[f] = f'id:{f}'
     entry = {'id': layer_id, 'label': label or meta['name'], 'dataset': ds, 'page': f'{PORTAL}/d/{ds}',
-             'year': year or 'current', 'fields': fields, 'categories': [], 'tiles': {'minzoom': 15, 'maxzoom': 15}}
+             'year': year or 'current', 'fields': fields, 'categories': cats, 'tiles': {'minzoom': 15, 'maxzoom': 15}}
     if geo and geo[0]['dataTypeName'] in ('point', 'location') and not any(c['dataTypeName'] not in ('point', 'location') for c in geo):
         entry.update(format='csv', point={'wkt': geo[0]['fieldName']})
+        # one point per street block: draw the streets instead (sf-blocks#52)
+        cnn = next((f for f in ('cnn', 'cnn_id') if f in fields), None)
+        if cnn: entry.update(geometry={'cnn': cnn}, stack_by_cnn={'keep': cats[:3]})
     else: entry['format'] = 'geojson'
-    conf['layers'].append(entry)
-    conf_file.write_text(json.dumps(conf, indent=2, ensure_ascii=False) + '\n')
+    (OUT / 'sources').mkdir(exist_ok=True)
+    (OUT / 'sources' / f'{layer_id}.json').write_text(json.dumps(entry, indent=2, ensure_ascii=False) + '\n')
     return entry
 
 
@@ -596,15 +665,17 @@ def main():
     ap.add_argument('--profile', metavar='DATASET')
     ap.add_argument('--report', help='write a Markdown report here')
     ap.add_argument('--check', action='store_true')
-    ap.add_argument('--add', metavar='ID', help='with --profile: add a first entry for this new layer to sources.json')
+    ap.add_argument('--changed-since', metavar='COMMIT', help='print the ids of layers added or edited since this commit')
+    ap.add_argument('--require', default='', help='with --check: layer ids (comma separated) that must be built from their current entries')
+    ap.add_argument('--add', metavar='ID', help='with --profile: add an entry for this new layer in data/tiles/sources/<ID>.json')
     ap.add_argument('--label'); ap.add_argument('--year'); ap.add_argument('--keep', help='fields to keep, comma separated')
     a = ap.parse_args()
     if a.profile and a.add:
         md = profile(a.profile)
         e = add(a.add, a.profile, a.label, a.year, a.keep)
-        md += ('\n\n### Added to `data/tiles/sources.json` (not built yet)\n\n```json\n' + json.dumps(e, indent=2, ensure_ascii=False) + '\n```\n\n'
-               'Edit the entry on this branch: remove fields you don\'t want, set each `type` (int, num1, date, id…), list `categories`, and '
-               'check `year`. Then run the action again on this branch, with the same id, to build the layer.')
+        md += (f'\n\n### Its entry: `data/tiles/sources/{a.add}.json`\n\n```json\n' + json.dumps(e, indent=2, ensure_ascii=False) + '\n```\n\n'
+               'To change it, edit that file on the pull request\'s branch: remove fields you don\'t want, set each type (int, num1, date, id…), '
+               'list `categories`, check `year`. Saving the edit rebuilds the layer.')
         print(md)
         if a.report: Path(a.report).write_text(md + '\n')
         return
@@ -613,18 +684,18 @@ def main():
         print(md)
         if a.report: Path(a.report).write_text(md + '\n')
         return
-    conf = json.loads((OUT / 'sources.json').read_text())
+    if a.changed_since:
+        print(' '.join(changed_since(a.changed_since))); return
+    conf = {'layers': load_sources()}
     index_file = OUT / 'index.json'
     index = json.loads(index_file.read_text()) if index_file.exists() else {'layers': []}
     if a.check:
-        bad = [l['id'] for l in index['layers'] if not (OUT / l['file']).exists() or not (OUT / l['stats']).exists()]
-        for l in index['layers']: log(f"{l['id']}: {l['features']:,} features, {l['file']}" + (' MISSING' if l['id'] in bad else ' ok'))
-        sys.exit(1 if bad else 0)
+        sys.exit(1 if check(index, conf['layers'], [i for i in re.split(r'[,\s]+', a.require) if i]) else 0)
     bbox = json.loads((ROOT / 'region.json').read_text())['bbox']
     bbox = [bbox[0] - 0.02, bbox[1] - 0.02, bbox[2] + 0.02, bbox[3] + 0.02]
     files = dict(x.split('=', 1) for x in a.file)
     layers = [l for l in conf['layers'] if not a.ids or l['id'] in a.ids]
-    if a.ids and len(layers) != len(a.ids): raise SystemExit(f'not in sources.json: {set(a.ids) - {l["id"] for l in layers}}')
+    if a.ids and len(layers) != len(a.ids): raise SystemExit(f'not in the sources: {set(a.ids) - {l["id"] for l in layers}}')
     report = []
     for layer in layers:
         log(f"{layer['id']} ({layer.get('dataset') or files.get(layer['id'])})")
@@ -644,7 +715,7 @@ def main():
                           + (f"; and {people} that look like people (landlords registering each rental), left to the rule and not named here" if people else ''))
     order = [l['id'] for l in conf['layers']]
     index['layers'].sort(key=lambda l: order.index(l['id']) if l['id'] in order else 99)
-    index['_doc'] = 'Map layers: data/tiles/<file>, built by scripts/build_tiles.py from sources.json. Read with PMTiles (format pmtiles) or as GeoJSON.'
+    index['_doc'] = 'Map layers: data/tiles/<file>, built by scripts/build_tiles.py from sources.json and sources/<id>.json. Read with PMTiles (format pmtiles) or as GeoJSON.'
     index_file.write_text(json.dumps({'_doc': index['_doc'], 'layers': index['layers']}, indent=2, ensure_ascii=False) + '\n')
     if a.report: Path(a.report).write_text('\n'.join(report) + '\n')
     print('\n'.join(report))
