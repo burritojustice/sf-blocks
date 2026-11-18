@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# sf-blocks 2026.11.02: master copy.
+# sf-blocks 2026.11.18.7: master copy.
 """Add a boundary set to sf-blocks, or refresh one, in one step. This is what the "Add or refresh a boundary
 set" GitHub Action runs, so nobody needs a command line; it works the same from one.
 

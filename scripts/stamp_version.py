@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# sf-blocks 2026.11.19
+# sf-blocks 2026.11.18.7
 """Stamp a version after pull requests merge, so they never conflict over VERSION and CHANGELOG.md.
 
 Each pull request adds its notes as a file in changes/ (changes/<branch or id>.md: one "- " line per change,

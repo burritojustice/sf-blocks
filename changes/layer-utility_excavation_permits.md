@@ -1,1 +1,0 @@
-- **Large Utility Excavation Permits** (`utility_excavation_permits`): 2,511 features from 2,702 rows, 2.0 MB `utility_excavation_permits.geojson`; 0 rows outside the region or without a location. Data year: current. Drawn as streets by CNN; 0 rows with a CNN that isn't in streets.json (kept at their own point when they have one).
