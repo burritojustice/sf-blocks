@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026.11.18.6
+- **Map layers keyed by street** (#52): `build_tiles.py` can draw a dataset as streets instead of points. `"geometry": {"cnn": "cnn"}` in `sources.json` gives each row its street's line from `data/streets.json` (an intersection's CNN gives the corner's point; `{"cnns": "<field>"}` takes a list of CNNs as one MultiLineString). `"stack_by_cnn": {"keep": [...]}` makes one feature per street: `n` rows, the most common value of each `keep` field, `n_<value>` for the first one, and every row in `items`. Rows whose CNN isn't in `streets.json` keep their own point and are counted in the report and in the manifest (`cnn_missing`). The manifest marks these layers `"join": "cnn"`.
+- The utility excavation permits are set up this way (by `permit_status`, `permit_purpose` and `agent`). They still need the Action run to build.
+
 ## 2026.11.18.5
 - **Shoreline 1850–1857** (`data/layers/shoreline.geojson`): San Francisco's shoreline from three NOAA Office of Coast Survey historical surveys (T-sheets), as one layer with a `survey` field: `1850–52` (register CA37A02), `1853` (CA37B07) and `1857` (CA37B08). 417 lines, with `kind` in plain words (mean high water, marsh or swamp edge, man-made, wharf or quay…), `year`, `sheet` (the T-sheet number) and `register`. The lines that are only the edge of a map sheet ("User Added Line", cartographic limit) are left out. The three exports are kept as they came in `data/uploads/shoreline/`.
 - `data/layers/index.json` entries now have `categories` (the category field's values with counts) and, for the shoreline, `colors` (one per survey), so apps can show and color the categories.
