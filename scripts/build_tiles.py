@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# sf-blocks 2026.11.08.1
+# sf-blocks 2026.11.18.6
 """Build map layers (points, lines, polygons too big for a plain GeoJSON file) into data/tiles/.
 
     python3 scripts/build_tiles.py                     every layer in data/tiles/sources.json
@@ -29,6 +29,12 @@ makes one feature per value of `by` with a count `n`, `shown` (rows without a ki
 `counts: <field>` adds `n_<value>` and `shown_<value>` for each value of that field (so a map can size a dot by the categories it shows); tiles {minzoom,
 maxzoom, overview: {minzoom, maxzoom, fields}}: the detail zooms carry every field, the overview (thinned
 where dense) only its fields (a name ending in * takes every field it starts).
+Layers keyed by street (sf-blocks#52): geometry {cnn: <field>} draws each row as that street's line from
+data/streets.json (an intersection's CNN as its corner point), and geometry {cnns: <field>} a field listing
+several CNNs as one MultiLineString; a row whose CNNs aren't in streets.json keeps its own point, if it has
+one. stack_by_cnn {keep: [fields]} then makes one feature per street (or set of streets): `n` rows, the most
+common value of each `keep` field, `n_<value>` for the first `keep` field, and the rows as JSON in `items`.
+The manifest marks these "join": "cnn".
 
 Needs tippecanoe and tile-join on PATH (or --tippecanoe DIR) for tiled layers. Standard library only.
 """
@@ -181,6 +187,74 @@ def geometry_of(layer, row):
         return {'type': 'Point', 'coordinates': [float(m[1]), float(m[2])]} if m else None
     try: return {'type': 'Point', 'coordinates': [float(row[pt['lon']]), float(row[pt['lat']])]}
     except (KeyError, TypeError, ValueError): return None
+
+
+# ---------- streets, for layers keyed by CNN ----------
+_streets = None
+
+
+def streets():
+    """CNN → the street's line (lon/lat), and intersection CNN → its corner, from data/streets.json"""
+    global _streets
+    if _streets is None:
+        raw = json.loads((ROOT / 'data' / 'streets.json').read_text())
+        F, N = {f: i for i, f in enumerate(raw['seg_fields'])}, {f: i for i, f in enumerate(raw['node_fields'])}
+        lines, corners = {}, {}
+        for r in raw['segs']:
+            g, pts, x, y = r[F['geom']], [], 0, 0
+            for i in range(0, len(g), 2):
+                x, y = (g[0], g[1]) if i == 0 else (x + g[i], y + g[i + 1])
+                pts.append([round(x / 1e5, 7), round(y / 1e5, 7)])
+            if len(pts) > 1: lines[int(r[F['cnn']])] = pts
+        for r in raw['nodes']:
+            if r[N['cnn']]: corners[int(r[N['cnn']])] = [round(r[N['x']] / 1e5, 7), round(r[N['y']] / 1e5, 7)]
+        _streets = (lines, corners)
+    return _streets
+
+
+def cnns_of(layer, src):
+    """the CNNs a row is on, from geometry {cnn} or {cnns} (a list: commas, semicolons, bars or spaces)"""
+    g = layer.get('geometry') or {}
+    raw = src.get(g['cnn']) if 'cnn' in g else src.get(g.get('cnns'))
+    out = []
+    for part in re.split(r'[,;|\s]+', str(raw if raw is not None else '')):
+        try: n = int(float(part))
+        except ValueError: continue
+        if n and n not in out: out.append(n)
+    return out
+
+
+def cnn_geometry(cnns):
+    """one line, several (MultiLineString), or a corner's point; None if none of them is in streets.json"""
+    lines, corners = streets()
+    ls = [lines[c] for c in cnns if c in lines]
+    if ls: return {'type': 'LineString', 'coordinates': ls[0]} if len(ls) == 1 else {'type': 'MultiLineString', 'coordinates': ls}
+    pts = [corners[c] for c in cnns if c in corners]
+    if pts: return {'type': 'Point', 'coordinates': pts[0]} if len(pts) == 1 else {'type': 'MultiPoint', 'coordinates': pts}
+    return None
+
+
+def stack_by_cnn(layer, records):
+    """rows on the same street(s) become one feature: n, the common value of each keep field, items"""
+    conf = layer.get('stack_by_cnn') or {}
+    keep, at, out = conf.get('keep', []), defaultdict(list), []
+    for p, geom, key in records: at[key].append((p, geom))
+    for key, rows in at.items():
+        if key is None:                               # no CNN on streets.json: each row as it is
+            out += [({**p, 'n': 1}, g) for p, g in rows]; continue
+        props = {'cnn' if len(key) == 1 else 'cnns': key[0] if len(key) == 1 else ','.join(map(str, key)), 'n': len(rows)}
+        for f in keep:
+            v = Counter(p.get(f) for p, _ in rows if p.get(f) is not None).most_common(1)
+            if v: props[f] = v[0][0]
+        if keep:
+            for v, k in Counter(p.get(keep[0]) or 'other' for p, _ in rows).items(): props[f'n_{v}'] = k
+        items = [{k: v for k, v in p.items() if v is not None and k not in SKIP_ITEM} for p, _ in rows]
+        props['items'] = json.dumps(items, separators=(',', ':'), ensure_ascii=False)
+        out.append((props, rows[0][1]))
+    return out
+
+
+SKIP_ITEM = {'cnn', 'cnns', 'x', 'y', 'latitude', 'longitude', 'lat', 'lon'}
 
 
 def rnd(c):
@@ -377,15 +451,24 @@ def counted(g, feats):
 
 
 def build(layer, src_rows, bbox, tdir):
-    records, skipped = [], 0
+    records, skipped, by_cnn, missing, keys = [], 0, bool(layer.get('geometry')), Counter(), []
     for row in src_rows:
-        geom = geometry_of(layer, row)
+        src = row.get('properties', row) if 'type' in row and 'geometry' in row else row
+        geom, key = None, None
+        if by_cnn:                                      # the street's line, else the row's own point
+            cnns = cnns_of(layer, src)
+            geom = cnn_geometry(cnns)
+            if geom: key = tuple(sorted(cnns))
+            else: missing['no cnn' if not cnns else 'cnn not in streets.json'] += 1
+        geom = geom or geometry_of(layer, row)
         if not geom or not in_bbox(geom, bbox): skipped += 1; continue
-        props = props_of(layer, row.get('properties', row) if 'type' in row and 'geometry' in row else row)
+        props = props_of(layer, src)
         records.append((props, {'type': geom['type'], 'coordinates': rnd(geom['coordinates'])}))
+        keys.append(key)
     review = apply_kinds(layer, records)
     stats = stats_for(layer, records)
-    feats = group(layer, records) if layer.get('group') else records
+    feats = (stack_by_cnn(layer, [(p, g, k) for (p, g), k in zip(records, keys)]) if layer.get('stack_by_cnn')
+             else group(layer, records) if layer.get('group') else records)
     size = sum(len(json.dumps(g['coordinates'])) + len(json.dumps(p)) for p, g in feats)
     tiled = len(feats) > TILE_IF['features'] or size > TILE_IF['bytes']
     for old in OUT.glob(f"{layer['id']}.*"):
@@ -408,6 +491,10 @@ def build(layer, src_rows, bbox, tdir):
         fields_out = {g['by']: 'text', **{f: rowf.get(f, 'text') for f in g.get('keep', [])},
                       **({plural(g['by']): 'count'} if g.get('stack') else {}),
                       'n': 'count', 'shown': 'count', **counted(g, feats), 'name': 'text', 'name_all': 'text', 'cat': 'text', 'food': 'bool', 'items': 'json'}
+    elif layer.get('stack_by_cnn'):
+        keep = layer['stack_by_cnn'].get('keep', [])
+        fields_out = {'cnn': 'id', 'cnns': 'text', 'n': 'count', **{f: rowf.get(f, 'text') for f in keep},
+                      **{k: 'count' for k in sorted({k for p, _ in feats for k in p if k.startswith('n_')})}, 'items': 'json'}
     else: fields_out = rowf
     entry = {'id': layer['id'], 'label': layer['label'], 'year': layer.get('year'), 'file': out.name,
              'format': 'pmtiles' if tiled else 'geojson', 'layer': layer['id'], 'bytes': out.stat().st_size,
@@ -420,6 +507,15 @@ def build(layer, src_rows, bbox, tdir):
         entry['grouped_by'] = layer['group']['by']
         entry['items_fields'] = {f: rowf.get(f, 'text') for f in layer['group']['list'] + ([layer['group']['by']] if layer['group'].get('stack') else [])}
         if layer['group'].get('stack'): entry['stacked'] = True
+    if by_cnn:
+        # apps match these by CNN, not by location (sf-blocks#52)
+        entry['join'] = 'cnn'
+        entry['cnn_field'] = 'cnn' if layer.get('stack_by_cnn') else (layer['geometry'].get('cnn') or layer['geometry'].get('cnns'))
+        entry['cnn_missing'] = sum(missing.values())
+        if layer.get('stack_by_cnn'):
+            entry['stacked_by'] = 'cnn'
+            entry['items_fields'] = {f: t for f, t in rowf.items() if f not in SKIP_ITEM}
+        log(f"  {len(records) - sum(missing.values()):,} rows on streets; " + (', '.join(f'{n:,} {why}' for why, n in missing.items()) or 'every CNN found'))
     log(f"  → data/tiles/{out.name}: {len(feats):,} features from {len(records):,} rows ({skipped:,} outside the region or without a location), "
         f"{out.stat().st_size / 1e6:.1f} MB")
     return entry, review, skipped
@@ -536,7 +632,8 @@ def main():
         entry, review, skipped = build(layer, rows, bbox, a.tippecanoe)
         index['layers'] = [l for l in index['layers'] if l['id'] != entry['id']] + [entry]
         report.append(f"- **{layer['label']}** (`{layer['id']}`): {entry['features']:,} features from {entry['records']:,} rows, "
-                      f"{entry['bytes'] / 1e6:.1f} MB `{entry['file']}`; {skipped:,} rows outside the region or without a location. Data year: {layer.get('year')}.")
+                      f"{entry['bytes'] / 1e6:.1f} MB `{entry['file']}`; {skipped:,} rows outside the region or without a location. Data year: {layer.get('year')}."
+                      + (f" Drawn as streets by CNN; {entry['cnn_missing']:,} rows with a CNN that isn't in streets.json (kept at their own point when they have one)." if entry.get('join') == 'cnn' else ''))
         if review:
             rule = json.loads((OUT / layer['kinds']['file']).read_text())['rule']['min_addresses']
             # companies by name; owners that look like people are only counted (the report goes in a public PR)

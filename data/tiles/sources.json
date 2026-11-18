@@ -299,7 +299,11 @@
         "latitude": "num:latitude",
         "longitude": "num:longitude"
       },
-      "categories": [],
+      "categories": [
+        "permit_status",
+        "permit_purpose",
+        "agent"
+      ],
       "tiles": {
         "minzoom": 15,
         "maxzoom": 15
@@ -307,6 +311,16 @@
       "format": "csv",
       "point": {
         "wkt": "location"
+      },
+      "geometry": {
+        "cnn": "cnn"
+      },
+      "stack_by_cnn": {
+        "keep": [
+          "permit_status",
+          "permit_purpose",
+          "agent"
+        ]
       }
     }
   ]
