@@ -217,8 +217,8 @@
    "file": "shoreline.geojson",
    "format": "geojson",
    "geometry": "LineString",
-   "features": 417,
-   "bytes": 638829,
+   "features": 460,
+   "bytes": 653178,
    "fields": {
     "id": "number",
     "survey": "text",
@@ -232,9 +232,9 @@
    "category": "survey",
    "name": "kind",
    "categories": {
-    "1857": 165,
-    "1850\u201352": 146,
-    "1853": 106
+    "1857": 177,
+    "1850\u201352": 171,
+    "1853": 112
    },
    "colors": {
     "1850\u201352": "#1C7ED6",
