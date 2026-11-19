@@ -404,18 +404,53 @@ SHORE_KIND = {'Natural.Mean High Water': 'Mean high water', 'Natural.Apparent.Ma
 SHORE_SURVEY = {'CA37A02': '1850–52', 'CA37B07': '1853', 'CA37B08': '1857'}
 
 
+JOIN_MAX_M, JOIN_TOUCH_M = 150, 1
+
+
+def line_ends(g):
+    c = g['coordinates'] if g['type'] == 'LineString' else [p for l in g['coordinates'] for p in l]
+    return c[0], c[-1]
+
+
+def _m(a, b):
+    return math.hypot((a[0] - b[0]) * 88000, (a[1] - b[1]) * 111000)   # meters, near 37.8° N
+
+
+def min_m(pt, pts):
+    return min((_m(pt, q) for q in pts), default=1e9)
+
+
+def line_m(g):
+    ls = [g['coordinates']] if g['type'] == 'LineString' else g['coordinates']
+    return sum(_m(a, b) for c in ls for a, b in zip(c, c[1:]))
+
+
 def build_shoreline(folder):
-    """data/uploads/shoreline/*.geojson (one per survey) → one layer. Lines that are only the edge of the map
-    sheet (NOAA class CARTOGRAPHIC LIMIT, "User Added Line") are left out; empty and system fields too."""
+    """data/uploads/shoreline/*.geojson (one per survey) → one layer, with empty and system fields left out.
+    NOAA's CARTOGRAPHIC LIMIT lines ("User Added Line") are of two sorts: short pieces that join two shoreline
+    lines where the digitized survey has a break (kept, as kind "Joining line"), and the edges of the map
+    sheet (left out): any that's long (over JOIN_MAX_M) or doesn't meet a shoreline line at both ends."""
     feats, files = [], sorted(folder.glob('*.geojson'))
     for p in files:
         reg = next((k for k in SHORE_SURVEY if k in p.name), None)
         if not reg:
             print(f'  shoreline: {p.name} has no known survey number in its name, skipped', flush=True)
             continue
-        for f in json.loads(p.read_text())['features']:
+        src = json.loads(p.read_text())['features']
+        is_cl = lambda f: ((f.get('properties') or {}).get('CLASS') or '').upper() == 'CARTOGRAPHIC LIMIT'
+        ends = [pt for f in src if not is_cl(f) and f.get('geometry') for pt in line_ends(f['geometry'])]
+        joins = edges = 0
+        for f in src:
             pr, g = f.get('properties') or {}, geom(f.get('geometry'))
-            if not g or (pr.get('CLASS') or '').upper() == 'CARTOGRAPHIC LIMIT':
+            if not g:
+                continue
+            if is_cl(f):
+                a, b = line_ends(f['geometry'])
+                if line_m(f['geometry']) > JOIN_MAX_M or min_m(a, ends) > JOIN_TOUCH_M or min_m(b, ends) > JOIN_TOUCH_M:
+                    edges += 1; continue
+                joins += 1
+                feats.append(feat(g, {'id': pr.get('FEATURE_ID'), 'survey': SHORE_SURVEY[reg], 'register': reg,
+                                      'kind': 'Joining line', 'class': 'Joining line', 'note': 'Joins two shoreline lines where the digitized survey has a break (NOAA: User Added Line)'}))
                 continue
             note = (pr.get('INFORM') or '').replace('\x00', '').strip()
             att = pr.get('ATTRIBUTE') or ''
@@ -423,6 +458,7 @@ def build_shoreline(folder):
                                   'year': int(str(pr.get('SRC_DATE'))[:4]) if str(pr.get('SRC_DATE') or '')[:4].isdigit() else None,
                                   'sheet': pr.get('SOURCE_ID'), 'kind': SHORE_KIND.get(att, att), 'class': (pr.get('CLASS') or '').capitalize(),
                                   'note': note or None}))
+        print(f'  shoreline {SHORE_SURVEY[reg]}: {joins} joining lines kept, {edges} sheet edges left out', flush=True)
     if files:
         write('shoreline', feats, files[-1], None)
 
