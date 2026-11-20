@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.11.20
+- **Bus Stops** (`bus_stops`): 3,260 features from 3,260 rows, 1.6 MB `bus_stops.geojson`; 0 rows outside the region or without a location. Data year: current.
+
 ## 2026.11.19
 - **Shoreline 1850–1857: the missing pieces are back.** NOAA marks two kinds of line "User Added Line" (class Cartographic limit): the edges of each map sheet, and short pieces joining two shoreline lines where the digitized survey has a break. The build dropped both; now it keeps the joining pieces (43 of them, all under 100 m, each meeting shoreline at both ends) as kind "Joining line", and leaves out only the sheet edges (12: long, or loose at one end). Two loose stubs in 1853 near Treat Ave and 17th St are a real gap between sheets in the source and stay out.
 
