@@ -1,0 +1,1 @@
+- **Bus Stops** (`bus_stops`): 3,260 features from 3,260 rows, 1.6 MB `bus_stops.geojson`; 0 rows outside the region or without a location. Data year: current.
