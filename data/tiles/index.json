@@ -205,6 +205,36 @@
       "source": "4f6c266617e7"
     },
     {
+      "id": "high_injury_network",
+      "label": "High Injury Network",
+      "year": "current",
+      "file": "high_injury_network.geojson",
+      "format": "geojson",
+      "layer": "high_injury_network",
+      "bytes": 2645400,
+      "features": 5917,
+      "records": 5917,
+      "geometry": "LineString",
+      "fields": {
+        "cnn_sgmt_pkey": "text",
+        "street_name": "text",
+        "street_type": "text",
+        "street_layer": "text",
+        "full_street_name": "text",
+        "class_code": "number",
+        "duel_car_way_yn": "text",
+        "duel_car_way_id": "number",
+        "f_node_cnn_intrsctn_fkey": "text",
+        "t_node_cnn_intrsctn_fkey": "text",
+        "corrected_length_miles": "number"
+      },
+      "stats": "high_injury_network.stats.json",
+      "dataset": "enwt-3u8m",
+      "page": "https://data.sf.gov/d/enwt-3u8m",
+      "retrieved": "2026-11-20",
+      "source": "2edc8b933a40"
+    },
+    {
       "id": "utility_excavation_permits",
       "label": "Large Utility Excavation Permits",
       "year": "current",
