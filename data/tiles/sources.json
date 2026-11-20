@@ -199,12 +199,13 @@
         "system_use_code": "text:system_use_code",
         "system_use": "text:system_use",
         "drain_type": "text:drain_type",
-        "point_x": "num:point_x",
-        "point_y": "num:point_y",
         "analysis_neighborhood": "text:analysis_neighborhood",
         "supervisor_district": "text:supervisor_district"
       },
-      "categories": [],
+      "categories": [
+        "drain_type",
+        "system_use"
+      ],
       "tiles": {
         "minzoom": 15,
         "maxzoom": 15
@@ -212,6 +213,11 @@
       "format": "csv",
       "point": {
         "wkt": "location"
+      },
+      "enrich": {
+        "elevation": {
+          "field": "elev_m"
+        }
       }
     },
     {

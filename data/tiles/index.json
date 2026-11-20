@@ -144,7 +144,7 @@
       "file": "storm_drains.pmtiles",
       "format": "pmtiles",
       "layer": "storm_drains",
-      "bytes": 981695,
+      "bytes": 572541,
       "features": 23907,
       "records": 23907,
       "geometry": "Point",
@@ -157,16 +157,21 @@
         "system_use_code": "text",
         "system_use": "text",
         "drain_type": "text",
-        "point_x": "number",
-        "point_y": "number",
         "analysis_neighborhood": "text",
-        "supervisor_district": "text"
+        "supervisor_district": "text",
+        "elev_m": "number"
       },
       "stats": "storm_drains.stats.json",
       "dataset": "jtgq-b7c5",
       "page": "https://data.sf.gov/d/jtgq-b7c5",
       "retrieved": "2026-11-20",
-      "source": "0622f9a27e8e"
+      "source": "81a297693b39",
+      "units": {
+        "elev_m": "m"
+      },
+      "enriched": [
+        "elevation"
+      ]
     },
     {
       "id": "bus_stops",

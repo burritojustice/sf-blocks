@@ -74,6 +74,14 @@ jobs:
         with:
           path: ~/tippecanoe
           key: tippecanoe-4f26211
+      # elevation tiles for enrich.elevation (Terrarium z15, about 150 for the city), kept between runs
+      - name: Elevation tiles
+        if: inputs.kind == 'Map layer'
+        uses: actions/cache@v4
+        with:
+          path: .tile-cache
+          key: terrarium-z15-${{ github.run_id }}
+          restore-keys: terrarium-z15-
       - name: Build tippecanoe
         if: (inputs.kind == 'Map layer' || inputs.kind == 'OSM ways') && steps.tc.outputs.cache-hit != 'true'
         run: |

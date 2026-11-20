@@ -155,7 +155,136 @@ def business_category(lic, naics):
 def field_types(layer):
     t = {n: s.split(':', 1)[0] for n, s in layer['fields'].items()}
     for n in layer.get('ids', []): t[n] = 'id'
+    t.update(enrich_types(layer))
     return t
+
+
+# ---------- enrich: fields added to every build, so a refresh from DataSF keeps them ----------
+# "enrich": {
+#   "elevation": {"field": "elev_m"},                    ground height in meters (0.1 m) from Terrarium tiles
+#   "cnn": {"field": "cnn", "within_m": 30},             the nearest street block
+#   "areas": {"supervisor_districts": "district"},       the area of a boundary set each feature is in
+#   "extra": {"file": "data/uploads/<id>/extra.csv", "key": "<id field>"}   hand-made columns, by id
+# }
+# Each works from a feature's point (a line's middle, a shape's centre). Stored in meters; the manifest's
+# "units" says so, and the apps show feet or meters.
+ENRICH_UNITS = {'elevation': 'm'}
+
+
+def enrich_types(layer):
+    e, t = layer.get('enrich') or {}, {}
+    if 'elevation' in e: t[e['elevation'].get('field', 'elev_m')] = 'num1'
+    if 'cnn' in e: t[e['cnn'].get('field', 'cnn')] = 'id'
+    for _, f in (e.get('areas') or {}).items(): t[f] = 'text'
+    if 'extra' in e:
+        path = ROOT / e['extra']['file']
+        if path.exists():
+            with open(path, newline='', encoding='utf-8-sig') as fh:
+                for c in next(csv.reader(fh), []):
+                    if c and c != e['extra']['key']: t[c] = 'text'
+    return t
+
+
+def rep_point(geom):
+    """a point to enrich a feature from: the point, a line's middle vertex, a polygon ring's average"""
+    t, c = geom['type'], geom['coordinates']
+    if t == 'Point': return c
+    if t == 'MultiPoint': return c[0]
+    if t == 'LineString': return c[len(c) // 2]
+    if t == 'MultiLineString': c = max(c, key=len); return c[len(c) // 2]
+    ring = c[0] if t == 'Polygon' else max((p[0] for p in c), key=len)
+    return [sum(p[0] for p in ring) / len(ring), sum(p[1] for p in ring) / len(ring)]
+
+
+def _in_ring(x, y, ring):
+    inside = False
+    for i in range(len(ring)):
+        x1, y1 = ring[i - 1][:2]; x2, y2 = ring[i][:2]
+        if (y1 > y) != (y2 > y) and x < (x2 - x1) * (y - y1) / (y2 - y1) + x1: inside = not inside
+    return inside
+
+
+class Enricher:
+    def __init__(self, layer, cache):
+        self.e, self.layer, self.cache = layer.get('enrich') or {}, layer, cache
+        self.n = Counter()
+        self._elev = self._areas = self._grid = self._extra = None
+
+    def elevation(self, lon, lat):
+        if self._elev is None:
+            import build_data                           # its Terrarium reader (stdlib PNG decoding, tile cache)
+            self._elev = build_data.Elevation(str(self.cache))
+        return self._elev.at(lon, lat)
+
+    def areas(self):
+        if self._areas is None:
+            idx = {l['id']: l for l in json.loads((ROOT / 'data' / 'boundaries' / 'index.json').read_text())['layers']}
+            self._areas = []
+            for sid, field in (self.e.get('areas') or {}).items():
+                meta = idx.get(sid)
+                if not meta: raise SystemExit(f'enrich.areas: no boundary set {sid!r}')
+                polys = []
+                for f in json.loads((ROOT / 'data' / 'boundaries' / meta['file']).read_text())['features']:
+                    g = f['geometry']; ps = [g['coordinates']] if g['type'] == 'Polygon' else g['coordinates']
+                    for p in ps:
+                        xs, ys = [q[0] for q in p[0]], [q[1] for q in p[0]]
+                        polys.append(((min(xs), min(ys), max(xs), max(ys)), p, f['properties'].get(meta['key'])))
+                self._areas.append((field, polys))
+        return self._areas
+
+    def nearest_cnn(self, lon, lat, within):
+        KX, KY = 111320 * math.cos(math.radians(37.76)), 110540
+        if self._grid is None:
+            lines, _ = streets(); self._grid = defaultdict(list)
+            for cnn, c in lines.items():
+                for (x1, y1), (x2, y2) in zip(c, c[1:]):
+                    for gx in range(int(min(x1, x2) * KX // 50), int(max(x1, x2) * KX // 50) + 1):
+                        for gy in range(int(min(y1, y2) * KY // 50), int(max(y1, y2) * KY // 50) + 1):
+                            self._grid[(gx, gy)].append((cnn, x1 * KX, y1 * KY, x2 * KX, y2 * KY))
+        px, py, best = lon * KX, lat * KY, (within, None)
+        r = int(within // 50) + 1
+        for gx in range(int(px // 50) - r, int(px // 50) + r + 1):
+            for gy in range(int(py // 50) - r, int(py // 50) + r + 1):
+                for cnn, ax, ay, bx, by in self._grid.get((gx, gy), ()):
+                    dx, dy = bx - ax, by - ay; L = dx * dx + dy * dy
+                    u = max(0, min(1, ((px - ax) * dx + (py - ay) * dy) / L)) if L else 0
+                    d = math.hypot(px - ax - u * dx, py - ay - u * dy)
+                    if d < best[0]: best = (d, cnn)
+        return best[1]
+
+    def extra(self):
+        if self._extra is None:
+            x, self._extra = self.e['extra'], {}
+            path = ROOT / x['file']
+            if path.exists():
+                with open(path, newline='', encoding='utf-8-sig') as fh:
+                    for row in csv.DictReader(fh): self._extra[str(row.get(x['key'], '')).strip()] = row
+        return self._extra
+
+    def __call__(self, props, src, geom):
+        if not self.e: return
+        lon, lat = rep_point(geom)[:2]
+        if 'elevation' in self.e:
+            try: props[self.e['elevation'].get('field', 'elev_m')] = round(self.elevation(lon, lat), 1); self.n['elevation'] += 1
+            except Exception as ex: self.n['elevation failed'] += 1; self.n.setdefault('_why', str(ex))
+        if 'cnn' in self.e:
+            c = self.nearest_cnn(lon, lat, self.e['cnn'].get('within_m', 30))
+            props[self.e['cnn'].get('field', 'cnn')] = c; self.n['cnn' if c else 'no street near'] += 1
+        for field, polys in (self.areas() if 'areas' in self.e else []):
+            v = next((name for (x0, y0, x1, y1), p, name in polys if x0 <= lon <= x1 and y0 <= lat <= y1
+                      and _in_ring(lon, lat, p[0]) and not any(_in_ring(lon, lat, h) for h in p[1:])), None)
+            props[field] = v; self.n[field if v is not None else field + ' outside'] += 1
+        if 'extra' in self.e:
+            key = str(src.get(self.e['extra']['key']) or props.get(self.e['extra']['key']) or '').strip()
+            row = self.extra().get(key)
+            if row:
+                self.n['extra'] += 1
+                for k, v in row.items():
+                    if k != self.e['extra']['key'] and v not in (None, ''): props[k] = convert('num', v) if re.fullmatch(r'-?\d+(\.\d+)?', str(v).strip()) else v
+
+    def report(self):
+        n = {k: v for k, v in self.n.items() if not k.startswith('_')}
+        return ', '.join(f'{v:,} {k}' for k, v in n.items()) + (f" ({self.n['_why']})" if '_why' in self.n else '')
 
 
 def props_of(layer, src):
@@ -401,7 +530,7 @@ def cat_stats(vals, total, top=60):
 def stats_for(layer, records):
     types, total, fields = field_types(layer), len(records), {}
     cats = set(layer.get('categories', []))
-    names = list(layer['fields']) + (['kind'] if layer.get('kinds') else [])
+    names = list(layer['fields']) + (['kind'] if layer.get('kinds') else []) + [n for n in enrich_types(layer) if n not in layer['fields']]
     for name in names:
         vals = [p[name] for p, _ in records if p.get(name) is not None]
         t = types.get(name, 'text')
@@ -454,8 +583,9 @@ def counted(g, feats):
     return {k: 'count' for k in sorted({k for p, _ in feats for k in p if re.match(r'(n|shown)_', k)})} if g.get('counts') else {}
 
 
-def build(layer, src_rows, bbox, tdir):
+def build(layer, src_rows, bbox, tdir, cache=None):
     records, skipped, by_cnn, missing, keys = [], 0, bool(layer.get('geometry')), Counter(), []
+    enrich = Enricher(layer, cache or (ROOT / '.tile-cache'))
     for row in src_rows:
         src = row.get('properties', row) if 'type' in row and 'geometry' in row else row
         geom, key = None, None
@@ -467,8 +597,10 @@ def build(layer, src_rows, bbox, tdir):
         geom = geom or geometry_of(layer, row)
         if not geom or not in_bbox(geom, bbox): skipped += 1; continue
         props = props_of(layer, src)
+        enrich(props, src, geom)
         records.append((props, {'type': geom['type'], 'coordinates': rnd(geom['coordinates'])}))
         keys.append(key)
+    if enrich.e: log(f'  enriched: {enrich.report()}')
     review = apply_kinds(layer, records)
     stats = stats_for(layer, records)
     feats = (stack_by_cnn(layer, [(p, g, k) for (p, g), k in zip(records, keys)]) if layer.get('stack_by_cnn')
@@ -507,6 +639,9 @@ def build(layer, src_rows, bbox, tdir):
              'fields': fields_out,
              'stats': f"{layer['id']}.stats.json", 'dataset': layer.get('dataset'), 'page': layer.get('page'),
              'retrieved': date.today().isoformat(), 'source': entry_hash(layer)}
+    units = {(layer['enrich'][k].get('field') or {'elevation': 'elev_m'}[k]): u for k, u in ENRICH_UNITS.items() if k in (layer.get('enrich') or {})}
+    if units: entry['units'] = units          # stored in these units; apps show feet or meters
+    if layer.get('enrich'): entry['enriched'] = sorted(k for k in layer['enrich'])
     if layer.get('group'):
         entry['grouped_by'] = layer['group']['by']
         entry['items_fields'] = {f: rowf.get(f, 'text') for f in layer['group']['list'] + ([layer['group']['by']] if layer['group'].get('stack') else [])}
