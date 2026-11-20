@@ -3,77 +3,87 @@
  "records": 23907,
  "built": "2026-11-20",
  "fields": {
-  "point_x": {
-   "type": "number",
-   "n": 23907,
-   "missing": 0,
-   "min": 5979783.09094049,
-   "max": 6023764.4281343045,
-   "mean": 6002924.0367,
-   "median": 6004504.55777975,
-   "std": 9944.8125,
-   "quantiles": {
-    "5": [
-     5993138.7758,
-     6001284.1067,
-     6007538.1671,
-     6012140.6834
-    ],
-    "7": [
-     5990413.2847,
-     5997408.224,
-     6002169.337,
-     6006762.6708,
-     6010343.713,
-     6013590.6861
-    ],
-    "10": [
-     5987823.6054,
-     5993138.7758,
-     5998027.5596,
-     6001284.1067,
-     6004504.5578,
-     6007538.1671,
-     6010044.6303,
-     6012140.6834,
-     6014701.7855
-    ]
+  "system_use": {
+   "type": "category",
+   "n": 23898,
+   "missing": 9,
+   "distinct": 4,
+   "values": {
+    "Storm; even if DS flow is combined": 22484,
+    "Separate Storm-Special Regulatory Area": 734,
+    "Combined Storm and Sanitary flows": 677,
+    "Sanitary": 3
    }
   },
-  "point_y": {
+  "drain_type": {
+   "type": "category",
+   "n": 23907,
+   "missing": 0,
+   "distinct": 27,
+   "values": {
+    "Catch Basin Drain": 21726,
+    "Storm Water Inlet Drain": 1344,
+    "Drop Inlet": 166,
+    "Area Drain, used in Mission Bay": 142,
+    "LID / Other surface flow inlet point": 100,
+    "Drainage Bubbler (LID-EIP-Green Infra.)": 68,
+    "LID / Other surface flow outlet point": 62,
+    "Track Drain": 54,
+    "Curb Inlet: Drain w/ no grate": 54,
+    "MH Inlet: Grated Cover": 45,
+    "Drain Box": 25,
+    "Trench Drain": 24,
+    "36in Square CB with Curb Inlet (IN-GO)": 20,
+    "Switchbox Drain": 13,
+    "Caltrans GDO Combination Inlet": 9,
+    "Caltrans G1 Grate Inlet": 8,
+    "Psuedo Drain for Model ONLY": 8,
+    "Caltrans G2 Grate Inlet": 8,
+    "Caltrans G4 Grate Inlet": 6,
+    "Tree Well; drains soil of tree planter": 6,
+    "Scupper-Hole in wall for surface flow": 6,
+    "Wetwell": 3,
+    "Caltrans G3 Grate Inlet": 3,
+    "Square Hinged MH Cover": 3,
+    "Wing Wall:Culvert entrance:angled sides": 2,
+    "Caltrans A2 Drain Inlet": 1,
+    "Caltrans GO Combination Inlet": 1
+   }
+  },
+  "elev_m": {
    "type": "number",
    "n": 23907,
    "missing": 0,
-   "min": 2083200.7061748283,
-   "max": 2130440.538925317,
-   "mean": 2103987.8172,
-   "median": 2103912.8203804297,
-   "std": 9659.095,
+   "min": -2.3,
+   "max": 259.2,
+   "mean": 49.1501,
+   "median": 39.8,
+   "std": 45.7791,
    "quantiles": {
     "5": [
-     2094657.7087,
-     2100536.9212,
-     2107182.5332,
-     2113147.4757
+     6.7,
+     24.5,
+     52.5,
+     81.5
     ],
     "7": [
-     2092652.2243,
-     2097104.3354,
-     2101525.4312,
-     2106405.1692,
-     2110750.5647,
-     2115032.3813
+     4.9,
+     12.6,
+     28.5,
+     48.8,
+     68.3,
+     93.8857
     ],
     "10": [
-     2090890.9906,
-     2094657.7087,
-     2097508.8788,
-     2100536.9212,
-     2103912.8204,
-     2107182.5332,
-     2110378.6148,
-     2113147.4757,
-     2116873.1272
+     4.1,
+     6.7,
+     13.7,
+     24.5,
+     39.8,
+     52.5,
+     66.0,
+     81.5,
+     108.9
     ]
    }
   }
