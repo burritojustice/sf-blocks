@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.11.20.2
+- **Storm Drains** (`storm_drains`): 23,907 features from 23,907 rows, 1.0 MB `storm_drains.pmtiles`; 0 rows outside the region or without a location. Data year: current.
+
 ## 2026.11.20
 - **Bus Stops** (`bus_stops`): 3,260 features from 3,260 rows, 1.6 MB `bus_stops.geojson`; 0 rows outside the region or without a location. Data year: current.
 
