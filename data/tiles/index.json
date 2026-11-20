@@ -138,6 +138,37 @@
       "retrieved": "2026-11-03"
     },
     {
+      "id": "storm_drains",
+      "label": "Storm Drains",
+      "year": "current",
+      "file": "storm_drains.pmtiles",
+      "format": "pmtiles",
+      "layer": "storm_drains",
+      "bytes": 981695,
+      "features": 23907,
+      "records": 23907,
+      "geometry": "Point",
+      "minzoom": 15,
+      "maxzoom": 15,
+      "detailzoom": 15,
+      "fields": {
+        "dpw_node_id": "text",
+        "puc_maximo_asset_id": "text",
+        "system_use_code": "text",
+        "system_use": "text",
+        "drain_type": "text",
+        "point_x": "number",
+        "point_y": "number",
+        "analysis_neighborhood": "text",
+        "supervisor_district": "text"
+      },
+      "stats": "storm_drains.stats.json",
+      "dataset": "jtgq-b7c5",
+      "page": "https://data.sf.gov/d/jtgq-b7c5",
+      "retrieved": "2026-11-20",
+      "source": "0622f9a27e8e"
+    },
+    {
       "id": "bus_stops",
       "label": "Bus Stops",
       "year": "current",
