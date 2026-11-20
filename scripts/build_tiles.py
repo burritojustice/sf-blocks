@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# sf-blocks 2026.11.18.7
+# sf-blocks 2026.11.20.4
 """Build map layers (points, lines, polygons too big for a plain GeoJSON file) into data/tiles/.
 
     python3 scripts/build_tiles.py                     every layer in data/tiles/sources.json and data/tiles/sources/
