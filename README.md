@@ -23,7 +23,7 @@ Another city can start its own repo with the same layout (nyc-blocks, london-blo
 | `region.json` | Name, home view, bbox, basemap keys, and paths to everything below |
 | `data/boundaries/` | Polygons to join to: districts, ZIPs, five neighborhood sets, tracts, Cultural Districts, Bay Area counties and ZIPs, precincts and the districts made from them. `index.json` lists them; `sources.json` says where each comes from and how names match |
 | `data/aliases.json` | Other names people use for areas ("South Bayshore" → Bayview, "Calle 24" → Calle 24 Latino Cultural District), by boundary set. One list for every app and script |
-| `data/layers/` | City layers drawn on maps: schools, fire and police stations, health care (points); Muni, bike network, Slow Streets (lines); city-owned lands (polygons) |
+| `data/layers/` | City layers drawn on maps: schools, fire and police stations, health care (points); Muni, bike network, Slow Streets, the 1850–1857 shoreline surveys (lines); city-owned lands, water in 1850–52 (polygons) |
 | `data/osm/` | OpenStreetMap ways in the city (streets, paths, bike paths, stairs, sidewalks) as pieces with ids and the CNNs they run along: `ways.pmtiles`, `gaps/` (pieces along no city street) and `index.json`. Built by `scripts/build_osm.py` through Actions → Rebuild data → OSM ways. © OpenStreetMap contributors, ODbL |
 | `data/search/` | Search index for Address / Places search: businesses (name, owner, address, NAICS), every address with its point, lot and CNN, landmarks, and NAICS titles. Built by `scripts/build_search.py` |
 | `data/facts/` | Facts per street block (CNN), worked out the way the apps' cards do: `streets.json` (lots, homes, land use, zoning, trees, businesses, people, districts) and `lots.json` (each block's lot ids and census blocks). Built by `scripts/build_facts.py` from the parcels, tiles and boundaries here |
@@ -75,6 +75,10 @@ From DataSF:
 Both CSVs are committed so the build works right away. If one is missing, `build_data.py` downloads it from DataSF's API (`https://data.sf.gov/resource/<id>.csv`); `python3 scripts/build_data.py --download` refreshes both before building. A manual Export from the pages above also works: save it under the name shown. The dataset ids and pages are also listed at the top of the script.
 
 The GeoJSON version of the streets dataset isn't needed; the CSV has the same geometry as WKT.
+
+### Historic shoreline and water
+
+`data/layers/shoreline.geojson` is NOAA's T-sheet shoreline surveys of 1850–52, 1853 and 1857 (`data/uploads/shoreline/`), as lines. `data/layers/shoreline_water.geojson` is built from them by `build_layers.py shoreline`: the 1850–52 shore, the one survey of the whole shore, chained into one line (gaps up to 1.2 km bridged straight across) and closed along a frame out in the bay and ocean, as one polygon of the water between them. Its `draw: "water"` in `index.json` tells apps to paint it in the basemap's water color under the roads, so filled land (the Marina, the waterfront, Mission Bay, Islais Creek, India Basin) shows as water; over today's water it's the same color. The 1853 and 1857 surveys cover only the northeast waterfront and get no polygon.
 
 ## streets.json
 
