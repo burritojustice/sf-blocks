@@ -326,6 +326,29 @@
       "page": "https://data.sf.gov/d/6ann-usi8",
       "retrieved": "2026-11-23",
       "source": "ab4f892e4c4e"
+    },
+    {
+      "id": "sea_level_rise_108in_line",
+      "label": "Sea level rise 108″ vulnerability zone (line)",
+      "year": "2014 (SFPUC; 2010 ground, 2010–11 LiDAR)",
+      "file": "sea_level_rise_108in_line.pmtiles",
+      "format": "pmtiles",
+      "layer": "sea_level_rise_108in_line",
+      "bytes": 175786,
+      "features": 1005,
+      "records": 1005,
+      "geometry": "LineString",
+      "minzoom": 10,
+      "maxzoom": 15,
+      "detailzoom": 10,
+      "fields": {
+        "name": "text"
+      },
+      "stats": "sea_level_rise_108in_line.stats.json",
+      "dataset": "92e4-7ptg",
+      "page": "https://data.sf.gov/d/92e4-7ptg",
+      "retrieved": "2026-11-23",
+      "source": "f343994458dd"
     }
   ]
 }
