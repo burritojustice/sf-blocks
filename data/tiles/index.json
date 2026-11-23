@@ -283,6 +283,29 @@
         "permit_end_date": "date",
         "permit_renewed_from_permit_number": "text"
       }
+    },
+    {
+      "id": "sea_level_rise_24in",
+      "label": "Sea level rise 24″ + 100-year storm",
+      "year": "2020 (BCDC Adapting to Rising Tides)",
+      "file": "sea_level_rise_24in.pmtiles",
+      "format": "pmtiles",
+      "layer": "sea_level_rise_24in",
+      "bytes": 1262516,
+      "features": 7,
+      "records": 7,
+      "geometry": "Polygon",
+      "minzoom": 10,
+      "maxzoom": 15,
+      "detailzoom": 10,
+      "fields": {
+        "zone": "number"
+      },
+      "stats": "sea_level_rise_24in.stats.json",
+      "dataset": "esku-ejgv",
+      "page": "https://data.sf.gov/d/esku-ejgv",
+      "retrieved": "2026-11-23",
+      "source": "5e41ebebd6e1"
     }
   ]
 }

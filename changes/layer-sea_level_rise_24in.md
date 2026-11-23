@@ -1,0 +1,1 @@
+- **Sea level rise 24″ + 100-year storm** (`sea_level_rise_24in`): 7 features from 7 rows, 1.3 MB `sea_level_rise_24in.pmtiles`; 0 rows outside the region or without a location. Data year: 2020 (BCDC Adapting to Rising Tides).
