@@ -283,6 +283,72 @@
         "permit_end_date": "date",
         "permit_renewed_from_permit_number": "text"
       }
+    },
+    {
+      "id": "sea_level_rise_24in",
+      "label": "Sea level rise 24″ + 100-year storm",
+      "year": "2020 (BCDC Adapting to Rising Tides)",
+      "file": "sea_level_rise_24in.pmtiles",
+      "format": "pmtiles",
+      "layer": "sea_level_rise_24in",
+      "bytes": 1262516,
+      "features": 7,
+      "records": 7,
+      "geometry": "Polygon",
+      "minzoom": 10,
+      "maxzoom": 15,
+      "detailzoom": 10,
+      "fields": {
+        "zone": "number"
+      },
+      "stats": "sea_level_rise_24in.stats.json",
+      "dataset": "esku-ejgv",
+      "page": "https://data.sf.gov/d/esku-ejgv",
+      "retrieved": "2026-11-23",
+      "source": "5e41ebebd6e1"
+    },
+    {
+      "id": "sea_level_rise_66in",
+      "label": "Sea level rise 66″ + 100-year storm",
+      "year": "2020 (BCDC Adapting to Rising Tides)",
+      "file": "sea_level_rise_66in.geojson",
+      "format": "geojson",
+      "layer": "sea_level_rise_66in",
+      "bytes": 1646043,
+      "features": 1,
+      "records": 1,
+      "geometry": "Polygon",
+      "fields": {
+        "slr108": "text"
+      },
+      "stats": "sea_level_rise_66in.stats.json",
+      "dataset": "6ann-usi8",
+      "page": "https://data.sf.gov/d/6ann-usi8",
+      "retrieved": "2026-11-23",
+      "source": "ab4f892e4c4e"
+    },
+    {
+      "id": "sea_level_rise_108in_line",
+      "label": "Sea level rise 108″ vulnerability zone (line)",
+      "year": "2014 (SFPUC; 2010 ground, 2010–11 LiDAR)",
+      "file": "sea_level_rise_108in_line.pmtiles",
+      "format": "pmtiles",
+      "layer": "sea_level_rise_108in_line",
+      "bytes": 175786,
+      "features": 1005,
+      "records": 1005,
+      "geometry": "LineString",
+      "minzoom": 10,
+      "maxzoom": 15,
+      "detailzoom": 10,
+      "fields": {
+        "name": "text"
+      },
+      "stats": "sea_level_rise_108in_line.stats.json",
+      "dataset": "92e4-7ptg",
+      "page": "https://data.sf.gov/d/92e4-7ptg",
+      "retrieved": "2026-11-23",
+      "source": "f343994458dd"
     }
   ]
 }
