@@ -83,6 +83,8 @@ The GeoJSON version of the streets dataset isn't needed; the CSV has the same ge
 - **1850–52**, a survey of the whole shore: the shore chained into one line and closed along a frame out in the bay and ocean (the county line at the south, west of Yerba Buena Island).
 - **1853 and 1857**, surveys of the northeast waterfront: every line but the sheet edges. The shore is chained (1853's one real gap, 101 m, is where its sheet cuts off the south side of Mission Creek), pier lines that start and end on the shore are spliced in so piers show as land, closed loops in the water become islands, and the shore is closed with a box to the north and east. A few short stubs that touch nothing stay lines.
 
+**Sheets digitized out of place** are moved at build time (`SHORE_SHIFT` in `build_layers.py`, meters east and north per survey sheet), easing to nothing within 400 m of where a moved sheet meets an unmoved one. The 1850–52 bay sheet, T-00352, is moved 60 m north and 6 m east: matched against the 1853 and 1857 surveys at the piers, the beach south of them and Rincon Point. The raw downloads stay as published.
+
 ## streets.json
 
 One row per street segment (active and retired), with: CNN, street name, from and to cross streets, left and right address ranges, from and to intersection CNNs, layer, active and accepted flags, neighborhood, analysis neighborhood, supervisor district, ZIP, one-way, class code, date dropped, and geometry. Coordinates are stored as integers (degrees × 100,000, about 1 m) and delta-encoded. Strings are stored once in a shared table.
