@@ -413,6 +413,35 @@ SHORE_SURVEY = {'CA37A02': '1850–52', 'CA37B07': '1853', 'CA37B08': '1857'}
 
 JOIN_MAX_M, JOIN_TOUCH_M = 150, 1
 
+# Sheets digitized out of place: (register, sheet) → meters (east, north) to move them. Measured by matching the
+# lines against the other surveys' (the same piers, Market Street, the beach south of the piers and Rincon Point).
+# T-00352 (1850–52, the bay shore from North Beach to Hunters Point) sits about 60 m south of where both the 1853
+# and 1857 surveys put the same shore. Within SHIFT_EASE_M of where a moved sheet meets an unmoved one, the move
+# eases to nothing, so the shore stays joined. The raw downloads stay as published.
+SHORE_SHIFT = {('CA37A02', 'T00352'): (6, 60)}
+SHIFT_EASE_M = 400
+
+
+def shift_sheets(reg, src):
+    moves = {sh: d for (r, sh), d in SHORE_SHIFT.items() if r == reg}
+    if not moves:
+        return
+    pts = lambda f: [p for l in ([f['geometry']['coordinates']] if f['geometry']['type'] == 'LineString' else f['geometry']['coordinates']) for p in l]
+    for sheet, (de, dn) in moves.items():
+        mine = [f for f in src if f.get('geometry') and (f.get('properties') or {}).get('SOURCE_ID') == sheet]
+        others = [p for f in src if f.get('geometry') and f not in mine for p in pts(f)]
+        mine_pts = [p for f in mine for p in pts(f)]
+        # the points where this sheet's lines meet another sheet's
+        seams = [q for q in others if min_m(q, mine_pts) < JOIN_TOUCH_M]
+        for f in mine:
+            g = f['geometry']
+            for l in ([g['coordinates']] if g['type'] == 'LineString' else g['coordinates']):
+                for p in l:
+                    k = min(1, min_m(p, seams) / SHIFT_EASE_M) if seams else 1
+                    p[0] = round(p[0] + k * de / 88000, 7)
+                    p[1] = round(p[1] + k * dn / 111000, 7)
+        print(f'  shoreline {SHORE_SURVEY[reg]}: sheet {sheet} moved {de} m east, {dn} m north ({len(seams)} seams eased)', flush=True)
+
 
 def line_ends(g):
     c = g['coordinates'] if g['type'] == 'LineString' else [p for l in g['coordinates'] for p in l]
@@ -444,6 +473,7 @@ def build_shoreline(folder):
             print(f'  shoreline: {p.name} has no known survey number in its name, skipped', flush=True)
             continue
         src = json.loads(p.read_text())['features']
+        shift_sheets(reg, src)
         is_cl = lambda f: ((f.get('properties') or {}).get('CLASS') or '').upper() == 'CARTOGRAPHIC LIMIT'
         ends = [pt for f in src if not is_cl(f) and f.get('geometry') for pt in line_ends(f['geometry'])]
         joins = edges = 0
