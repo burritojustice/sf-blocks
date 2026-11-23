@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.11.23.2
+- Water in 1853 and 1857 (`data/layers/shoreline_water.geojson`): the two waterfront surveys, from every line they have (wharves, marsh edges and piers included, sheet edges not), closed with a box to the north and east. Piers show as land and marsh islands as holes, and 1857 includes Islais Creek. The layer is now "Water in the 1850s", one area per survey.
+
 ## 2026.11.23
 - Water in 1850–52 (`data/layers/shoreline_water.geojson`): the 1850–52 shoreline survey closed into a polygon of the water between the old shore and the bay and ocean, marked `draw: "water"` so apps paint it in the basemap's water color under the roads. Filled land shows as water. The 1853 and 1857 surveys cover only part of the shore and get no polygon.
 - Three sea level rise map layers from DataSF: 24″ rise with a 100-year storm (`esku-ejgv`), 66″ rise with a 100-year storm (`6ann-usi8`), and the 108″ inundation vulnerability zone edge (`92e4-7ptg`, lines).
