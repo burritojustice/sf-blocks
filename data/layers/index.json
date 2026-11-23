@@ -256,12 +256,12 @@
   },
   {
    "id": "shoreline_water",
-   "label": "Water in 1850\u201352",
+   "label": "Water in the 1850s",
    "file": "shoreline_water.geojson",
    "format": "geojson",
    "geometry": "Polygon",
-   "features": 1,
-   "bytes": 121222,
+   "features": 3,
+   "bytes": 387461,
    "fields": {
     "survey": "text",
     "shore_km": "number",
@@ -270,7 +270,9 @@
    "category": "survey",
    "name": "survey",
    "categories": {
-    "1850\u201352": 1
+    "1850\u201352": 1,
+    "1853": 1,
+    "1857": 1
    },
    "colors": {
     "1850\u201352": "#1C7ED6",

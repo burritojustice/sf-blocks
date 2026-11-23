@@ -80,7 +80,7 @@ LAYER_INFO = {
                   'colors': {'1850–52': '#1C7ED6', '1853': '#E8590C', '1857': '#2F9E44'}},
     # draw 'water': apps paint it in the basemap's water color, just above the basemap's water and under its
     # roads, so land that was water then shows as water
-    'shoreline_water': {'label': 'Water in 1850–52', 'category': 'survey', 'name': 'survey', 'draw': 'water',
+    'shoreline_water': {'label': 'Water in the 1850s', 'category': 'survey', 'name': 'survey', 'draw': 'water',
                         'colors': {'1850–52': '#1C7ED6', '1853': '#E8590C', '1857': '#2F9E44'}},
 }
 
@@ -471,13 +471,15 @@ def build_shoreline(folder):
         write('shoreline_water', shoreline_water(feats), files[-1], None)
 
 
-# Water areas from the shoreline surveys. Each survey's shoreline pieces (mean high water, joining lines,
-# seawalls; not wharves, marsh edges or rocks) are chained end to end into one line along SF's shore,
+# Water areas from the shoreline surveys. A survey of the whole shore (1850–52): its shoreline pieces (mean high
+# water, joining lines, seawalls; not wharves, marsh edges or rocks) are chained end to end into one line along SF's shore,
 # with gaps up to WATER_BRIDGE_M bridged straight across. Its two ends are then closed along WATER_FRAME,
 # a ring out in open water (west of Yerba Buena Island, so the island isn't painted as water), on the
 # side away from WATER_LAND (a point that's always been land). Only surveys of the whole shore (WATER_END_M). So the polygon is the water between the
 # historic shore and the frame: drawn under the basemap's roads, land that was water then (fill) shows as
 # water, and over today's water it's the same color. Only the shore north of the county line, in SF.
+# A survey of part of the shore (1853, 1857: the northeast waterfront) uses every line it has instead
+# (_partial_water): see there.
 WATER_KINDS = {'Mean high water', 'Joining line', 'Man-made', 'Approximate', 'Shoreline / alongshore boundary'}
 WATER_BRIDGE_M = 1200
 WATER_FRAME = [(-122.54, 37.7065), (-122.35, 37.7065), (-122.35, 37.79), (-122.376, 37.79), (-122.376, 37.817), (-122.54, 37.817)]
@@ -526,6 +528,125 @@ def _frame_walk(fa, fb, forward):
     return out + [qb]
 
 
+PART_BRIDGE_M = 150   # 1853 needs 101 m, where its sheet cuts off the south side of Mission Creek
+PART_SPLICE_M = 8     # a pier line whose two ends are this close to the shore becomes part of it
+# the box for a survey of part of the shore: east from its south end, round the frame's northeast corner
+# (west of Yerba Buena Island), north to its west end
+PART_NE = [(-122.35, 37.79), (-122.376, 37.79), (-122.376, 37.817)]
+
+
+def _chain(segs, bridge):
+    """join the two nearest loose ends again and again while they're within bridge m; longest first,
+    with the gaps over 1 m that were bridged"""
+    chains, gaps = [list(c) for c in segs if len(c) > 1], []
+    while len(chains) > 1:
+        best = None
+        for i, a in enumerate(chains):
+            for j in range(i + 1, len(chains)):
+                b = chains[j]
+                for ra in (0, 1):
+                    for rb in (0, 1):
+                        d = _m(a[-1] if not ra else a[0], b[0] if not rb else b[-1])
+                        if best is None or d < best[0]:
+                            best = (d, i, j, ra, rb)
+        d, i, j, ra, rb = best
+        if d > bridge:
+            break
+        a = chains[i][::-1] if ra else chains[i]
+        b = chains[j][::-1] if rb else chains[j]
+        if d > 1:
+            gaps.append(round(d))
+        chains[i] = a + (b[1:] if d < 1 else b)
+        chains.pop(j)
+    return sorted(chains, key=_len_m, reverse=True), gaps
+
+
+def _len_m(c):
+    return sum(_m(p, q) for p, q in zip(c, c[1:]))
+
+
+def _crossings(ring):
+    """how many times the ring crosses itself (segments in a grid, so it's quick)"""
+    segs = list(zip(ring, ring[1:] + ring[:1]))
+    side = lambda p, q, r: (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0])
+    grid = {}
+    for i, (a, b) in enumerate(segs):
+        for gx in range(int(min(a[0], b[0]) * 500), int(max(a[0], b[0]) * 500) + 1):
+            for gy in range(int(min(a[1], b[1]) * 500), int(max(a[1], b[1]) * 500) + 1):
+                grid.setdefault((gx, gy), []).append(i)
+    seen, n = set(), 0
+    for cell in grid.values():
+        for x in range(len(cell)):
+            for y in range(x + 1, len(cell)):
+                i, j = cell[x], cell[y]
+                if abs(i - j) < 2 or (i == 0 and j == len(segs) - 1) or (i, j) in seen:
+                    continue
+                seen.add((i, j))
+                (a, b), (c, e) = segs[i], segs[j]
+                if side(a, b, c) * side(a, b, e) < 0 and side(c, e, a) * side(c, e, b) < 0:
+                    n += 1
+    return n
+
+
+def _partial_water(survey, feats):
+    """Water for a survey of part of the shore, from every line it has (not the sheet edges, already left
+    out, or the few pieces past the frame's north edge). The lines, apart from alongshore features, are
+    chained into one shore (gaps up to PART_BRIDGE_M bridged); alongshore features and leftover pieces whose
+    two ends touch the shore (piers) are spliced into it, so piers show as land; the shore is closed with a
+    box to the north and east (PART_NE); closed loops inside the water become holes (islands, piers drawn as
+    rings), and loops on land become water of their own (ponds). Lines that touch nothing stay lines."""
+    lines, loops = [], []
+    for f in feats:
+        pr, g = f['properties'], f['geometry']
+        if pr['survey'] != survey:
+            continue
+        for c in ([g['coordinates']] if g['type'] == 'LineString' else g['coordinates']):
+            c = [tuple(p) for p in c]
+            if any(p[1] >= WATER_FRAME[-1][1] for p in c) or len(c) < 2:
+                continue
+            if len(c) > 3 and _m(c[0], c[-1]) < 1:
+                loops.append(c)
+            else:
+                lines.append((c, pr['kind']))
+    chains, gaps = _chain([c for c, k in lines if k != 'Alongshore feature'], PART_BRIDGE_M)
+    if not chains:
+        return None
+    shore = chains[0]
+    if (shore[0][1] - shore[0][0]) < (shore[-1][1] - shore[-1][0]):
+        shore = shore[::-1]   # north-west end first
+    close = lambda sh: sh + [(PART_NE[0][0], sh[-1][1])] + PART_NE + [(sh[0][0], PART_NE[-1][1])]
+    if _crossings(close(shore)):
+        print(f'  shoreline water {survey}: the shore crosses itself once closed, no water area', flush=True)
+        return None
+    near = lambda p: min(range(len(shore)), key=lambda i: _m(shore[i], p))
+    spliced = left = 0
+    for pc in sorted(chains[1:] + [c for c, k in lines if k == 'Alongshore feature'], key=len, reverse=True):
+        a, b = near(pc[0]), near(pc[-1])
+        if _m(shore[a], pc[0]) > PART_SPLICE_M or _m(shore[b], pc[-1]) > PART_SPLICE_M:
+            left += 1; continue
+        if b < a:
+            a, b, pc = b, a, pc[::-1]
+        if _len_m(shore[a:b + 1]) > 3 * _len_m(pc) + 50:   # it runs along the shore, not out from it
+            left += 1; continue
+        cand = shore[:a] + pc + shore[b + 1:]
+        if _crossings(close(cand)):
+            left += 1; continue
+        shore = cand; spliced += 1
+    ring = close(shore)
+    holes, ponds = [], []
+    for lp in loops:
+        mid = (sum(p[0] for p in lp) / len(lp), sum(p[1] for p in lp) / len(lp))
+        (holes if _in_ring(mid, ring) else ponds).append(lp)
+    rnd = lambda r: [[round(x, 6), round(y, 6)] for x, y in r] + [[round(r[0][0], 6), round(r[0][1], 6)]]
+    polys = [[rnd(ring)] + [rnd(h) for h in holes]] + [[rnd(p)] for p in ponds]
+    g = {'type': 'Polygon', 'coordinates': polys[0]} if len(polys) == 1 else {'type': 'MultiPolygon', 'coordinates': polys}
+    km = round(_len_m(shore) / 1000, 1)
+    print(f'  shoreline water {survey}: one shore of {km} km ({len(gaps)} gaps bridged, the longest {max(gaps, default=0)} m), '
+          f'{spliced} pier lines spliced in, {len(holes)} islands, {len(ponds)} ponds, {left} lines left as lines; closed with a box to the north and east', flush=True)
+    return feat(g, {'survey': survey, 'shore_km': km,
+                    'note': 'Water between the surveyed shore and a box out in the bay to the north and east; the survey covers only part of the shore'})
+
+
 def shoreline_water(feats):
     out = []
     for survey in sorted({f['properties']['survey'] for f in feats}):
@@ -564,7 +685,9 @@ def shoreline_water(feats):
         # it (1853 and 1857: the northeast waterfront) can't be closed without inventing shore, so it gets none.
         gap = max(_m(shore[-1], fa[2]), _m(shore[0], fb[2]))
         if gap > WATER_END_M:
-            print(f'  shoreline water {survey}: the survey covers only part of the shore (an end is {gap / 1000:.1f} km from the edge), no water area', flush=True)
+            w = _partial_water(survey, feats)
+            if w:
+                out.append(w)
             continue
         ring = None
         for fw in (True, False):

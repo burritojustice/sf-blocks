@@ -78,7 +78,10 @@ The GeoJSON version of the streets dataset isn't needed; the CSV has the same ge
 
 ### Historic shoreline and water
 
-`data/layers/shoreline.geojson` is NOAA's T-sheet shoreline surveys of 1850–52, 1853 and 1857 (`data/uploads/shoreline/`), as lines. `data/layers/shoreline_water.geojson` is built from them by `build_layers.py shoreline`: the 1850–52 shore, the one survey of the whole shore, chained into one line (gaps up to 1.2 km bridged straight across) and closed along a frame out in the bay and ocean, as one polygon of the water between them. Its `draw: "water"` in `index.json` tells apps to paint it in the basemap's water color under the roads, so filled land (the Marina, the waterfront, Mission Bay, Islais Creek, India Basin) shows as water; over today's water it's the same color. The 1853 and 1857 surveys cover only the northeast waterfront and get no polygon.
+`data/layers/shoreline.geojson` is NOAA's T-sheet shoreline surveys of 1850–52, 1853 and 1857 (`data/uploads/shoreline/`, one file per survey), as lines. `data/layers/shoreline_water.geojson` is built from them by `build_layers.py shoreline`: one polygon per survey of the water then. Its `draw: "water"` in `index.json` tells apps to paint it in the basemap's water color under the roads, so filled land shows as water; over today's water it's the same color.
+
+- **1850–52**, a survey of the whole shore: the shore chained into one line and closed along a frame out in the bay and ocean (the county line at the south, west of Yerba Buena Island).
+- **1853 and 1857**, surveys of the northeast waterfront: every line but the sheet edges. The shore is chained (1853's one real gap, 101 m, is where its sheet cuts off the south side of Mission Creek), pier lines that start and end on the shore are spliced in so piers show as land, closed loops in the water become islands, and the shore is closed with a box to the north and east. A few short stubs that touch nothing stay lines.
 
 ## streets.json
 
