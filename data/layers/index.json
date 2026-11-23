@@ -28,6 +28,7 @@
     "Historic": 2
    },
    "colors": null,
+   "draw": null,
    "title": "Muni Simple Routes",
    "dataset": "9exe-acju",
    "page": "https://data.sf.gov/Transportation/Muni-Simple-Routes/9exe-acju/about_data",
@@ -56,6 +57,7 @@
     "CLASS I": 371
    },
    "colors": null,
+   "draw": null,
    "title": "MTA Bike Network Linear Features",
    "dataset": "ygmz-vaxd",
    "page": "https://data.sf.gov/Transportation/MTA-Bike-Network-Linear-Features/ygmz-vaxd/about_data",
@@ -83,6 +85,7 @@
     "Planned": 18
    },
    "colors": null,
+   "draw": null,
    "title": "Slow Streets",
    "dataset": "hkz3-itiu",
    "page": "https://data.sf.gov/Transportation/Slow-Streets/hkz3-itiu/about_data",
@@ -116,6 +119,7 @@
     "Continuation High Schools": 2
    },
    "colors": null,
+   "draw": null,
    "title": "Schools",
    "dataset": "7e7j-59qk",
    "page": "https://data.sf.gov/Economy-and-Community/Schools/7e7j-59qk/about_data",
@@ -140,6 +144,7 @@
     "police": 21
    },
    "colors": null,
+   "draw": null,
    "title": "City-owned Facilities: Fire and Police",
    "dataset": "wt27-4jim",
    "page": "https://data.sf.gov/City-Infrastructure/City-owned-Facilities-Fire-and-Police/wt27-4jim/about_data",
@@ -166,6 +171,7 @@
     "hospital": 13
    },
    "colors": null,
+   "draw": null,
    "title": "Health Care Facilities",
    "dataset": "jhsu-2pka",
    "page": "https://data.sf.gov/Health-and-Social-Services/Health-Care-Facilities/jhsu-2pka/about_data",
@@ -206,6 +212,7 @@
     "openspace": 4
    },
    "colors": null,
+   "draw": null,
    "title": "City Lands",
    "dataset": "gtnh-hgvs",
    "page": "https://data.sf.gov/City-Infrastructure/City-Lands/gtnh-hgvs/about_data",
@@ -241,7 +248,37 @@
     "1853": "#E8590C",
     "1857": "#2F9E44"
    },
+   "draw": null,
    "title": "NOAA historical shoreline surveys (T-sheets)",
+   "dataset": null,
+   "page": "https://shoreline.noaa.gov/t-sheets.html",
+   "data_as_of": null
+  },
+  {
+   "id": "shoreline_water",
+   "label": "Water in 1850\u201352",
+   "file": "shoreline_water.geojson",
+   "format": "geojson",
+   "geometry": "Polygon",
+   "features": 1,
+   "bytes": 121222,
+   "fields": {
+    "survey": "text",
+    "shore_km": "number",
+    "note": "text"
+   },
+   "category": "survey",
+   "name": "survey",
+   "categories": {
+    "1850\u201352": 1
+   },
+   "colors": {
+    "1850\u201352": "#1C7ED6",
+    "1853": "#E8590C",
+    "1857": "#2F9E44"
+   },
+   "draw": "water",
+   "title": "NOAA historical shoreline surveys (T-sheets): water areas",
    "dataset": null,
    "page": "https://shoreline.noaa.gov/t-sheets.html",
    "data_as_of": null

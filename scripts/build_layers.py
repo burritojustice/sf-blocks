@@ -36,6 +36,9 @@ SOURCES = {
     # survey in data/uploads/shoreline/, built into one layer with a survey field (not from DataSF)
     'shoreline': {'title': 'NOAA historical shoreline surveys (T-sheets)', 'id': None, 'format': 'GeoJSON',
                   'url': 'https://shoreline.noaa.gov/t-sheets.html', 'also': ['shoreline'], 'folder': 'shoreline'},
+    # built from the shoreline layer (build_shoreline), not downloaded
+    'shoreline_water': {'title': 'NOAA historical shoreline surveys (T-sheets): water areas', 'id': None, 'format': 'GeoJSON',
+                        'url': 'https://shoreline.noaa.gov/t-sheets.html', 'also': []},
     'muni': {'title': 'Muni Simple Routes', 'id': '9exe-acju', 'format': 'GeoJSON',
              'url': 'https://data.sf.gov/Transportation/Muni-Simple-Routes/9exe-acju/about_data',
              'also': ['muni']},
@@ -75,6 +78,10 @@ LAYER_INFO = {
     'lands': {'label': 'City-owned land', 'category': 'cat', 'name': 'name'},
     'shoreline': {'label': 'Shoreline 1850–1857', 'category': 'survey', 'name': 'kind',
                   'colors': {'1850–52': '#1C7ED6', '1853': '#E8590C', '1857': '#2F9E44'}},
+    # draw 'water': apps paint it in the basemap's water color, just above the basemap's water and under its
+    # roads, so land that was water then shows as water
+    'shoreline_water': {'label': 'Water in 1850–52', 'category': 'survey', 'name': 'survey', 'draw': 'water',
+                        'colors': {'1850–52': '#1C7ED6', '1853': '#E8590C', '1857': '#2F9E44'}},
 }
 
 
@@ -112,7 +119,7 @@ def write_index():
         layers.append({'id': key, 'label': info['label'], 'file': p.name, 'format': 'geojson',
                        'geometry': kinds[0] if len(kinds) == 1 else kinds, 'features': len(feats), 'bytes': p.stat().st_size,
                        'fields': fields, 'category': info.get('category'), 'name': info.get('name'),
-                       'categories': cats(feats, info.get('category')), 'colors': info.get('colors'),
+                       'categories': cats(feats, info.get('category')), 'colors': info.get('colors'), 'draw': info.get('draw'),
                        'title': src.get('title'), 'dataset': src.get('id'), 'page': src.get('url'), 'data_as_of': src.get('data_as_of')})
     out = OUT / 'index.json'
     out.write_text(json.dumps({'_doc': 'Small map layers: data/layers/<file>, GeoJSON, built by scripts/build_layers.py.', 'layers': layers}, indent=1) + '\n')
@@ -461,6 +468,119 @@ def build_shoreline(folder):
         print(f'  shoreline {SHORE_SURVEY[reg]}: {joins} joining lines kept, {edges} sheet edges left out', flush=True)
     if files:
         write('shoreline', feats, files[-1], None)
+        write('shoreline_water', shoreline_water(feats), files[-1], None)
+
+
+# Water areas from the shoreline surveys. Each survey's shoreline pieces (mean high water, joining lines,
+# seawalls; not wharves, marsh edges or rocks) are chained end to end into one line along SF's shore,
+# with gaps up to WATER_BRIDGE_M bridged straight across. Its two ends are then closed along WATER_FRAME,
+# a ring out in open water (west of Yerba Buena Island, so the island isn't painted as water), on the
+# side away from WATER_LAND (a point that's always been land). Only surveys of the whole shore (WATER_END_M). So the polygon is the water between the
+# historic shore and the frame: drawn under the basemap's roads, land that was water then (fill) shows as
+# water, and over today's water it's the same color. Only the shore north of the county line, in SF.
+WATER_KINDS = {'Mean high water', 'Joining line', 'Man-made', 'Approximate', 'Shoreline / alongshore boundary'}
+WATER_BRIDGE_M = 1200
+WATER_FRAME = [(-122.54, 37.7065), (-122.35, 37.7065), (-122.35, 37.79), (-122.376, 37.79), (-122.376, 37.817), (-122.54, 37.817)]
+WATER_LAND = (-122.44, 37.76)
+WATER_END_M = 500
+
+
+def _in_ring(pt, ring):
+    x, y, inside = pt[0], pt[1], False
+    for (x1, y1), (x2, y2) in zip(ring, ring[1:] + ring[:1]):
+        if (y1 > y) != (y2 > y) and x < x1 + (y - y1) * (x2 - x1) / (y2 - y1):
+            inside = not inside
+    return inside
+
+
+def _on_frame(pt):
+    """the nearest point on WATER_FRAME to pt: (segment index, distance along it 0–1, the point)"""
+    best = None
+    for i, a in enumerate(WATER_FRAME):
+        b = WATER_FRAME[(i + 1) % len(WATER_FRAME)]
+        dx, dy = (b[0] - a[0]) * 0.79, b[1] - a[1]
+        t = max(0, min(1, (((pt[0] - a[0]) * 0.79) * dx + (pt[1] - a[1]) * dy) / (dx * dx + dy * dy)))
+        q = (a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1]))
+        d = _m(pt, q)
+        if best is None or d < best[0]:
+            best = (d, i, t, q)
+    return best[1:]
+
+
+def _frame_walk(fa, fb, forward):
+    """the frame's corners passed going from point fa to point fb (each from _on_frame), one way round"""
+    n, (ia, ta, qa), (ib, tb, qb) = len(WATER_FRAME), fa, fb
+    out, i = [qa], ia
+    if forward:
+        if ia == ib and tb >= ta:
+            return out + [qb]
+        while True:
+            i = (i + 1) % n; out.append(WATER_FRAME[i])
+            if i == ib:
+                return out + [qb]
+    if ia == ib and tb <= ta:
+        return out + [qb]
+    out.append(WATER_FRAME[i])
+    while i != (ib + 1) % n:
+        i = (i - 1) % n; out.append(WATER_FRAME[i])
+    return out + [qb]
+
+
+def shoreline_water(feats):
+    out = []
+    for survey in sorted({f['properties']['survey'] for f in feats}):
+        segs = []
+        for f in feats:
+            pr, g = f['properties'], f['geometry']
+            if pr['survey'] != survey or pr['kind'] not in WATER_KINDS:
+                continue
+            for c in ([g['coordinates']] if g['type'] == 'LineString' else g['coordinates']):
+                if all(WATER_FRAME[0][1] - 0.002 < p[1] < WATER_FRAME[-1][1] for p in c):
+                    segs.append([tuple(p) for p in c])
+        # chain: join the two nearest loose ends again and again, while they're within WATER_BRIDGE_M
+        chains = [s for s in segs if len(s) > 1]
+        while len(chains) > 1:
+            best = None
+            for i, a in enumerate(chains):
+                for j in range(i + 1, len(chains)):
+                    b = chains[j]
+                    for ra in (0, 1):
+                        for rb in (0, 1):
+                            d = _m(a[-1] if not ra else a[0], b[0] if not rb else b[-1])
+                            if best is None or d < best[0]:
+                                best = (d, i, j, ra, rb)
+            d, i, j, ra, rb = best
+            if d > WATER_BRIDGE_M:
+                break
+            a = chains[i][::-1] if ra else chains[i]
+            b = chains[j][::-1] if rb else chains[j]
+            chains[i] = a + (b[1:] if d < 1 else b)
+            chains.pop(j)
+        shore = max(chains, key=lambda c: sum(_m(p, q) for p, q in zip(c, c[1:])), default=None)
+        if not shore or len(shore) < 3:
+            continue
+        fa, fb = _on_frame(shore[-1]), _on_frame(shore[0])
+        # only a survey of the whole shore: both ends reach the frame (the county line). A survey of part of
+        # it (1853 and 1857: the northeast waterfront) can't be closed without inventing shore, so it gets none.
+        gap = max(_m(shore[-1], fa[2]), _m(shore[0], fb[2]))
+        if gap > WATER_END_M:
+            print(f'  shoreline water {survey}: the survey covers only part of the shore (an end is {gap / 1000:.1f} km from the edge), no water area', flush=True)
+            continue
+        ring = None
+        for fw in (True, False):
+            r = shore + _frame_walk(fa, fb, fw)[:-1]
+            if not _in_ring(WATER_LAND, r):
+                ring = r
+                break
+        if not ring:
+            print(f'  shoreline water {survey}: couldn\'t close the shore away from land, skipped', flush=True)
+            continue
+        ring = [[round(x, 6), round(y, 6)] for x, y in ring]
+        ring.append(ring[0])
+        out.append(feat({'type': 'Polygon', 'coordinates': [ring]}, {'survey': survey, 'shore_km': round(sum(_m(p, q) for p, q in zip(shore, shore[1:])) / 1000, 1),
+                    'note': 'Water between the surveyed shore and a line out in the bay and ocean; shore gaps up to 1.2 km bridged straight across'}))
+        print(f'  shoreline water {survey}: {len(segs)} shore pieces → one shore of {out[-1]["properties"]["shore_km"]} km, closed offshore', flush=True)
+    return out
 
 
 def main():

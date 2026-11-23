@@ -328,6 +328,59 @@
           "agent"
         ]
       }
+    },
+    {
+      "id": "sea_level_rise_24in",
+      "label": "Sea level rise 24″ + 100-year storm",
+      "dataset": "esku-ejgv",
+      "page": "https://data.sf.gov/d/esku-ejgv",
+      "year": "2020 (BCDC Adapting to Rising Tides)",
+      "format": "geojson",
+      "fields": {
+        "zone": "int:gridcode"
+      },
+      "categories": [
+        "zone"
+      ],
+      "note": "Inundation from 24 inches of sea level rise with a 100-year storm (66 inches of total water level).",
+      "tiles": {
+        "minzoom": 10,
+        "maxzoom": 15
+      }
+    },
+    {
+      "id": "sea_level_rise_66in",
+      "label": "Sea level rise 66″ + 100-year storm",
+      "dataset": "6ann-usi8",
+      "page": "https://data.sf.gov/d/6ann-usi8",
+      "year": "2020 (BCDC Adapting to Rising Tides)",
+      "format": "geojson",
+      "fields": {
+        "slr108": "text:slr108"
+      },
+      "categories": [],
+      "note": "Inundation from 66 inches of sea level rise with a 100-year storm (108 inches of total water level).",
+      "tiles": {
+        "minzoom": 10,
+        "maxzoom": 15
+      }
+    },
+    {
+      "id": "sea_level_rise_108in_line",
+      "label": "Sea level rise 108″ vulnerability zone (line)",
+      "dataset": "92e4-7ptg",
+      "page": "https://data.sf.gov/d/92e4-7ptg",
+      "year": "2014 (SFPUC; 2010 ground, 2010–11 LiDAR)",
+      "format": "geojson",
+      "fields": {
+        "name": "text:name"
+      },
+      "categories": [],
+      "note": "Edge of the 108-inch inundation vulnerability zone (sea level rise, King Tide and 100-year storm together, no adaptation). A planning tool, not exact flood lines; piers left out.",
+      "tiles": {
+        "minzoom": 10,
+        "maxzoom": 15
+      }
     }
   ]
 }
