@@ -306,6 +306,26 @@
       "page": "https://data.sf.gov/d/esku-ejgv",
       "retrieved": "2026-11-23",
       "source": "5e41ebebd6e1"
+    },
+    {
+      "id": "sea_level_rise_66in",
+      "label": "Sea level rise 66″ + 100-year storm",
+      "year": "2020 (BCDC Adapting to Rising Tides)",
+      "file": "sea_level_rise_66in.geojson",
+      "format": "geojson",
+      "layer": "sea_level_rise_66in",
+      "bytes": 1646043,
+      "features": 1,
+      "records": 1,
+      "geometry": "Polygon",
+      "fields": {
+        "slr108": "text"
+      },
+      "stats": "sea_level_rise_66in.stats.json",
+      "dataset": "6ann-usi8",
+      "page": "https://data.sf.gov/d/6ann-usi8",
+      "retrieved": "2026-11-23",
+      "source": "ab4f892e4c4e"
     }
   ]
 }
