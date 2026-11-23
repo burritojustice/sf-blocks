@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# sf-blocks 2026.11.23.2: master copy, moved here from civic-joy-fund/block-party.
+# sf-blocks 2026.11.23.3: master copy, moved here from civic-joy-fund/block-party.
 """Build the small map overlay files in data/layers/ from the raw downloads in data/uploads/.
 
     python3 scripts/build_layers.py              # reads data/uploads/, writes data/layers/ and its index.json

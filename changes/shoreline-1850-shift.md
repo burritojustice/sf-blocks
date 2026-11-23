@@ -1,1 +1,0 @@
-- The 1850–52 shoreline's bay sheet (T-00352, North Beach to Hunters Point) is moved 60 m north and 6 m east, where the 1853 and 1857 surveys put the same piers, beach and Rincon Point. It was digitized out of place. Near North Beach, where it meets the next sheet, the move eases off so the shore stays joined. The water areas are rebuilt to match. The raw download is unchanged.

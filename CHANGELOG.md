@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.11.23.3
+- The 1850–52 shoreline's bay sheet (T-00352, North Beach to Hunters Point) is moved 60 m north and 6 m east, where the 1853 and 1857 surveys put the same piers, beach and Rincon Point. It was digitized out of place. Near North Beach, where it meets the next sheet, the move eases off so the shore stays joined. The water areas are rebuilt to match. The raw download is unchanged.
+
 ## 2026.11.23.2
 - Water in 1853 and 1857 (`data/layers/shoreline_water.geojson`): the two waterfront surveys, from every line they have (wharves, marsh edges and piers included, sheet edges not), closed with a box to the north and east. Piers show as land and marsh islands as holes, and 1857 includes Islais Creek. The layer is now "Water in the 1850s", one area per survey.
 
