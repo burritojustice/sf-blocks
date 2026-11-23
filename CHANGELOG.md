@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026.11.23
+- Water in 1850–52 (`data/layers/shoreline_water.geojson`): the 1850–52 shoreline survey closed into a polygon of the water between the old shore and the bay and ocean, marked `draw: "water"` so apps paint it in the basemap's water color under the roads. Filled land shows as water. The 1853 and 1857 surveys cover only part of the shore and get no polygon.
+- Three sea level rise map layers from DataSF: 24″ rise with a 100-year storm (`esku-ejgv`), 66″ rise with a 100-year storm (`6ann-usi8`), and the 108″ inundation vulnerability zone edge (`92e4-7ptg`, lines).
+- **Sea level rise 24″ + 100-year storm** (`sea_level_rise_24in`): 7 features from 7 rows, 1.3 MB `sea_level_rise_24in.pmtiles`; 0 rows outside the region or without a location. Data year: 2020 (BCDC Adapting to Rising Tides).
+- **Sea level rise 66″ + 100-year storm** (`sea_level_rise_66in`): 1 features from 1 rows, 1.6 MB `sea_level_rise_66in.geojson`; 0 rows outside the region or without a location. Data year: 2020 (BCDC Adapting to Rising Tides).
+- **Sea level rise 108″ vulnerability zone (line)** (`sea_level_rise_108in_line`): 1,005 features from 1,005 rows, 0.2 MB `sea_level_rise_108in_line.pmtiles`; 0 rows outside the region or without a location. Data year: 2014 (SFPUC; 2010 ground, 2010–11 LiDAR).
+
 ## 2026.11.20.4
 - **Storm Drains** (`storm_drains`): 23,907 features from 23,907 rows, 0.6 MB `storm_drains.pmtiles`; 0 rows outside the region or without a location. Data year: current.
 - **Map layers can be enriched, and keep it through refreshes.** A layer's entry can now say `enrich`: `elevation` (ground height in meters from the Terrarium tiles Block Party uses for slopes), `cnn` (the nearest street block), `areas` (the district, neighborhood or any boundary set each feature is in) and `extra` (hand-made columns in a CSV beside the source, joined by id). They're added on every build, so rebuilding from DataSF keeps them, and the raw download stays as the city published it. The manifest says which fields are in meters (`units`), so the apps can show feet or meters.

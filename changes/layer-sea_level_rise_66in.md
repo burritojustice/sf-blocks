@@ -1,1 +1,0 @@
-- **Sea level rise 66″ + 100-year storm** (`sea_level_rise_66in`): 1 features from 1 rows, 1.6 MB `sea_level_rise_66in.geojson`; 0 rows outside the region or without a location. Data year: 2020 (BCDC Adapting to Rising Tides).

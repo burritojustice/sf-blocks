@@ -1,1 +1,0 @@
-- **Sea level rise 108″ vulnerability zone (line)** (`sea_level_rise_108in_line`): 1,005 features from 1,005 rows, 0.2 MB `sea_level_rise_108in_line.pmtiles`; 0 rows outside the region or without a location. Data year: 2014 (SFPUC; 2010 ground, 2010–11 LiDAR).
