@@ -255,6 +255,42 @@
    "data_as_of": null
   },
   {
+   "id": "chart_1853",
+   "label": "Names on the 1853 chart",
+   "file": "chart_1853.geojson",
+   "format": "geojson",
+   "geometry": "Point",
+   "features": 20,
+   "bytes": 4196,
+   "fields": {
+    "id": "number",
+    "name": "text",
+    "as_printed": "text",
+    "kind": "text",
+    "year": "number",
+    "note": "text"
+   },
+   "category": "kind",
+   "name": "name",
+   "categories": {
+    "wharf": 7,
+    "point": 5,
+    "rock": 2,
+    "reserve": 1,
+    "gauge": 1,
+    "railway": 1,
+    "bay": 1,
+    "shoal": 1,
+    "wreck": 1
+   },
+   "colors": null,
+   "draw": null,
+   "title": "U.S. Coast Survey, City of San Francisco and its Vicinity (1853)",
+   "dataset": null,
+   "page": "https://www.davidrumsey.com/luna/servlet/detail/RUMSEY~8~1~2210~180022",
+   "data_as_of": null
+  },
+  {
    "id": "shoreline_water",
    "label": "Water in the 1850s",
    "file": "shoreline_water.geojson",

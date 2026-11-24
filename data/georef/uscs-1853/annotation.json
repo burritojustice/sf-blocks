@@ -1,0 +1,2550 @@
+{
+ "@context": [
+  "http://iiif.io/api/extension/georef/1/context.json",
+  "http://iiif.io/api/presentation/3/context.json"
+ ],
+ "type": "Annotation",
+ "motivation": "georeferencing",
+ "target": {
+  "type": "SpecificResource",
+  "source": {
+   "id": "https://www.davidrumsey.com/luna/servlet/iiif/RUMSEY~8~1~2210~180022",
+   "type": "ImageService2",
+   "height": 9914,
+   "width": 6880,
+   "partOf": [
+    {
+     "id": "https://www.davidrumsey.com/luna/servlet/iiif/m/RUMSEY~8~1~2210~180022/canvas/c1",
+     "type": "Canvas",
+     "label": {
+      "none": [
+       "San Francisco & vicinity."
+      ]
+     },
+     "partOf": [
+      {
+       "id": "https://www.davidrumsey.com/luna/servlet/iiif/m/RUMSEY~8~1~2210~180022/manifest",
+       "type": "Manifest",
+       "label": {
+        "none": [
+         "San Francisco & vicinity."
+        ]
+       }
+      }
+     ]
+    }
+   ],
+   "provider": [
+    {
+     "label": {
+      "none": [
+       "David Rumsey Map Collection"
+      ]
+     },
+     "homepage": [
+      {
+       "id": "https://www.davidrumsey.com/luna/servlet/view/all"
+      }
+     ]
+    }
+   ]
+  },
+  "selector": {
+   "type": "SvgSelector",
+   "value": "<svg width=\"6880\" height=\"9914\"><polygon points=\"773,1110 775,8577 6129,8566 6120,1106\" /></svg>"
+  }
+ },
+ "body": {
+  "type": "FeatureCollection",
+  "transformation": {
+   "type": "polynomial",
+   "options": {
+    "order": 1
+   }
+  },
+  "features": [
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2673,
+      3056
+     ],
+     "streets": "Chestnut St & Stockton St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40994,
+      37.80417
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2505,
+      3084
+     ],
+     "streets": "Chestnut St & Powell St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.41158,
+      37.80396
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2684,
+      3114
+     ],
+     "streets": "Fielding St & Stockton St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40985,
+      37.80372
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      1995,
+      3159
+     ],
+     "streets": "Chestnut St & Jones St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.41651,
+      37.80335
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2694,
+      3178
+     ],
+     "streets": "Lombard St & Stockton St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40975,
+      37.80324
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2522,
+      3202
+     ],
+     "streets": "Lombard St & Powell St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.41139,
+      37.80303
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2930,
+      3265
+     ],
+     "streets": "Child St & Greenwich St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40742,
+      37.80257
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2014,
+      3280
+     ],
+     "streets": "Jones St & Lombard St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.41632,
+      37.80241
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3511,
+      3301
+     ],
+     "streets": "Battery St & Filbert St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40179,
+      37.80231
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2713,
+      3299
+     ],
+     "streets": "Greenwich St & Stockton St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40956,
+      37.8023
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3386,
+      3315
+     ],
+     "streets": "Filbert St & Sansome St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40297,
+      37.80217
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2543,
+      3324
+     ],
+     "streets": "Greenwich St & Powell St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.4112,
+      37.8021
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2502,
+      3331
+     ],
+     "streets": "Greenwich St & Via Bufano"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.4116,
+      37.80205
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3390,
+      3376
+     ],
+     "streets": "Alta St & Start: 1-99 Block"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40293,
+      37.80171
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2033,
+      3400
+     ],
+     "streets": "Greenwich St & Jones St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.41613,
+      37.80148
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3530,
+      3419
+     ],
+     "streets": "Battery St & Union St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40162,
+      37.80138
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2732,
+      3417
+     ],
+     "streets": "Filbert St & Stockton St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40937,
+      37.80137
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3406,
+      3437
+     ],
+     "streets": "Sansome St & Union St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40279,
+      37.80124
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2559,
+      3442
+     ],
+     "streets": "Filbert St & Powell St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.41102,
+      37.80117
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2042,
+      3461
+     ],
+     "streets": "Jones St & Valparaiso St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.41604,
+      37.80101
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3540,
+      3478
+     ],
+     "streets": "Battery St & John Maher St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40152,
+      37.80092
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2566,
+      3486
+     ],
+     "streets": "Columbus Ave & Powell St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.41095,
+      37.80083
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2993,
+      3499
+     ],
+     "streets": "Union St & Varennes St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.4068,
+      37.80074
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2911,
+      3512
+     ],
+     "streets": "Grant Ave & Union St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40758,
+      37.80064
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3673,
+      3519
+     ],
+     "streets": "Front St & Green St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40025,
+      37.80061
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2786,
+      3533
+     ],
+     "streets": "Union St & Via Ferlinghetti"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40884,
+      37.80049
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3549,
+      3538
+     ],
+     "streets": "Battery St & Green St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40143,
+      37.80046
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2750,
+      3536
+     ],
+     "streets": "Stockton St & Union St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40919,
+      37.80045
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3013,
+      3617
+     ],
+     "streets": "Green St & Varennes St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40661,
+      37.7998
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2931,
+      3629
+     ],
+     "streets": "Grant Ave & Green St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.4074,
+      37.7997
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3570,
+      3654
+     ],
+     "streets": "Battery St & Vallejo St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40124,
+      37.79953
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2770,
+      3654
+     ],
+     "streets": "Columbus Ave & Green St & Stockton St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40901,
+      37.79949
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3446,
+      3668
+     ],
+     "streets": "Sansome St & Vallejo St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40242,
+      37.79938
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2599,
+      3681
+     ],
+     "streets": "Green St & Powell St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.41064,
+      37.7993
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2952,
+      3746
+     ],
+     "streets": "Grant Ave & Vallejo St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40721,
+      37.79878
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3707,
+      3757
+     ],
+     "streets": "Broadway & Front St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.39987,
+      37.79873
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2884,
+      3756
+     ],
+     "streets": "Columbus Ave & Vallejo St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40787,
+      37.7987
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3587,
+      3772
+     ],
+     "streets": "Battery St & Broadway"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40105,
+      37.79858
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2786,
+      3772
+     ],
+     "streets": "Stockton St & Vallejo St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40881,
+      37.79857
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3463,
+      3791
+     ],
+     "streets": "Broadway & Sansome St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40223,
+      37.79843
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2615,
+      3799
+     ],
+     "streets": "Powell St & Vallejo St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.41046,
+      37.79837
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3331,
+      3809
+     ],
+     "streets": "Bartol St & Broadway"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40352,
+      37.79827
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3294,
+      3821
+     ],
+     "streets": "Broadway & Montgomery St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40386,
+      37.79822
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2963,
+      3825
+     ],
+     "streets": "Columbus Ave & Grant Ave"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40708,
+      37.79815
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3007,
+      3865
+     ],
+     "streets": "Broadway & Columbus Ave"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40667,
+      37.79786
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2969,
+      3870
+     ],
+     "streets": "Broadway & Grant Ave"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40702,
+      37.79782
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3727,
+      3874
+     ],
+     "streets": "Front St & Pacific Ave"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.39969,
+      37.79781
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3341,
+      3874
+     ],
+     "streets": "Bartol St & Start: 1-99 Block"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40342,
+      37.79778
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3608,
+      3892
+     ],
+     "streets": "Battery St & Pacific Ave"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40086,
+      37.79765
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2805,
+      3893
+     ],
+     "streets": "Broadway & Stockton St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40862,
+      37.79763
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2764,
+      3897
+     ],
+     "streets": "Broadway & Cordelia St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40904,
+      37.79757
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3484,
+      3911
+     ],
+     "streets": "Pacific Ave & Sansome St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40204,
+      37.7975
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2872,
+      3925
+     ],
+     "streets": "Stark St & Start: 1-99 Block"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40797,
+      37.7974
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2811,
+      3932
+     ],
+     "streets": "Stark St & Stockton St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40856,
+      37.79733
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3314,
+      3936
+     ],
+     "streets": "Montgomery St & Pacific Ave"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40368,
+      37.7973
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3152,
+      3962
+     ],
+     "streets": "Kearny St & Pacific Ave"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40532,
+      37.79709
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3133,
+      3966
+     ],
+     "streets": "Columbus Ave & Pacific Ave"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40551,
+      37.79706
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3021,
+      3985
+     ],
+     "streets": "Beckett St & Pacific Ave"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40653,
+      37.79694
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3747,
+      3987
+     ],
+     "streets": "Front St & Jackson St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.39951,
+      37.79693
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3155,
+      3988
+     ],
+     "streets": "Columbus Ave & Kearny St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40529,
+      37.79691
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2988,
+      3990
+     ],
+     "streets": "Grant Ave & Pacific Ave"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40683,
+      37.7969
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3497,
+      3991
+     ],
+     "streets": "Gold St & Sansome St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40191,
+      37.79688
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3440,
+      4000
+     ],
+     "streets": "Balance St & Gold St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40246,
+      37.79681
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3624,
+      4004
+     ],
+     "streets": "Battery St & Jackson St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40068,
+      37.79678
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2824,
+      4015
+     ],
+     "streets": "Pacific Ave & Stockton St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40843,
+      37.7967
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2781,
+      4022
+     ],
+     "streets": "Cordelia St & Pacific Ave"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40885,
+      37.79665
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3503,
+      4023
+     ],
+     "streets": "Jackson St & Sansome St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40185,
+      37.79663
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2742,
+      4026
+     ],
+     "streets": "Pacific Ave & Trenton St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40925,
+      37.7966
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3446,
+      4033
+     ],
+     "streets": "Balance St & Jackson St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.4024,
+      37.79655
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2654,
+      4042
+     ],
+     "streets": "Pacific Ave & Powell St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.41008,
+      37.79649
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3334,
+      4050
+     ],
+     "streets": "Jackson St & Montgomery St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.4035,
+      37.79642
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3244,
+      4063
+     ],
+     "streets": "Columbus Ave & Jackson St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40441,
+      37.7963
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3170,
+      4076
+     ],
+     "streets": "Jackson St & Kearny St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40514,
+      37.79621
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3041,
+      4097
+     ],
+     "streets": "Beckett St & Jackson St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40635,
+      37.79606
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3008,
+      4104
+     ],
+     "streets": "Grant Ave & Jackson St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40665,
+      37.79602
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3647,
+      4118
+     ],
+     "streets": "Battery St & Washington St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40049,
+      37.79588
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3518,
+      4141
+     ],
+     "streets": "Sansome St & Washington St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40168,
+      37.79572
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3352,
+      4164
+     ],
+     "streets": "Columbus Ave & Montgomery St & Washington St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40332,
+      37.79553
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3653,
+      4176
+     ],
+     "streets": "Battery St & Merchant St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40041,
+      37.79545
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3187,
+      4189
+     ],
+     "streets": "Kearny St & Washington St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40496,
+      37.79533
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3902,
+      4195
+     ],
+     "streets": "Clay St & Davis St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.39797,
+      37.79531
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3781,
+      4216
+     ],
+     "streets": "Clay St & Front St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.39915,
+      37.79516
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3025,
+      4217
+     ],
+     "streets": "Grant Ave & Washington St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40648,
+      37.79514
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3362,
+      4226
+     ],
+     "streets": "Merchant St & Montgomery St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40322,
+      37.79507
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3659,
+      4233
+     ],
+     "streets": "Battery St & Clay St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40033,
+      37.79501
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2860,
+      4242
+     ],
+     "streets": "Stockton St & Washington St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40808,
+      37.79494
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3197,
+      4250
+     ],
+     "streets": "Kearny St & Merchant St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40488,
+      37.79486
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3539,
+      4256
+     ],
+     "streets": "Clay St & Sansome St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40149,
+      37.79484
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3448,
+      4265
+     ],
+     "streets": "Clay St & Leidesdorff St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40237,
+      37.79477
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3370,
+      4277
+     ],
+     "streets": "Clay St & Montgomery St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40314,
+      37.79467
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      4040,
+      4290
+     ],
+     "streets": "Drumm St & Sacramento St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.39659,
+      37.79459
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3668,
+      4288
+     ],
+     "streets": "Battery St & Commercial St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40024,
+      37.79458
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3205,
+      4303
+     ],
+     "streets": "Clay St & Kearny St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.4048,
+      37.79445
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3546,
+      4311
+     ],
+     "streets": "Commercial St & Sansome St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.4014,
+      37.79443
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3919,
+      4310
+     ],
+     "streets": "Davis St & Sacramento St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.3978,
+      37.79443
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3461,
+      4325
+     ],
+     "streets": "Commercial St & Leidesdorff St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40226,
+      37.79432
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3800,
+      4329
+     ],
+     "streets": "Front St & Sacramento St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.39897,
+      37.79428
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3043,
+      4331
+     ],
+     "streets": "Clay St & Grant Ave"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.4063,
+      37.79426
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3381,
+      4337
+     ],
+     "streets": "Commercial St & Montgomery St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40305,
+      37.79422
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2941,
+      4348
+     ],
+     "streets": "Clay St & Spofford St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40729,
+      37.79414
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3677,
+      4348
+     ],
+     "streets": "Battery St & Sacramento St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40015,
+      37.79413
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2914,
+      4352
+     ],
+     "streets": "Clay St & Hangah St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40753,
+      37.79411
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2878,
+      4358
+     ],
+     "streets": "Clay St & Stockton St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.4079,
+      37.79406
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3214,
+      4360
+     ],
+     "streets": "Commercial St & Kearny St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40471,
+      37.79402
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2793,
+      4368
+     ],
+     "streets": "Clay St & Joice St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40872,
+      37.79396
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3471,
+      4381
+     ],
+     "streets": "Leidesdorff St & Sacramento St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40216,
+      37.79388
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3809,
+      4386
+     ],
+     "streets": "Front St & Halleck St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.39888,
+      37.79384
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3053,
+      4386
+     ],
+     "streets": "Commercial St & Grant Ave"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40622,
+      37.79383
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      2622,
+      4395
+     ],
+     "streets": "Clay St & Wetmore St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.41037,
+      37.79375
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      4060,
+      4408
+     ],
+     "streets": "California St & Drumm St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.39639,
+      37.79366
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3283,
+      4410
+     ],
+     "streets": "Sacramento St & Spring St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40402,
+      37.79365
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3224,
+      4418
+     ],
+     "streets": "Kearny St & Sacramento St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40461,
+      37.79357
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3940,
+      4427
+     ],
+     "streets": "California St & Davis St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.39761,
+      37.79351
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3481,
+      4436
+     ],
+     "streets": "Halleck St & Leidesdorff St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40206,
+      37.79344
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3060,
+      4444
+     ],
+     "streets": "Grant Ave & Sacramento St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40613,
+      37.79338
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3819,
+      4448
+     ],
+     "streets": "California St & Front St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.39878,
+      37.79336
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      4067,
+      4460
+     ],
+     "streets": "Drumm St & Market St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.3963,
+      37.79326
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3696,
+      4467
+     ],
+     "streets": "Battery St & California St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.39996,
+      37.79321
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3575,
+      4488
+     ],
+     "streets": "California St & Sansome St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40113,
+      37.79306
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3491,
+      4501
+     ],
+     "streets": "California St & Leidesdorff St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40196,
+      37.79295
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3304,
+      4530
+     ],
+     "streets": "California St & Spring St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40383,
+      37.79272
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3243,
+      4538
+     ],
+     "streets": "California St & Kearny St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40442,
+      37.79264
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3114,
+      4559
+     ],
+     "streets": "California St & Quincy St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40565,
+      37.79249
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3081,
+      4562
+     ],
+     "streets": "California St & Grant Ave"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40594,
+      37.79245
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3717,
+      4591
+     ],
+     "streets": "Battery St & Pine St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.39976,
+      37.79226
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3593,
+      4608
+     ],
+     "streets": "Pine St & Sansome St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40093,
+      37.79211
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3513,
+      4624
+     ],
+     "streets": "Leidesdorff St & Pine St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40175,
+      37.792
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3430,
+      4637
+     ],
+     "streets": "Montgomery St & Pine St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40257,
+      37.7919
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3297,
+      4656
+     ],
+     "streets": "Belden St & Pine St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40387,
+      37.79173
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3261,
+      4661
+     ],
+     "streets": "Kearny St & Pine St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40422,
+      37.79169
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3738,
+      4703
+     ],
+     "streets": "Battery St & Bush St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.39957,
+      37.79133
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3615,
+      4730
+     ],
+     "streets": "Bush St & Sansome St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40074,
+      37.79118
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3781,
+      4741
+     ],
+     "streets": "01St St & Bush St & Market St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.39915,
+      37.79102
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3447,
+      4754
+     ],
+     "streets": "Bush St & Montgomery St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40238,
+      37.79097
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3317,
+      4775
+     ],
+     "streets": "Belden St & Bush St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40367,
+      37.79081
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3280,
+      4781
+     ],
+     "streets": "Bush St & Kearny St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40403,
+      37.79076
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3841,
+      4796
+     ],
+     "streets": "01St St & Stevenson St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.39859,
+      37.79057
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3635,
+      4850
+     ],
+     "streets": "Sansome St & Sutter St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.40056,
+      37.79025
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3764,
+      4873
+     ],
+     "streets": "Ecker St & Stevenson St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.39935,
+      37.78997
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3844,
+      4884
+     ],
+     "streets": "Jessie St & Mid Block"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.39857,
+      37.7899
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      3142,
+      4928
+     ],
+     "streets": "Grant Ave & Sutter St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.4054,
+      37.78963
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      4009,
+      4962
+     ],
+     "streets": "01St St & Minna St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.39703,
+      37.78933
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      4691,
+      5109
+     ],
+     "streets": "Harrison St & Main St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.39032,
+      37.78813
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      4357,
+      5133
+     ],
+     "streets": "Folsom St & Fremont St"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.3936,
+      37.788
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      4513,
+      5288
+     ],
+     "streets": "Fremont St & Harrison St & I-80 W Off Ramp"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.39205,
+      37.78677
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "properties": {
+     "resourceCoords": [
+      4716,
+      6632
+     ],
+     "streets": "03Rd St & Terry A Francois Blvd"
+    },
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -122.39003,
+      37.7763
+     ]
+    }
+   }
+  ]
+ }
+}
