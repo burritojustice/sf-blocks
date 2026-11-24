@@ -39,6 +39,11 @@ SOURCES = {
     # built from the shoreline layer (build_shoreline), not downloaded
     'shoreline_water': {'title': 'NOAA historical shoreline surveys (T-sheets): water areas', 'id': None, 'format': 'GeoJSON',
                         'url': 'https://shoreline.noaa.gov/t-sheets.html', 'also': []},
+    # names read off the U.S. Coast Survey's 1853 chart of the city (David Rumsey Map Collection scan), placed with
+    # a georeference fitted to today's street intersections: data/georef/uscs-1853/ (see docs/shoreline.md)
+    'chart_1853': {'title': 'U.S. Coast Survey, City of San Francisco and its Vicinity (1853)', 'id': None, 'format': 'CSV',
+                   'url': 'https://www.davidrumsey.com/luna/servlet/detail/RUMSEY~8~1~2210~180022', 'also': [],
+                   'path': 'data/georef/uscs-1853'},
     'muni': {'title': 'Muni Simple Routes', 'id': '9exe-acju', 'format': 'GeoJSON',
              'url': 'https://data.sf.gov/Transportation/Muni-Simple-Routes/9exe-acju/about_data',
              'also': ['muni']},
@@ -78,6 +83,7 @@ LAYER_INFO = {
     'lands': {'label': 'City-owned land', 'category': 'cat', 'name': 'name'},
     'shoreline': {'label': 'Shoreline 1850–1857', 'category': 'survey', 'name': 'kind',
                   'colors': {'1850–52': '#1C7ED6', '1853': '#E8590C', '1857': '#2F9E44'}},
+    'chart_1853': {'label': 'Names on the 1853 chart', 'category': 'kind', 'name': 'name'},
     # draw 'water': apps paint it in the basemap's water color, just above the basemap's water and under its
     # roads, so land that was water then shows as water
     'shoreline_water': {'label': 'Water in the 1850s', 'category': 'survey', 'name': 'survey', 'draw': 'water',
@@ -443,6 +449,48 @@ def shift_sheets(reg, src):
         print(f'  shoreline {SHORE_SURVEY[reg]}: sheet {sheet} moved {de} m east, {dn} m north ({len(seams)} seams eased)', flush=True)
 
 
+def georef(folder):
+    """an affine fit from a scan's pixels to lon/lat, from control_points.csv (px_x, px_y, lon, lat), least squares
+    in meters around the points' middle; returns (to_lonlat, rms meters)"""
+    pts = [(float(r['px_x']), float(r['px_y']), float(r['lon']), float(r['lat'])) for r in read_csv(folder / 'control_points.csv')]
+    lon0 = sum(p[2] for p in pts) / len(pts); lat0 = sum(p[3] for p in pts) / len(pts)
+    kx, ky = 111320 * math.cos(math.radians(lat0)), 110950
+    # normal equations for [x, y, 1] → east, north
+    A = [[0.0] * 3 for _ in range(3)]; be = [0.0] * 3; bn = [0.0] * 3
+    for x, y, lon, lat in pts:
+        v = (x, y, 1.0); e, n = (lon - lon0) * kx, (lat - lat0) * ky
+        for i in range(3):
+            be[i] += v[i] * e; bn[i] += v[i] * n
+            for j in range(3):
+                A[i][j] += v[i] * v[j]
+    def solve(M, b):
+        M = [row[:] + [b[i]] for i, row in enumerate(M)]
+        for c in range(3):
+            piv = max(range(c, 3), key=lambda r: abs(M[r][c])); M[c], M[piv] = M[piv], M[c]
+            for r in range(3):
+                if r != c:
+                    k = M[r][c] / M[c][c]
+                    M[r] = [a - k * bb for a, bb in zip(M[r], M[c])]
+        return [M[i][3] / M[i][i] for i in range(3)]
+    ce, cn = solve(A, be), solve(A, bn)
+    def to_lonlat(x, y):
+        return (lon0 + (ce[0] * x + ce[1] * y + ce[2]) / kx, lat0 + (cn[0] * x + cn[1] * y + cn[2]) / ky)
+    err = [math.hypot((to_lonlat(x, y)[0] - lon) * kx, (to_lonlat(x, y)[1] - lat) * ky) for x, y, lon, lat in pts]
+    return to_lonlat, math.sqrt(sum(e * e for e in err) / len(err)), len(pts)
+
+
+def build_chart_1853(folder):
+    to_ll, rms, n = georef(folder)
+    feats = []
+    for i, r in enumerate(read_csv(folder / 'names.csv')):
+        lon, lat = to_ll(float(r['px_x']), float(r['px_y']))
+        feats.append(feat({'type': 'Point', 'coordinates': [round(lon, 6), round(lat, 6)]},
+                          {'id': i + 1, 'name': r['name'], 'as_printed': r['as_printed'], 'kind': r['kind'], 'year': 1853,
+                           'note': r.get('note')}))
+    print(f'  1853 chart: {n} control points, {rms:.1f} m rms', flush=True)
+    write('chart_1853', feats, folder / 'names.csv', None)
+
+
 def line_ends(g):
     c = g['coordinates'] if g['type'] == 'LineString' else [p for l in g['coordinates'] for p in l]
     return c[0], c[-1]
@@ -748,12 +796,12 @@ def main():
     SRC.mkdir(exist_ok=True)
     jobs = {'muni': build_muni, 'bike': build_bike, 'schools': build_schools,
             'stations': build_stations, 'health': build_health, 'slow': build_slow, 'lands': build_lands,
-            'shoreline': build_shoreline}
+            'shoreline': build_shoreline, 'chart_1853': build_chart_1853}
     for key, fn in jobs.items():
         if a.only and key not in a.only:
             continue
         # a layer built from a folder of files (shoreline) gets the folder
-        p = (SRC / SOURCES[key]['folder']) if SOURCES[key].get('folder') and (SRC / SOURCES[key]['folder']).is_dir() else find(key)
+        p = (ROOT / SOURCES[key]['path']) if SOURCES[key].get('path') else (SRC / SOURCES[key]['folder']) if SOURCES[key].get('folder') and (SRC / SOURCES[key]['folder']).is_dir() else find(key)
         if (not p or (a.download and key != 'schools')) and SOURCES[key]['id']:
             try:
                 p = download(key)

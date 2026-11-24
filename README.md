@@ -78,12 +78,7 @@ The GeoJSON version of the streets dataset isn't needed; the CSV has the same ge
 
 ### Historic shoreline and water
 
-`data/layers/shoreline.geojson` is NOAA's T-sheet shoreline surveys of 1850–52, 1853 and 1857 (`data/uploads/shoreline/`, one file per survey), as lines. `data/layers/shoreline_water.geojson` is built from them by `build_layers.py shoreline`: one polygon per survey of the water then. Its `draw: "water"` in `index.json` tells apps to paint it in the basemap's water color under the roads, so filled land shows as water; over today's water it's the same color.
-
-- **1850–52**, a survey of the whole shore: the shore chained into one line and closed along a frame out in the bay and ocean (the county line at the south, west of Yerba Buena Island).
-- **1853 and 1857**, surveys of the northeast waterfront: every line but the sheet edges. The shore is chained (1853's one real gap, 101 m, is where its sheet cuts off the south side of Mission Creek), pier lines that start and end on the shore are spliced in so piers show as land, closed loops in the water become islands, and the shore is closed with a box to the north and east. A few short stubs that touch nothing stay lines.
-
-**Sheets digitized out of place** are moved at build time (`SHORE_SHIFT` in `build_layers.py`, meters east and north per survey sheet), easing to nothing within 400 m of where a moved sheet meets an unmoved one. The 1850–52 bay sheet, T-00352, is moved 60 m north and 6 m east: matched against the 1853 and 1857 surveys at the piers, the beach south of them and Rincon Point. The raw downloads stay as published.
+The 1850s shoreline (`data/layers/shoreline.geojson`), the water areas built from it (`shoreline_water.geojson`) and the names on the 1853 chart (`chart_1853.geojson`) are described in [docs/shoreline.md](docs/shoreline.md): the sources, the sheet we move (`SHORE_SHIFT`), how the lines are closed into water areas, and how the 1853 chart is fitted to today's street intersections (`data/georef/uscs-1853/`).
 
 ## streets.json
 
