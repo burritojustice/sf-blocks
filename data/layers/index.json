@@ -261,7 +261,7 @@
    "format": "geojson",
    "geometry": "Point",
    "features": 20,
-   "bytes": 4196,
+   "bytes": 4197,
    "fields": {
     "id": "number",
     "name": "text",
