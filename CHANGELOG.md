@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026.11.24
+- New layer **Names on the 1853 chart** (`chart_1853`): 20 wharves, points, rocks and shoals named on the U.S. Coast Survey's 1853 chart (Laws, Cunningham's, Broadway, Pacific, Central and Market Street wharves, Clark's Point, Rincon Point, Steamboat Point, Mission Rock, the Wreck of the Tonquin…). They're placed with a georeference fitted to 146 of today's street intersections (3.3 m RMS), kept in `data/georef/uscs-1853/` with an Allmaps annotation for tiles.
+- New `docs/shoreline.md`: where the shoreline comes from, the 60 m move of the 1850–52 bay sheet, how the water areas are built, and how to check the alignment with intersections.
+
 ## 2026.11.23.3
 - The 1850–52 shoreline's bay sheet (T-00352, North Beach to Hunters Point) is moved 60 m north and 6 m east, where the 1853 and 1857 surveys put the same piers, beach and Rincon Point. It was digitized out of place. Near North Beach, where it meets the next sheet, the move eases off so the shore stays joined. The water areas are rebuilt to match. The raw download is unchanged.
 
