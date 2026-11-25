@@ -1,1 +1,0 @@
-- The 1853 chart's georeference has three more control points in the Mission (16th Street at Guerrero, Mission and Folsom). Before, the fit was anchored only north of Townsend and was 15–20 m off there. The names on the chart move slightly to match.

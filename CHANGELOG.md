@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.11.25
+- The 1853 chart's georeference has three more control points in the Mission (16th Street at Guerrero, Mission and Folsom). Before, the fit was anchored only north of Townsend and was 15–20 m off there. The names on the chart move slightly to match.
+
 ## 2026.11.24
 - New layer **Names on the 1853 chart** (`chart_1853`): 20 wharves, points, rocks and shoals named on the U.S. Coast Survey's 1853 chart (Laws, Cunningham's, Broadway, Pacific, Central and Market Street wharves, Clark's Point, Rincon Point, Steamboat Point, Mission Rock, the Wreck of the Tonquin…). They're placed with a georeference fitted to 146 of today's street intersections (3.3 m RMS), kept in `data/georef/uscs-1853/` with an Allmaps annotation for tiles.
 - New `docs/shoreline.md`: where the shoreline comes from, the 60 m move of the 1850–52 bay sheet, how the water areas are built, and how to check the alignment with intersections.
