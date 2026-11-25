@@ -64,7 +64,7 @@ A water area is the shore closed into a ring, with the land left out:
 
 `data/georef/uscs-1853/` holds:
 
-- `control_points.csv`: 146 street intersections, each with its pixel on Rumsey's scan (`px_x`, `px_y`, full size) and its place today (`lon`, `lat`, from `data/streets.json`).
+- `control_points.csv`: 149 street intersections, each with its pixel on Rumsey's scan (`px_x`, `px_y`, full size) and its place today (`lon`, `lat`, from `data/streets.json`).
 - `names.csv`: the names read off the chart (`name`, `as_printed`, `kind`, pixel position, `note`). The build places them with an affine fit to the control points.
 - `annotation.json`: the same control points as an [Allmaps](https://allmaps.org) georeference annotation, pointing at Rumsey's IIIF image.
 
@@ -74,6 +74,7 @@ A water area is the shore closed into a ring, with the land left out:
 2. For each of about 1,000 intersections in the 1853 city, draw today's streets around it (centerlines from `streets.json`, widened to their real widths: 21 m downtown, 25 m south of Market, 36.6 m for Market) into the scan's pixels.
 3. Slide that drawing to where it best matches the chart's street edges, and keep the shift.
 4. Fit an affine transformation with RANSAC, then keep the intersections within 10 px. That leaves 146, with **3.3 m RMS**.
+5. The 146 all lie north of Townsend. Three more were added by hand from the Mission: 16th Street at Guerrero, Mission and Folsom. Before they were added, the fit was 15–20 m off there.
 
 A second- or third-order fit isn't any better: the chart's city plan lines up with today's streets to about 3 m without any bending.
 
