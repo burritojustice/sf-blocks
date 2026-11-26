@@ -449,6 +449,87 @@ def shift_sheets(reg, src):
         print(f'  shoreline {SHORE_SURVEY[reg]}: sheet {sheet} moved {de} m east, {dn} m north ({len(seams)} seams eased)', flush=True)
 
 
+# After the move, each sheet with at least BEND_MIN_TIES tie points in data/georef/shoreline_ties.csv is bent onto
+# them with a thin-plate spline: each tie is a spot on the moved line (lon, lat) and the same feature on the 1853
+# chart (to_lon, to_lat), picked by hand in the tie picker. BEND_SMOOTH (m²) lets the bend miss a tie that disagrees
+# with its neighbors rather than kink. Farther than BEND_REACH_M from every tie, the bend holds the value it has at
+# that distance rather than extrapolating; within BEND_EASE_M of a seam with an unbent sheet it eases to nothing.
+TIES = ROOT / 'data/georef/shoreline_ties.csv'
+BEND_MIN_TIES, BEND_SMOOTH, BEND_REACH_M, BEND_EASE_M = 10, 3e4, 300, 150
+
+
+def _tps(P, D, lam):
+    """thin-plate spline through points P (meters) with displacements D (meters); returns f(x, y) → (dx, dy)"""
+    U = lambda r2: 0.0 if r2 <= 0 else 0.5 * r2 * math.log(r2)
+    n = len(P); N = n + 3
+    A = [[0.0] * N for _ in range(N)]
+    for i in range(n):
+        for j in range(n):
+            A[i][j] = U((P[i][0] - P[j][0]) ** 2 + (P[i][1] - P[j][1]) ** 2) + (lam if i == j else 0)
+        A[i][n:n + 3] = [1, P[i][0], P[i][1]]
+        A[n][i], A[n + 1][i], A[n + 2][i] = 1, P[i][0], P[i][1]
+
+    def solve(b):
+        M = [A[i][:] + [b[i]] for i in range(N)]
+        for c in range(N):
+            p = max(range(c, N), key=lambda r: abs(M[r][c])); M[c], M[p] = M[p], M[c]
+            for r in range(N):
+                if r != c and M[r][c]:
+                    k = M[r][c] / M[c][c]; Mr, Mc = M[r], M[c]
+                    for j in range(c, N + 1):
+                        Mr[j] -= k * Mc[j]
+        return [M[i][N] / M[i][i] for i in range(N)]
+    wx, wy = solve([d[0] for d in D] + [0, 0, 0]), solve([d[1] for d in D] + [0, 0, 0])
+
+    def f(x, y):
+        k = [U((x - p[0]) ** 2 + (y - p[1]) ** 2) for p in P]
+        return (sum(a * b for a, b in zip(wx, k)) + wx[n] + wx[n + 1] * x + wx[n + 2] * y,
+                sum(a * b for a, b in zip(wy, k)) + wy[n] + wy[n + 1] * x + wy[n + 2] * y)
+    return f
+
+
+def bend_sheets(reg, src):
+    if not TIES.exists():
+        return
+    ties = [r for r in read_csv(TIES) if r['register'] == reg]
+    by = {}
+    for r in ties:
+        by.setdefault(r['sheet'], []).append(r)
+    pts = lambda f: [p for l in ([f['geometry']['coordinates']] if f['geometry']['type'] == 'LineString' else f['geometry']['coordinates']) for p in l]
+    for sheet, rows in sorted(by.items()):
+        if len(rows) < BEND_MIN_TIES:
+            print(f'  shoreline {SHORE_SURVEY[reg]}: sheet {sheet} has {len(rows)} tie(s), fewer than {BEND_MIN_TIES}: not bent', flush=True)
+            continue
+        lat0 = sum(float(r['lat']) for r in rows) / len(rows); lon0 = sum(float(r['lon']) for r in rows) / len(rows)
+        kx, ky = 111320 * math.cos(math.radians(lat0)), 110950
+        xy = lambda lon, lat: ((lon - lon0) * kx, (lat - lat0) * ky)
+        P = [xy(float(r['lon']), float(r['lat'])) for r in rows]
+        D = [((float(r['to_lon']) - float(r['lon'])) * kx, (float(r['to_lat']) - float(r['lat'])) * ky) for r in rows]
+        f = _tps(P, D, BEND_SMOOTH)
+        mine = [g for g in src if g.get('geometry') and (g.get('properties') or {}).get('SOURCE_ID') == sheet]
+        others = [p for g in src if g.get('geometry') and g not in mine for p in pts(g)]
+        mine_pts = [p for g in mine for p in pts(g)]
+        seams = [q for q in others if min_m(q, mine_pts) < JOIN_TOUCH_M]
+        moved = 0
+        for g in mine:
+            gg = g['geometry']
+            for l in ([gg['coordinates']] if gg['type'] == 'LineString' else gg['coordinates']):
+                for p in l:
+                    x, y = xy(p[0], p[1])
+                    i = min(range(len(P)), key=lambda j: (P[j][0] - x) ** 2 + (P[j][1] - y) ** 2)
+                    d = math.hypot(P[i][0] - x, P[i][1] - y)
+                    if d > BEND_REACH_M:   # hold the bend found at BEND_REACH_M from the nearest tie
+                        x, y = P[i][0] + (x - P[i][0]) * BEND_REACH_M / d, P[i][1] + (y - P[i][1]) * BEND_REACH_M / d
+                    de, dn = f(x, y)
+                    k = min(1, min_m(p, seams) / BEND_EASE_M) if seams else 1
+                    p[0] = round(p[0] + k * de / kx, 7)
+                    p[1] = round(p[1] + k * dn / ky, 7)
+                    moved += 1
+        miss = sorted(math.hypot(*(a - b for a, b in zip(f(*P[i]), D[i]))) for i in range(len(P)))
+        print(f'  shoreline {SHORE_SURVEY[reg]}: sheet {sheet} bent onto {len(rows)} ties ({moved} points); '
+              f'misses its ties by {miss[len(miss) // 2]:.1f} m median, {miss[-1]:.1f} m most', flush=True)
+
+
 def georef(folder):
     """an affine fit from a scan's pixels to lon/lat, from control_points.csv (px_x, px_y, lon, lat), least squares
     in meters around the points' middle; returns (to_lonlat, rms meters)"""
@@ -522,6 +603,7 @@ def build_shoreline(folder):
             continue
         src = json.loads(p.read_text())['features']
         shift_sheets(reg, src)
+        bend_sheets(reg, src)
         is_cl = lambda f: ((f.get('properties') or {}).get('CLASS') or '').upper() == 'CARTOGRAPHIC LIMIT'
         ends = [pt for f in src if not is_cl(f) and f.get('geometry') for pt in line_ends(f['geometry'])]
         joins = edges = 0
