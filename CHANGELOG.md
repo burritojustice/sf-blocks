@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026.11.26
+- The 1850–52 bay sheet (T-00352) is now bent onto the 1853 chart after its 60 m move, using the tie points John picked between the line and the chart (`data/georef/shoreline_ties.csv`). North Beach and the Mission Creek marsh move 25–60 m south, onto the chart. The bent line passes within about 2 m of the ties (median). The water areas are rebuilt to match.
+- `docs/shoreline.md` links NOAA's InPort records for the three surveys, sums up how NOAA made the lines, and explains what is aligned to what.
+
 ## 2026.11.25
 - The 1853 chart's georeference has three more control points in the Mission (16th Street at Guerrero, Mission and Folsom). Before, the fit was anchored only north of Townsend and was 15–20 m off there. The names on the chart move slightly to match.
 
