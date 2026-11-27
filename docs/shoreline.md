@@ -61,12 +61,12 @@ The 1850–52 bay sheet, **T-00352** (North Beach to Hunters Point), sat about 6
 
 The 60 m move fixed T-00352 along the bay front, but not inland: on the same sheet, the Mission Creek marsh and North Beach still sat 25–60 m north of the chart. So after the move, the build bends the sheet:
 
-- **Tie points** are in `data/georef/shoreline_ties.csv`: a spot on the moved 1850–52 line (`lon`, `lat`) and the same feature on the chart (`to_lon`, `to_lat`), with a note. John picked them in the tie picker, an artifact page that shows the chart under NOAA's lines: 90 so far, 89 on T-00352 and one on T-00314 (Fort Mason, as far west as the 1853 chart goes). Ties picked on the bent line are stored as the matching point on the moved line, since the two match vertex for vertex.
+- **Tie points** are in `data/georef/shoreline_ties.csv`: a spot on the moved 1850–52 line (`lon`, `lat`) and the same feature on the chart (`to_lon`, `to_lat`), with a note. John picked them in the tie picker, an artifact page that shows the chart under NOAA's lines: 167 so far, 166 on T-00352 and one on T-00314 (Fort Mason, as far west as the 1853 chart goes). Ties picked on the bent line are stored as the matching point on the moved line, since the two match vertex for vertex.
 - **The bend** (`bend_sheets()`) fits a thin-plate spline to a sheet's ties, if it has at least 10 (`BEND_MIN_TIES`), and moves every point of the sheet by it.
   - `BEND_SMOOTH` lets it miss a tie that disagrees with its neighbors, rather than kink.
   - Farther than 300 m from every tie (`BEND_REACH_M`), it holds the value it has at that distance instead of extrapolating. That covers Islais Creek and Hunters Point, south of Pt. San Quentin, which the 1853 chart doesn't reach; they wait for the 1857 chart.
   - Within 150 m of a seam with an unbent sheet (`BEND_EASE_M`), it eases to nothing.
-- **How well it fits:** the bent line passes within 2 m of its ties (median), 11 m at most. Holding each tie out in turn and predicting it from the others gives 6 m (median). The ties that disagree most with their neighbors are on the south edge of Mission Creek, where the marsh and water lines are smooth and close together and good ties are hard to find, and Van Ness, at the edge of the ties beside the seam.
+- **How well it fits:** the bent line passes within 2.7 m of its ties (median), 15 m at most. Holding each tie out in turn and predicting it from the others gives 5 m (median). The ties that disagree most with their neighbors are on the south edge of Mission Creek, where the marsh and water lines are smooth and close together and good ties are hard to find, and Van Ness, at the edge of the ties beside the seam.
 - **Before the bend,** the ties were 29 m off (median): mostly south, and about 20 m west along the waterfront.
 
 T-00314 (the north shore, Fort Mason west) has a single tie, so it isn't bent yet.

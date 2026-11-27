@@ -1,0 +1,1 @@
+- The 1850–52 bay sheet is bent onto 77 more tie points that John picked from the bent line to the 1853 chart, along Mission Lagoon, Mission Creek and the south side of the Mission Bay marsh (167 ties in all). The line there moves a few meters onto the chart's edges.

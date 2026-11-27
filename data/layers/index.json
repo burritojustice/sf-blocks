@@ -225,7 +225,7 @@
    "format": "geojson",
    "geometry": "LineString",
    "features": 460,
-   "bytes": 653158,
+   "bytes": 653149,
    "fields": {
     "id": "number",
     "survey": "text",
@@ -297,7 +297,7 @@
    "format": "geojson",
    "geometry": "Polygon",
    "features": 3,
-   "bytes": 387429,
+   "bytes": 387427,
    "fields": {
     "survey": "text",
     "shore_km": "number",
